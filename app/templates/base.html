@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="{{ locale }}" dir="{{ direction }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CommerceFlow{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/rtl.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gray-50" style="background: var(--color-bg-primary);">
+    <!-- Sidebar -->
+    <div id="sidebar" class="fixed inset-y-0 {% if direction == 'rtl' %}right-0{% else %}left-0{% endif %} text-white z-50 transition-all duration-300 ease-in-out sidebar-expanded w-64 lg:translate-x-0 {% if direction == 'rtl' %}translate-x-full{% else %}-translate-x-full{% endif %} lg:translate-x-0" style="background: linear-gradient(180deg, var(--color-sidebar-bg) 0%, #0F172A 100%); box-shadow: 4px 0 6px -1px rgba(0, 0, 0, 0.1); border-right: 1px solid #334155;">
+        <div class="flex flex-col h-full">
+            <!-- Logo and Toggle -->
+            <div class="flex items-center justify-between h-16 px-4" style="background: #0F172A; border-bottom: 1px solid #334155;">
+                <div class="flex items-center flex-1 min-w-0">
+                    <i class="fas fa-chart-line text-2xl {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %} flex-shrink-0"></i>
+                    <span class="text-xl font-bold sidebar-text">{{ _('CommerceFlow') }}</span>
+                </div>
+                <button id="sidebar-toggle" class="{% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %} p-1 rounded flex-shrink-0 transition-all duration-200" style="border-radius: 8px;" onmouseover="this.style.background='#334155'" onmouseout="this.style.background='transparent'">
+                    <i class="fas fa-chevron-{% if direction == 'rtl' %}right{% else %}left{% endif %}"></i>
+                </button>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 overflow-y-auto py-4">
+                <!-- Dashboard -->
+                <div class="mb-2">
+                    <a href="{{ url_for('dashboard.index') }}" class="flex items-center px-6 py-3 transition-all duration-200 {% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %}" style="border-radius: 8px; {% if request.endpoint == 'dashboard.index' %}background: var(--color-sidebar-active); border-left: 3px solid var(--color-sidebar-accent); font-weight: 600;{% else %}margin: 0.25rem 0.5rem;{% endif %}" onmouseover="if (!this.classList.contains('active')) this.style.background='var(--color-sidebar-hover)'; this.style.transform='translateX(2px)'" onmouseout="if (!this.classList.contains('active')) this.style.background='transparent'; this.style.transform='translateX(0)'" {% if request.endpoint == 'dashboard.index' %}class="active"{% endif %}>
+                        <i class="fas fa-home w-5 flex-shrink-0" style="{% if request.endpoint == 'dashboard.index' %}color: var(--color-sidebar-accent);{% else %}color: #CBD5E1;{% endif %}"></i>
+                        <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Dashboard') }}</span>
+                    </a>
+                </div>
+
+                <!-- Catalog Module -->
+                <div class="mb-2">
+                    <div class="px-6 py-2 text-xs text-indigo-300 font-semibold sidebar-text">{{ _('CATALOG') }}</div>
+                    <a href="{{ url_for('products_frontend.list') }}" class="flex items-center px-6 py-3 hover:bg-indigo-800 {% if 'products' in request.endpoint and 'price' not in request.endpoint and direction == 'rtl' %}border-l-4 border-indigo-400{% elif 'products' in request.endpoint and 'price' not in request.endpoint %}border-r-4 border-indigo-400{% endif %}">
+                        <i class="fas fa-box w-5 flex-shrink-0"></i>
+                        <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Products') }}</span>
+                    </a>
+                    <a href="{{ url_for('products_frontend.list_price_lists') }}" class="flex items-center px-6 py-3 hover:bg-indigo-800 {% if 'price' in request.endpoint and direction == 'rtl' %}border-l-4 border-indigo-400{% elif 'price' in request.endpoint %}border-r-4 border-indigo-400{% endif %}">
+                        <i class="fas fa-tags w-5 flex-shrink-0"></i>
+                        <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Price Lists') }}</span>
+                    </a>
+                </div>
+
+                <!-- Purchases Module -->
+                <div class="mb-2">
+                    <div class="px-6 py-2 text-xs text-indigo-300 font-semibold sidebar-text">{{ _('PURCHASES') }}</div>
+                    <a href="{{ url_for('purchases_frontend.list_suppliers') }}" class="flex items-center px-6 py-3 hover:bg-indigo-800 {% if 'suppliers' in request.endpoint and direction == 'rtl' %}border-l-4 border-indigo-400{% elif 'suppliers' in request.endpoint %}border-r-4 border-indigo-400{% endif %}">
+                        <i class="fas fa-truck w-5 flex-shrink-0"></i>
+                        <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Suppliers') }}</span>
+                    </a>
+                    <a href="{{ url_for('purchases_frontend.list_purchase_orders') }}" class="flex items-center px-6 py-3 hover:bg-indigo-800 {% if 'purchase_orders' in request.endpoint and direction == 'rtl' %}border-l-4 border-indigo-400{% elif 'purchase_orders' in request.endpoint %}border-r-4 border-indigo-400{% endif %}">
+                        <i class="fas fa-shopping-bag w-5 flex-shrink-0"></i>
+                        <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Purchase Orders') }}</span>
+                    </a>
+                </div>
+
+                <!-- Inventory Module -->
+                <div class="mb-2">
+                    <div class="px-6 py-2 text-xs text-indigo-300 font-semibold sidebar-text">{{ _('INVENTORY') }}</div>
+                    <a href="{{ url_for('stock.index') }}" class="flex items-center px-6 py-3 hover:bg-indigo-800 {% if 'stock' in request.endpoint and 'locations' not in request.endpoint and 'movements' not in request.endpoint and 'alerts' not in request.endpoint and direction == 'rtl' %}border-l-4 border-indigo-400{% elif 'stock' in request.endpoint and 'locations' not in request.endpoint and 'movements' not in request.endpoint and 'alerts' not in request.endpoint %}border-r-4 border-indigo-400{% endif %}">
+                        <i class="fas fa-boxes w-5 flex-shrink-0"></i>
+                        <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Stock') }}</span>
+                    </a>
+                    <a href="{{ url_for('stock.locations') }}" class="flex items-center px-6 py-3 hover:bg-indigo-800 {% if 'locations' in request.endpoint and direction == 'rtl' %}border-l-4 border-indigo-400{% elif 'locations' in request.endpoint %}border-r-4 border-indigo-400{% endif %}">
+                        <i class="fas fa-warehouse w-5 flex-shrink-0"></i>
+                        <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Warehouses') }}</span>
+                    </a>
+                    <a href="{{ url_for('stock.movements') }}" class="flex items-center px-6 py-3 hover:bg-indigo-800 {% if 'movements' in request.endpoint and direction == 'rtl' %}border-l-4 border-indigo-400{% elif 'movements' in request.endpoint %}border-r-4 border-indigo-400{% endif %}">
+                        <i class="fas fa-exchange-alt w-5 flex-shrink-0"></i>
+                        <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Movements') }}</span>
+                    </a>
+                    <a href="{{ url_for('stock.alerts') }}" class="flex items-center px-6 py-3 hover:bg-indigo-800 {% if 'alerts' in request.endpoint and direction == 'rtl' %}border-l-4 border-indigo-400{% elif 'alerts' in request.endpoint %}border-r-4 border-indigo-400{% endif %}">
+                        <i class="fas fa-exclamation-triangle w-5 flex-shrink-0"></i>
+                        <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Alerts') }}</span>
+                    </a>
+                </div>
+
+                <!-- Sales Module -->
+                <div class="mb-2">
+                    <div class="px-6 py-2 text-xs text-indigo-300 font-semibold sidebar-text">{{ _('SALES') }}</div>
+                    <a href="{{ url_for('customers_frontend.list') }}" class="flex items-center px-6 py-3 hover:bg-indigo-800 {% if 'customers' in request.endpoint and direction == 'rtl' %}border-l-4 border-indigo-400{% elif 'customers' in request.endpoint %}border-r-4 border-indigo-400{% endif %}">
+                        <i class="fas fa-users w-5 flex-shrink-0"></i>
+                        <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Customers') }}</span>
+                    </a>
+                    <a href="{{ url_for('sales.quotes_list') }}" class="flex items-center px-6 py-3 hover:bg-indigo-800 {% if 'quotes' in request.endpoint and direction == 'rtl' %}border-l-4 border-indigo-400{% elif 'quotes' in request.endpoint %}border-r-4 border-indigo-400{% endif %}">
+                        <i class="fas fa-file-invoice w-5 flex-shrink-0"></i>
+                        <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Quotes') }}</span>
+                    </a>
+                    <a href="{{ url_for('sales.orders_list') }}" class="flex items-center px-6 py-3 hover:bg-indigo-800 {% if 'orders' in request.endpoint and direction == 'rtl' %}border-l-4 border-indigo-400{% elif 'orders' in request.endpoint %}border-r-4 border-indigo-400{% endif %}">
+                        <i class="fas fa-shopping-cart w-5 flex-shrink-0"></i>
+                        <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Orders') }}</span>
+                    </a>
+                    <a href="{{ url_for('promotions.list') }}" class="flex items-center px-6 py-3 hover:bg-indigo-800 {% if 'promotions' in request.endpoint and direction == 'rtl' %}border-l-4 border-indigo-400{% elif 'promotions' in request.endpoint %}border-r-4 border-indigo-400{% endif %}">
+                        <i class="fas fa-percent w-5 flex-shrink-0"></i>
+                        <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Promotions') }}</span>
+                    </a>
+                    <a href="{{ url_for('billing.invoices_list') }}" class="flex items-center px-6 py-3 hover:bg-indigo-800 {% if 'invoices' in request.endpoint and direction == 'rtl' %}border-l-4 border-indigo-400{% elif 'invoices' in request.endpoint %}border-r-4 border-indigo-400{% endif %}">
+                        <i class="fas fa-file-invoice-dollar w-5 flex-shrink-0"></i>
+                        <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Invoices') }}</span>
+                    </a>
+                </div>
+
+                <!-- Settings Module -->
+                <div class="mb-2 mt-4">
+                    <div class="px-6 py-2 text-xs text-indigo-300 font-semibold sidebar-text">{{ _('SETTINGS') }}</div>
+                    <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                        <i class="fas fa-cog w-5 flex-shrink-0"></i>
+                        <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Configuration') }}</span>
+                    </a>
+                </div>
+            </nav>
+
+            <!-- User Profile -->
+            <div class="p-4 border-t border-indigo-800">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} flex-1">
+                        <div class="text-sm font-medium">{% if g.user %}{{ g.user.username }}{% else %}Guest{% endif %}</div>
+                        <div class="text-xs text-indigo-300">{% if g.user %}{{ g.user.role }}{% else %}Guest{% endif %}</div>
+                    </div>
+                    <!-- Language Switcher -->
+                    <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-1{% else %}space-x-1{% endif %}">
+                        <button onclick="window.i18n.switchLanguage('fr')" 
+                                class="px-2 py-1 text-xs {% if locale == 'fr' %}bg-indigo-700{% else %}hover:bg-indigo-800{% endif %} rounded"
+                                data-locale="fr">FR</button>
+                        <button onclick="window.i18n.switchLanguage('ar')" 
+                                class="px-2 py-1 text-xs {% if locale == 'ar' %}bg-indigo-700{% else %}hover:bg-indigo-800{% endif %} rounded"
+                                data-locale="ar">AR</button>
+                    </div>
+                    <button class="text-indigo-300 hover:text-white {% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %}">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Sidebar Overlay -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden"></div>
+
+    <!-- Main Content -->
+    <div id="main-content" class="transition-all duration-300 ease-in-out">
+        <!-- Top Bar -->
+        <div class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+            <div class="px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center {% if direction == 'rtl' %}space-x-reverse space-x-4{% else %}space-x-4{% endif %}">
+                    <!-- Mobile Menu Toggle -->
+                    <button id="mobile-menu-toggle" class="lg:hidden p-2 text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">{% block page_title %}{{ _('CommerceFlow') }}{% endblock %}</h1>
+                        <p class="text-sm text-gray-600">{% block page_subtitle %}{% endblock %}</p>
+                    </div>
+                </div>
+                <div class="flex items-center {% if direction == 'rtl' %}space-x-reverse space-x-4{% else %}space-x-4{% endif %}">
+                    <button class="relative p-2 text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-bell text-xl"></i>
+                        <span class="absolute top-0 {% if direction == 'rtl' %}left-0{% else %}right-0{% endif %} w-2 h-2 bg-red-500 rounded-full"></span>
+                    </button>
+                    <div class="text-sm text-gray-600">
+                        <i class="far fa-calendar {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                        <span id="current-date"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="p-6">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="mb-6 space-y-3">
+                        {% for category, message in messages %}
+                            <div class="rounded-lg p-4 border {% if category == 'error' %}bg-red-50 border-red-200 text-red-800{% elif category == 'success' %}bg-green-50 border-green-200 text-green-800{% elif category == 'warning' %}bg-yellow-50 border-yellow-200 text-yellow-800{% else %}bg-blue-50 border-blue-200 text-blue-800{% endif %}">
+                                <div class="flex {% if direction == 'rtl' %}flex-row-reverse{% endif %} items-center {% if direction == 'rtl' %}space-x-reverse space-x-3{% else %}space-x-3{% endif %}">
+                                    {% if category == 'error' %}
+                                        <i class="fas fa-exclamation-circle text-xl"></i>
+                                    {% elif category == 'success' %}
+                                        <i class="fas fa-check-circle text-xl"></i>
+                                    {% elif category == 'warning' %}
+                                        <i class="fas fa-exclamation-triangle text-xl"></i>
+                                    {% else %}
+                                        <i class="fas fa-info-circle text-xl"></i>
+                                    {% endif %}
+                                    <span class="flex-1">{{ message }}</span>
+                                    <button onclick="this.parentElement.parentElement.remove()" class="{% if direction == 'rtl' %}mr-auto{% else %}ml-auto{% endif %} text-current opacity-70 hover:opacity-100">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/components.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/interactions.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/sidebar-modern.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+    
+    <script>
+        // Set current date
+        document.getElementById('current-date').textContent = new Date().toLocaleDateString('{{ locale }}', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        // Sidebar toggle functionality
+        (function() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
+            const sidebarTexts = document.querySelectorAll('.sidebar-text');
+            
+            // Check localStorage for sidebar state
+            const isExpanded = localStorage.getItem('sidebarExpanded') !== 'false';
+            
+            // Initialize sidebar state
+            function initSidebar() {
+                if (window.innerWidth >= 1024) {
+                    // Desktop: use saved state
+                    sidebar.classList.remove('-translate-x-full', 'translate-x-full');
+                    sidebar.classList.add('translate-x-0');
+                    if (isExpanded) {
+                        expandSidebar();
+                    } else {
+                        collapseSidebar();
+                    }
+                } else {
+                    // Mobile: always collapsed and hidden by default
+                    sidebar.classList.add('-translate-x-full');
+                    if ('{{ direction }}' === 'rtl') {
+                        sidebar.classList.remove('translate-x-0');
+                        sidebar.classList.add('translate-x-full');
+                    } else {
+                        sidebar.classList.remove('translate-x-0');
+                    }
+                    mainContent.style.marginLeft = '';
+                    mainContent.style.marginRight = '';
+                }
+            }
+            
+            function expandSidebar() {
+                sidebar.classList.remove('sidebar-collapsed');
+                sidebar.classList.add('sidebar-expanded');
+                sidebar.style.width = '16rem'; // w-64 = 256px = 16rem
+                mainContent.style.marginLeft = sidebar.style.marginRight = '';
+                mainContent.style.marginRight = sidebar.style.marginLeft = '';
+                if ('{{ direction }}' === 'rtl') {
+                    mainContent.style.marginRight = '16rem';
+                } else {
+                    mainContent.style.marginLeft = '16rem';
+                }
+                sidebarTexts.forEach(el => el.style.display = '');
+                localStorage.setItem('sidebarExpanded', 'true');
+            }
+            
+            function collapseSidebar() {
+                sidebar.classList.remove('sidebar-expanded');
+                sidebar.classList.add('sidebar-collapsed');
+                sidebar.style.width = '5rem'; // w-20 = 80px = 5rem
+                mainContent.style.marginLeft = sidebar.style.marginRight = '';
+                mainContent.style.marginRight = sidebar.style.marginLeft = '';
+                if ('{{ direction }}' === 'rtl') {
+                    mainContent.style.marginRight = '5rem';
+                } else {
+                    mainContent.style.marginLeft = '5rem';
+                }
+                sidebarTexts.forEach(el => el.style.display = 'none');
+                localStorage.setItem('sidebarExpanded', 'false');
+            }
+            
+            function toggleSidebar() {
+                if (sidebar.classList.contains('sidebar-expanded')) {
+                    collapseSidebar();
+                } else {
+                    expandSidebar();
+                }
+            }
+            
+            // Desktop toggle
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    toggleSidebar();
+                });
+            }
+            
+            // Mobile menu toggle
+            if (mobileMenuToggle) {
+                mobileMenuToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    sidebar.classList.toggle('-translate-x-full');
+                    sidebar.classList.toggle('translate-x-0');
+                    if ('{{ direction }}' === 'rtl') {
+                        sidebar.classList.toggle('translate-x-0');
+                        sidebar.classList.toggle('translate-x-full');
+                    }
+                    sidebarOverlay.classList.toggle('hidden');
+                });
+            }
+            
+            // Close mobile menu when clicking overlay
+            if (sidebarOverlay) {
+                sidebarOverlay.addEventListener('click', function() {
+                    sidebar.classList.add('-translate-x-full');
+                    if ('{{ direction }}' === 'rtl') {
+                        sidebar.classList.remove('translate-x-0');
+                        sidebar.classList.add('translate-x-full');
+                    } else {
+                        sidebar.classList.remove('translate-x-0');
+                    }
+                    sidebarOverlay.classList.add('hidden');
+                });
+            }
+            
+            // Handle window resize
+            let resizeTimer;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(function() {
+                    if (window.innerWidth >= 1024) {
+                        // Desktop: restore saved state
+                        sidebarOverlay.classList.add('hidden');
+                        if (isExpanded) {
+                            expandSidebar();
+                        } else {
+                            collapseSidebar();
+                        }
+                    } else {
+                        // Mobile: always collapsed
+                        collapseSidebar();
+                        sidebar.classList.add('-translate-x-full');
+                        if ('{{ direction }}' === 'rtl') {
+                            sidebar.classList.remove('translate-x-0');
+                            sidebar.classList.add('translate-x-full');
+                        } else {
+                            sidebar.classList.remove('translate-x-0');
+                        }
+                    }
+                }, 250);
+            });
+            
+            // Initialize on page load
+            initSidebar();
+        })();
+    </script>
+</body>
+</html>
+

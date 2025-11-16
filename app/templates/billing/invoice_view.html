@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Invoice') }} {{ invoice.number }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Invoice') }} {{ invoice.number }}{% endblock %}
+{% block page_subtitle %}{{ _('Invoice details and management') }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Invoice Header -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900">{{ invoice.number }}</h2>
+                <p class="text-sm text-gray-500 mt-1">
+                    {{ _('Status') }}: 
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full
+                        {% if invoice.status == 'draft' %}bg-yellow-100 text-yellow-800
+                        {% elif invoice.status == 'validated' %}bg-blue-100 text-blue-800
+                        {% elif invoice.status == 'sent' %}bg-indigo-100 text-indigo-800
+                        {% elif invoice.status == 'partially_paid' %}bg-purple-100 text-purple-800
+                        {% elif invoice.status == 'paid' %}bg-green-100 text-green-800
+                        {% elif invoice.status == 'overdue' %}bg-red-100 text-red-800
+                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ invoice.status|upper|replace('_', ' ') }}
+                    </span>
+                </p>
+            </div>
+            <div class="flex items-center gap-2">
+                {% if invoice.status == 'draft' %}
+                <form method="POST" action="{{ url_for('billing.validate_invoice', invoice_id=invoice.id) }}" class="inline">
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-check {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                        {{ _('Validate') }}
+                    </button>
+                </form>
+                {% endif %}
+                {% if invoice.status in ['validated', 'sent'] %}
+                <form method="POST" action="{{ url_for('billing.send_invoice', invoice_id=invoice.id) }}" class="inline">
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                        <i class="fas fa-paper-plane {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                        {{ _('Send Email') }}
+                    </button>
+                </form>
+                {% endif %}
+                <a href="{{ url_for('billing.invoice_pdf', invoice_id=invoice.id) }}" 
+                   class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                    <i class="fas fa-file-pdf {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                    {{ _('Download PDF') }}
+                </a>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+            <div>
+                <div class="text-xs text-gray-500">{{ _('Invoice Date') }}</div>
+                <div class="text-sm font-medium text-gray-900">{{ invoice.invoice_date.strftime('%d/%m/%Y') }}</div>
+            </div>
+            <div>
+                <div class="text-xs text-gray-500">{{ _('Due Date') }}</div>
+                <div class="text-sm font-medium text-gray-900">{{ invoice.due_date.strftime('%d/%m/%Y') }}</div>
+            </div>
+            <div>
+                <div class="text-xs text-gray-500">{{ _('Customer') }}</div>
+                <div class="text-sm font-medium text-gray-900">{{ invoice.customer_name or 'N/A' }}</div>
+            </div>
+            {% if invoice.order_number %}
+            <div>
+                <div class="text-xs text-gray-500">{{ _('Order') }}</div>
+                <div class="text-sm font-medium text-gray-900">{{ invoice.order_number }}</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Invoice Lines -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">{{ _('Invoice Lines') }}</h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ _('Product') }}</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{{ _('Quantity') }}</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{{ _('Unit Price') }}</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{{ _('Discount') }}</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{{ _('Total HT') }}</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{{ _('TVA') }}</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{{ _('Total TTC') }}</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for line in invoice.lines %}
+                    <tr>
+                        <td class="px-4 py-3 text-sm">
+                            <div class="font-medium text-gray-900">{{ line.product_name or 'N/A' }}</div>
+                            {% if line.product_code %}
+                            <div class="text-xs text-gray-500">{{ line.product_code }}</div>
+                            {% endif %}
+                            {% if line.variant_name %}
+                            <div class="text-xs text-gray-500">{{ _('Variant') }}: {{ line.variant_name }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-900 text-right">{{ "%.3f"|format(line.quantity) }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-900 text-right">{{ "%.2f"|format(line.unit_price) }} €</td>
+                        <td class="px-4 py-3 text-sm text-gray-500 text-right">
+                            {% if line.discount_percent > 0 %}
+                                {{ "%.2f"|format(line.discount_percent) }}%
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-900 text-right">{{ "%.2f"|format(line.line_total_ht) }} €</td>
+                        <td class="px-4 py-3 text-sm text-gray-500 text-right">{{ "%.2f"|format(line.tax_rate) }}%</td>
+                        <td class="px-4 py-3 text-sm font-medium text-gray-900 text-right">{{ "%.2f"|format(line.line_total_ttc) }} €</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Totals -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <div class="flex justify-end">
+            <div class="w-full md:w-1/3">
+                <table class="min-w-full">
+                    <tbody>
+                        <tr>
+                            <td class="px-4 py-2 text-sm text-gray-600 text-right">{{ _('Subtotal HT') }}:</td>
+                            <td class="px-4 py-2 text-sm font-medium text-gray-900 text-right">{{ "%.2f"|format(invoice.subtotal) }} €</td>
+                        </tr>
+                        {% if invoice.discount_percent > 0 %}
+                        <tr>
+                            <td class="px-4 py-2 text-sm text-gray-600 text-right">{{ _('Discount') }} ({{ "%.2f"|format(invoice.discount_percent) }}%):</td>
+                            <td class="px-4 py-2 text-sm font-medium text-red-600 text-right">-{{ "%.2f"|format(invoice.discount_amount) }} €</td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <td class="px-4 py-2 text-sm text-gray-600 text-right">{{ _('TVA') }}:</td>
+                            <td class="px-4 py-2 text-sm font-medium text-gray-900 text-right">{{ "%.2f"|format(invoice.tax_amount) }} €</td>
+                        </tr>
+                        <tr class="border-t-2 border-gray-300">
+                            <td class="px-4 py-2 text-base font-bold text-gray-900 text-right">{{ _('Total TTC') }}:</td>
+                            <td class="px-4 py-2 text-base font-bold text-gray-900 text-right">{{ "%.2f"|format(invoice.total) }} €</td>
+                        </tr>
+                        {% if invoice.paid_amount > 0 %}
+                        <tr>
+                            <td class="px-4 py-2 text-sm text-gray-600 text-right">{{ _('Paid') }}:</td>
+                            <td class="px-4 py-2 text-sm font-medium text-green-600 text-right">{{ "%.2f"|format(invoice.paid_amount) }} €</td>
+                        </tr>
+                        <tr>
+                            <td class="px-4 py-2 text-sm text-gray-600 text-right">{{ _('Remaining') }}:</td>
+                            <td class="px-4 py-2 text-sm font-medium {% if invoice.remaining_amount > 0 %}text-red-600{% else %}text-green-600{% endif %} text-right">
+                                {{ "%.2f"|format(invoice.remaining_amount) }} €
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Credit Notes -->
+    {% if invoice.credit_notes %}
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">{{ _('Credit Notes') }}</h3>
+        <div class="space-y-2">
+            {% for credit_note in invoice.credit_notes %}
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div>
+                    <div class="text-sm font-medium text-gray-900">{{ credit_note.number }}</div>
+                    <div class="text-xs text-gray-500">{{ credit_note.reason }}</div>
+                </div>
+                <div class="text-sm font-medium text-gray-900">{{ "%.2f"|format(credit_note.total_ttc) }} €</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Actions -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <div class="flex items-center justify-between">
+            <a href="{{ url_for('billing.invoices_list') }}" class="text-gray-600 hover:text-gray-900">
+                <i class="fas fa-arrow-left {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                {{ _('Back to list') }}
+            </a>
+            {% if invoice.status != 'canceled' %}
+            <a href="{{ url_for('billing.create_credit_note', invoice_id=invoice.id) }}" 
+               class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors">
+                <i class="fas fa-undo {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                {{ _('Create Credit Note') }}
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,944 @@
+{% extends "base.html" %}
+
+{% block title %}{% if order %}{{ _('Edit Order') }}{% else %}{{ _('New Order') }}{% endif %} - CommerceFlow{% endblock %}
+
+{% block extra_css %}
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<style>
+    .select2-container {
+        width: 100% !important;
+    }
+    .select2-container--default .select2-selection--single {
+        height: 38px;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 36px;
+        padding-left: 12px;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 36px;
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}{% if order %}{{ _('Edit Order') }} {{ order.number }}{% else %}{{ _('New Order') }}{% endif %}{% endblock %}
+{% block page_subtitle %}{% if order %}{{ _('Modify order information') }}{% else %}{{ _('Create a new order for a customer') }}{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    {% if quote %}
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+            <i class="fas fa-info-circle text-blue-600"></i>
+            <div>
+                <p class="text-sm font-medium text-blue-900">{{ _('Creating order from quote') }} {{ quote.number }}</p>
+                <p class="text-xs text-blue-700">{{ _('Quote lines will be automatically copied to the order') }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <form id="order-form" method="POST" action="{{ url_for('sales.save_order') }}" onsubmit="return submitOrderForm(event)">
+        {% if order %}
+        <input type="hidden" name="id" value="{{ order.id }}">
+        {% endif %}
+        {% if quote %}
+        <input type="hidden" name="quote_id" value="{{ quote.id }}">
+        {% endif %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Column - Main Info -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Customer Selection -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Customer Information') }}</h3>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                            {{ _('Customer') }} <span style="color: var(--color-error);">*</span>
+                        </label>
+                        <select id="customer_id" name="customer_id" required
+                                class="modern-input"
+                                {% if order %}data-selected-customer-id="{{ order.customer_id }}"{% elif quote %}data-selected-customer-id="{{ quote.customer_id }}"{% endif %}
+                                {% if order and order.status != 'draft' %}disabled{% endif %}>
+                            <option value="">{{ _('Select a customer...') }}</option>
+                            <!-- Customer options will be loaded via API -->
+                        </select>
+                        {% if order %}
+                        <p class="mt-2 text-sm text-gray-500">{{ _('Current:') }} {{ order.customer_name }} ({{ order.customer_code }})</p>
+                        {% elif quote %}
+                        <p class="mt-2 text-sm text-gray-500">{{ _('From quote:') }} {{ quote.customer_name }} ({{ quote.customer_code }})</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Order Lines -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %} items-center mb-4">
+                        <h3 class="text-lg font-bold text-gray-900">{{ _('Order Lines') }}</h3>
+                        {% if not order or order.status == 'draft' %}
+                        <button type="button" onclick="addOrderLine()" 
+                                class="px-3 py-1 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition">
+                            <i class="fas fa-plus {% if direction == 'rtl' %}ml-1{% else %}mr-1{% endif %}"></i>
+                            {{ _('Add Line') }}
+                        </button>
+                        {% endif %}
+                    </div>
+
+                    <div id="order-lines-container" class="space-y-4">
+                        {% if order and order.lines %}
+                            {% for line in order.lines %}
+                            <div class="order-line border border-gray-200 rounded-lg p-5" data-line-id="{{ line.id }}">
+                                <div class="grid grid-cols-12 gap-4">
+                                    <div class="col-span-5">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Product / Variant') }}</label>
+                                        <div class="flex items-center gap-2">
+                                            <input type="hidden" name="lines[{{ loop.index0 }}][product_id]" 
+                                                   class="product-id-input" 
+                                                   value="{{ line.product_id if line.product_id else '' }}" required>
+                                            <input type="hidden" name="lines[{{ loop.index0 }}][variant_id]" 
+                                                   class="variant-id-input" 
+                                                   value="{{ line.variant_id if line.variant_id else '' }}">
+                                            <input type="text" 
+                                                   class="product-display-input flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 cursor-pointer" 
+                                                   readonly
+                                                   placeholder="{{ _('Click to select product...') }}"
+                                                   onclick="openProductPicker({{ loop.index0 }})"
+                                                   data-line-index="{{ loop.index0 }}"
+                                                   {% if order.status != 'draft' %}disabled{% endif %}>
+                                            <button type="button" 
+                                                    class="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                                                    onclick="openProductPicker({{ loop.index0 }})"
+                                                    title="{{ _('Select Product') }}"
+                                                    {% if order.status != 'draft' %}disabled{% endif %}>
+                                                <i class="fas fa-search"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Quantity') }}</label>
+                                        <input type="number" name="lines[{{ loop.index0 }}][quantity]" 
+                                               value="{{ line.quantity }}" step="0.001" min="0.001" required
+                                               class="quantity-input block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                               onchange="calculateTotals()"
+                                               {% if order.status != 'draft' %}disabled{% endif %}>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Unit Price') }}</label>
+                                        <input type="number" name="lines[{{ loop.index0 }}][unit_price]" 
+                                               value="{{ line.unit_price }}" step="0.01" min="0" required
+                                               class="price-input block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                               onchange="calculateTotals()"
+                                               {% if order.status != 'draft' %}disabled{% endif %}>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Discount %') }}</label>
+                                        <input type="number" name="lines[{{ loop.index0 }}][discount_percent]" 
+                                               value="{{ line.discount_percent }}" step="0.01" min="0" max="100"
+                                               class="discount-input block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                               onchange="calculateTotals()"
+                                               {% if order.status != 'draft' %}disabled{% endif %}>
+                                    </div>
+                                    <div class="col-span-1">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Total HT') }}</label>
+                                        <div class="line-total-ht px-3 py-2 text-sm font-medium text-gray-900 bg-gray-50 rounded-lg">
+                                            {{ "%.2f"|format(line.line_total_ht) }} €
+                                        </div>
+                                    </div>
+                                    {% if not order or order.status == 'draft' %}
+                                    <div class="col-span-1 flex items-end">
+                                        <button type="button" onclick="removeOrderLine(this)" 
+                                                class="w-full px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                    {% endif %}
+                                    <input type="hidden" name="lines[{{ loop.index0 }}][tax_rate]" value="{{ line.tax_rate if line.tax_rate else 20.0 }}">
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% elif quote and quote.lines %}
+                            {% for line in quote.lines %}
+                            <div class="order-line border border-gray-200 rounded-lg p-5" data-line-index="{{ loop.index0 }}">
+                                <div class="grid grid-cols-12 gap-4">
+                                    <div class="col-span-5">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Product / Variant') }}</label>
+                                        <div class="flex items-center gap-2">
+                                            <input type="hidden" name="lines[{{ loop.index0 }}][product_id]" 
+                                                   class="product-id-input" 
+                                                   value="{{ line.product_id if line.product_id else '' }}" required>
+                                            <input type="hidden" name="lines[{{ loop.index0 }}][variant_id]" 
+                                                   class="variant-id-input" 
+                                                   value="{{ line.variant_id if line.variant_id else '' }}">
+                                            <input type="text" 
+                                                   class="product-display-input flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 cursor-pointer" 
+                                                   readonly
+                                                   placeholder="{{ _('Click to select product...') }}"
+                                                   onclick="openProductPicker({{ loop.index0 }})"
+                                                   data-line-index="{{ loop.index0 }}">
+                                            <button type="button" 
+                                                    class="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                                                    onclick="openProductPicker({{ loop.index0 }})"
+                                                    title="{{ _('Select Product') }}">
+                                                <i class="fas fa-search"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Quantity') }}</label>
+                                        <input type="number" name="lines[{{ loop.index0 }}][quantity]" 
+                                               value="{{ line.quantity }}" step="0.001" min="0.001" required
+                                               class="quantity-input block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                               onchange="calculateTotals()">
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Unit Price') }}</label>
+                                        <input type="number" name="lines[{{ loop.index0 }}][unit_price]" 
+                                               value="{{ line.unit_price }}" step="0.01" min="0" required
+                                               class="price-input block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                               onchange="calculateTotals()">
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Discount %') }}</label>
+                                        <input type="number" name="lines[{{ loop.index0 }}][discount_percent]" 
+                                               value="{{ line.discount_percent }}" step="0.01" min="0" max="100"
+                                               class="discount-input block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                               onchange="calculateTotals()">
+                                    </div>
+                                    <div class="col-span-1">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Total HT') }}</label>
+                                        <div class="line-total-ht px-3 py-2 text-sm font-medium text-gray-900 bg-gray-50 rounded-lg">
+                                            {{ "%.2f"|format(line.line_total_ht) }} €
+                                        </div>
+                                    </div>
+                                    <div class="col-span-1 flex items-end">
+                                        <button type="button" onclick="removeOrderLine(this)" 
+                                                class="w-full px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                    <input type="hidden" name="lines[{{ loop.index0 }}][tax_rate]" value="{{ line.tax_rate if line.tax_rate else 20.0 }}">
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <!-- Empty state - will be populated by JavaScript -->
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Delivery Information -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Delivery Information') }}</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Delivery Date Requested') }}
+                            </label>
+                            <input type="date" name="delivery_date_requested"
+                                   value="{% if order %}{{ order.delivery_date_requested.isoformat() if order.delivery_date_requested }}{% endif %}"
+                                   class="modern-input"
+                                   {% if order and order.status != 'draft' %}disabled{% endif %}>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Delivery Date Promised') }}
+                            </label>
+                            <input type="date" name="delivery_date_promised"
+                                   value="{% if order %}{{ order.delivery_date_promised.isoformat() if order.delivery_date_promised }}{% endif %}"
+                                   class="modern-input"
+                                   {% if order and order.status != 'draft' %}disabled{% endif %}>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                            {{ _('Delivery Instructions') }}
+                        </label>
+                        <textarea name="delivery_instructions" rows="3"
+                                class="modern-input"
+                                {% if order and order.status != 'draft' %}disabled{% endif %}>{% if order %}{{ order.delivery_instructions or '' }}{% endif %}</textarea>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Notes') }}</h3>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                            {{ _('Order Notes') }}
+                        </label>
+                        <textarea name="notes" rows="4"
+                                class="modern-input"
+                                {% if order and order.status != 'draft' %}disabled{% endif %}>{% if order %}{{ order.notes or '' }}{% endif %}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Settings & Totals -->
+            <div class="space-y-6">
+                <!-- Order Settings -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Settings') }}</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Document Discount (%)') }}
+                            </label>
+                            <input type="number" name="discount_percent" 
+                                   value="{% if order %}{{ order.discount_percent }}{% else %}0{% endif %}"
+                                   step="0.01" min="0" max="100"
+                                   class="modern-input"
+                                   onchange="calculateTotals()"
+                                   {% if order and order.status != 'draft' %}disabled{% endif %}>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Totals Summary -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Totals') }}</h3>
+                    
+                    <dl class="space-y-2">
+                        <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %}">
+                            <dt class="text-sm text-gray-600">{{ _('Subtotal HT') }}:</dt>
+                            <dd class="text-sm font-medium text-gray-900" id="subtotal">0.00 €</dd>
+                        </div>
+                        <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %}">
+                            <dt class="text-sm text-gray-600">{{ _('Discount') }}:</dt>
+                            <dd class="text-sm font-medium text-red-600" id="discount">0.00 €</dd>
+                        </div>
+                        <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %}">
+                            <dt class="text-sm text-gray-600">{{ _('Tax') }}:</dt>
+                            <dd class="text-sm font-medium text-gray-900" id="tax">0.00 €</dd>
+                        </div>
+                        <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %} border-t pt-2">
+                            <dt class="text-base font-bold text-gray-900">{{ _('Total TTC') }}:</dt>
+                            <dd class="text-base font-bold text-indigo-600" id="total">0.00 €</dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="mt-6 flex {% if direction == 'rtl' %}justify-start space-x-reverse space-x-3{% else %}justify-end space-x-3{% endif %}">
+            <a href="{% if order %}{{ url_for('sales.view_order', order_id=order.id) }}{% else %}{{ url_for('sales.orders_list') }}{% endif %}" 
+               class="px-6 py-2 bg-white text-gray-700 rounded-lg shadow-sm border border-gray-200 hover:bg-gray-50 transition">
+                {{ _('Cancel') }}
+            </a>
+            {% if not order or order.status == 'draft' %}
+            <button type="submit" 
+                    class="px-6 py-2 bg-indigo-600 text-white rounded-lg shadow-sm hover:bg-indigo-700 transition">
+                {% if order %}{{ _('Update Order') }}{% else %}{{ _('Create Order') }}{% endif %}
+            </button>
+            {% endif %}
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- jQuery and Select2 JS -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+let lineIndex = 0;
+let customers = [];
+let products = [];
+
+// Ensure jQuery is available
+if (typeof jQuery === 'undefined') {
+    console.error('jQuery is not loaded!');
+}
+if (typeof jQuery.fn.select2 === 'undefined') {
+    console.error('Select2 is not loaded!');
+}
+
+// Load customers on page load
+async function loadCustomers() {
+    try {
+        const response = await fetch('/orders/data/customers');
+        const data = await response.json();
+        
+        if (data.success && data.data && data.data.items) {
+            customers = data.data.items;
+            const select = document.getElementById('customer_id');
+            
+            if (!select) {
+                console.error('Customer select element not found');
+                return;
+            }
+            
+            // Clear existing options except the first one
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
+            
+            // Add customers
+            customers.forEach(customer => {
+                const option = document.createElement('option');
+                option.value = customer.id;
+                const displayName = customer.company_name || 
+                                   (customer.first_name && customer.last_name ? 
+                                    `${customer.first_name} ${customer.last_name}` : 
+                                    customer.name);
+                option.textContent = `${displayName} (${customer.code})`;
+                select.appendChild(option);
+            });
+            
+            // Initialize Select2 on customer select
+            if (typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined') {
+                if ($(select).hasClass('select2-hidden-accessible')) {
+                    $(select).select2('destroy');
+                }
+                
+                const selectedCustomerId = select.dataset.selectedCustomerId 
+                    ? parseInt(select.dataset.selectedCustomerId) 
+                    : null;
+                
+                $(select).select2({
+                    theme: 'bootstrap-5',
+                    placeholder: '{{ _("Select a customer...") }}',
+                    allowClear: true,
+                    width: '100%',
+                    {% if order and order.status != 'draft' %}disabled: true{% endif %}
+                });
+                
+                if (selectedCustomerId) {
+                    $(select).val(selectedCustomerId).trigger('change');
+                }
+            }
+        } else {
+            console.error('Error loading customers:', data);
+        }
+    } catch (error) {
+        console.error('Error loading customers:', error);
+    }
+}
+
+// Load products on page load
+async function loadProducts() {
+    try {
+        const response = await fetch('/orders/data/products');
+        const data = await response.json();
+        
+        if (data.success && data.data && data.data.items) {
+            products = data.data.items;
+        } else {
+            console.error('Error loading products:', data);
+        }
+    } catch (error) {
+        console.error('Error loading products:', error);
+    }
+}
+
+// Add a new order line
+function addOrderLine() {
+    const container = document.getElementById('order-lines-container');
+    const lineDiv = document.createElement('div');
+    lineDiv.className = 'order-line border border-gray-200 rounded-lg p-5';
+    lineDiv.setAttribute('data-line-index', lineIndex);
+    
+    lineDiv.innerHTML = `
+        <div class="grid grid-cols-12 gap-4">
+            <div class="col-span-5">
+                <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Product / Variant') }}</label>
+                <div class="flex items-center gap-2">
+                    <input type="hidden" name="lines[${lineIndex}][product_id]" 
+                           class="product-id-input" 
+                           value="" required>
+                    <input type="hidden" name="lines[${lineIndex}][variant_id]" 
+                           class="variant-id-input" 
+                           value="">
+                    <input type="text" 
+                           class="product-display-input flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 cursor-pointer" 
+                           readonly
+                           placeholder="{{ _('Click to select product...') }}"
+                           onclick="openProductPicker(${lineIndex})"
+                           data-line-index="${lineIndex}">
+                    <button type="button" 
+                            class="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                            onclick="openProductPicker(${lineIndex})"
+                            title="{{ _('Select Product') }}">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-span-2">
+                <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Quantity') }}</label>
+                <input type="number" name="lines[${lineIndex}][quantity]" 
+                       value="1" step="0.001" min="0.001" required
+                       class="quantity-input block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                       onchange="calculateTotals()">
+            </div>
+            <div class="col-span-2">
+                <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Unit Price') }}</label>
+                <input type="number" name="lines[${lineIndex}][unit_price]" 
+                       value="0" step="0.01" min="0" required
+                       class="price-input block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                       onchange="calculateTotals()">
+            </div>
+            <div class="col-span-2">
+                <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Discount %') }}</label>
+                <input type="number" name="lines[${lineIndex}][discount_percent]" 
+                       value="0" step="0.01" min="0" max="100"
+                       class="discount-input block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                       onchange="calculateTotals()">
+            </div>
+            <div class="col-span-1">
+                <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Total HT') }}</label>
+                <div class="line-total-ht px-3 py-2 text-sm font-medium text-gray-900 bg-gray-50 rounded-lg">
+                    0.00 €
+                </div>
+            </div>
+            <div class="col-span-1 flex items-end">
+                <button type="button" onclick="removeOrderLine(this)" 
+                        class="w-full px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+            <input type="hidden" name="lines[${lineIndex}][tax_rate]" value="20.0">
+        </div>
+    `;
+    
+    container.appendChild(lineDiv);
+    
+    // Populate product select
+    const productSelect = lineDiv.querySelector('.product-select');
+    products.forEach(product => {
+        const option = document.createElement('option');
+        option.value = product.id;
+        option.textContent = `${product.code} - ${product.name}`;
+        productSelect.appendChild(option);
+    });
+    
+    // Initialize Select2 on the new product select
+    if (typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined') {
+        setTimeout(function() {
+            if ($(productSelect).hasClass('select2-hidden-accessible')) {
+                $(productSelect).select2('destroy');
+            }
+            $(productSelect).select2({
+                theme: 'bootstrap-5',
+                placeholder: '{{ _("Select product...") }}',
+                allowClear: true,
+                width: '100%'
+            });
+        }, 100);
+    }
+    
+    lineIndex++;
+}
+
+// Remove an order line
+function removeOrderLine(button) {
+    const lineDiv = button.closest('.order-line');
+    const productSelect = lineDiv.querySelector('.product-select');
+    
+    if (typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined' && productSelect) {
+        if ($(productSelect).hasClass('select2-hidden-accessible')) {
+            $(productSelect).select2('destroy');
+        }
+    }
+    
+    lineDiv.remove();
+    calculateTotals();
+}
+
+// Update price when product is selected
+async function updatePrice(select, lineIndex) {
+    const productId = select.value;
+    if (!productId) return;
+    
+    const product = products.find(p => p.id == productId);
+    if (!product) return;
+    
+    const customerId = document.getElementById('customer_id').value;
+    if (customerId) {
+        try {
+            const response = await fetch(`/orders/data/price-for-customer?product_id=${productId}&customer_id=${customerId}&quantity=1`);
+            const data = await response.json();
+            if (data.success && data.data) {
+                const priceInput = select.closest('.order-line').querySelector('.price-input');
+                priceInput.value = data.data.final_price;
+                
+                if (data.data.applied_discount_percent > 0) {
+                    const discountInput = select.closest('.order-line').querySelector('.discount-input');
+                    discountInput.value = data.data.applied_discount_percent;
+                }
+                
+                calculateTotals();
+                return;
+            }
+        } catch (error) {
+            console.error('Error fetching customer price:', error);
+        }
+    }
+    
+    const priceInput = select.closest('.order-line').querySelector('.price-input');
+    priceInput.value = product.price;
+    calculateTotals();
+}
+
+// Calculate totals
+function calculateTotals() {
+    const lines = document.querySelectorAll('.order-line');
+    let subtotal = 0;
+    let totalDiscount = 0;
+    const taxRate = 20; // Default tax rate
+    
+    lines.forEach(line => {
+        const quantity = parseFloat(line.querySelector('.quantity-input')?.value || 0);
+        const unitPrice = parseFloat(line.querySelector('.price-input')?.value || 0);
+        const discountPercent = parseFloat(line.querySelector('.discount-input')?.value || 0);
+        
+        const lineSubtotal = quantity * unitPrice;
+        const lineDiscount = lineSubtotal * (discountPercent / 100);
+        const lineTotal = lineSubtotal - lineDiscount;
+        
+        const lineTotalElement = line.querySelector('.line-total-ht');
+        if (lineTotalElement) {
+            lineTotalElement.textContent = lineTotal.toFixed(2) + ' €';
+        }
+        
+        subtotal += lineTotal;
+        totalDiscount += lineDiscount;
+    });
+    
+    const docDiscountPercent = parseFloat(document.querySelector('input[name="discount_percent"]')?.value || 0);
+    const docDiscount = subtotal * (docDiscountPercent / 100);
+    subtotal -= docDiscount;
+    totalDiscount += docDiscount;
+    
+    const tax = subtotal * (taxRate / 100);
+    const total = subtotal + tax;
+    
+    document.getElementById('subtotal').textContent = subtotal.toFixed(2) + ' €';
+    document.getElementById('discount').textContent = '-' + totalDiscount.toFixed(2) + ' €';
+    document.getElementById('tax').textContent = tax.toFixed(2) + ' €';
+    document.getElementById('total').textContent = total.toFixed(2) + ' €';
+}
+
+// Submit order form
+async function submitOrderForm(event) {
+    event.preventDefault();
+    
+    const form = document.getElementById('order-form');
+    const formData = new FormData(form);
+    
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.redirected) {
+            window.location.href = response.url;
+        } else {
+            const result = await response.json();
+            if (result.status === 'error' || result.error) {
+                const errorMsg = result.message || result.error || 'Error saving order';
+                alert(errorMsg);
+            } else {
+                window.location.href = `/orders/${result.order_id || result.id}`;
+            }
+        }
+    } catch (error) {
+        console.error('Error submitting form:', error);
+        alert('Error submitting form. Please try again.');
+    }
+    
+    return false;
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', async function() {
+    await loadCustomers();
+    await loadProducts();
+    
+    const existingLines = document.querySelectorAll('.order-line');
+    lineIndex = existingLines.length;
+    
+    const customerSelect = document.getElementById('customer_id');
+    if (customerSelect && customerSelect.dataset.selectedCustomerId) {
+        const selectedCustomerId = parseInt(customerSelect.dataset.selectedCustomerId);
+        customerSelect.value = selectedCustomerId;
+    }
+    
+    const docDiscountInput = document.querySelector('input[name="discount_percent"]');
+    if (docDiscountInput) {
+        docDiscountInput.addEventListener('change', calculateTotals);
+    }
+    
+    // Load product display for existing lines
+    existingLines.forEach(line => {
+        const productIdInput = line.querySelector('.product-id-input');
+        const variantIdInput = line.querySelector('.variant-id-input');
+        const displayInput = line.querySelector('.product-display-input');
+        
+        if (productIdInput && productIdInput.value) {
+            const productId = parseInt(productIdInput.value);
+            const variantId = variantIdInput ? parseInt(variantIdInput.value) : null;
+            
+            // Find product in products array
+            const product = products.find(p => p.id == productId);
+            if (product && displayInput) {
+                if (variantId) {
+                    // Load variant info
+                    fetch(`/products/${productId}/data/variants`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.results) {
+                                const variant = data.results.find(v => v.id == variantId);
+                                if (variant) {
+                                    displayInput.value = `${product.code} - ${product.name} / ${variant.code} - ${variant.name}`;
+                                } else {
+                                    displayInput.value = `${product.code} - ${product.name}`;
+                                }
+                            }
+                        })
+                        .catch(() => {
+                            displayInput.value = `${product.code} - ${product.name}`;
+                        });
+                } else {
+                    displayInput.value = `${product.code} - ${product.name}`;
+                }
+            }
+        }
+    });
+    
+    calculateTotals();
+});
+
+// Product Picker Modal
+let currentLineIndex = null;
+let productsPickerData = [];
+let filteredProducts = [];
+
+// Open product picker modal
+function openProductPicker(lineIndex) {
+    currentLineIndex = lineIndex;
+    document.getElementById('product-picker-modal').classList.remove('hidden');
+    loadProductsForPicker();
+}
+
+// Close product picker modal
+function closeProductPicker() {
+    document.getElementById('product-picker-modal').classList.add('hidden');
+    currentLineIndex = null;
+}
+
+// Load products for picker
+async function loadProductsForPicker(search = '') {
+    try {
+        const response = await fetch(`/products/data/picker?search=${encodeURIComponent(search)}&page=1&per_page=100`);
+        const data = await response.json();
+        
+        if (data.error) {
+            console.error('Error loading products:', data.error);
+            return;
+        }
+        
+        productsPickerData = data.items || [];
+        filteredProducts = productsPickerData;
+        renderProductsList();
+    } catch (error) {
+        console.error('Error loading products:', error);
+    }
+}
+
+// Render products list in modal
+function renderProductsList() {
+    const container = document.getElementById('product-picker-list');
+    container.innerHTML = '';
+    
+    if (filteredProducts.length === 0) {
+        container.innerHTML = '<div class="text-center py-8 text-gray-500">{{ _("No products found") }}</div>';
+        return;
+    }
+    
+    filteredProducts.forEach(item => {
+        // Product row
+        const productRow = document.createElement('div');
+        productRow.className = 'border-b border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer';
+        productRow.onclick = () => selectProduct(item.id, null, item);
+        
+        const stockIcon = item.stock > 0 ? '📦' : '📦';
+        const stockText = `${item.stock} ${item.stock === 1 ? '{{ _("unit") }}' : '{{ _("units") }}'}`;
+        const priceText = item.price ? `${item.price.toFixed(2)} €` : '{{ _("N/A") }}';
+        const variantText = item.has_variants 
+            ? `{{ _("Variants") }}: ${item.variant_attrs.join(', ')}` 
+            : '{{ _("No variants") }}';
+        
+        productRow.innerHTML = `
+            <div class="flex items-center justify-between p-4">
+                <div class="flex-1">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">📷</span>
+                        <div>
+                            <div class="font-semibold text-gray-900">${item.name} (${item.code})</div>
+                            <div class="text-sm text-gray-600 mt-1">
+                                💰 ${priceText} | ${variantText}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm font-medium text-gray-700">${stockIcon} ${stockText}</div>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(productRow);
+        
+        // Variants rows (if any)
+        if (item.has_variants && item.variants.length > 0) {
+            item.variants.forEach(variant => {
+                const variantRow = document.createElement('div');
+                variantRow.className = 'border-b border-gray-100 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer pl-12';
+                variantRow.onclick = (e) => {
+                    e.stopPropagation();
+                    selectProduct(item.id, variant.id, item, variant);
+                };
+                
+                const variantStockIcon = variant.stock > 0 ? '📦' : '📦';
+                const variantStockText = `${variant.stock} ${variant.stock === 1 ? '{{ _("unit") }}' : '{{ _("units") }}'}`;
+                const variantPriceText = variant.price ? `${variant.price.toFixed(2)} €` : priceText;
+                
+                variantRow.innerHTML = `
+                    <div class="flex items-center justify-between p-3">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm">└─</span>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-800">${variant.name} (${variant.code})</div>
+                                    <div class="text-xs text-gray-600 mt-0.5">💰 ${variantPriceText}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs font-medium text-gray-600">${variantStockIcon} ${variantStockText}</div>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(variantRow);
+            });
+        }
+    });
+}
+
+// Select product/variant
+function selectProduct(productId, variantId, product, variant = null) {
+    if (!currentLineIndex && currentLineIndex !== 0) return;
+    
+    const container = document.getElementById('order-lines-container');
+    const lines = container.querySelectorAll('.order-line');
+    let lineDiv = null;
+    
+    // Try to find by data-line-index or data-line-id
+    for (let line of lines) {
+        const lineIdx = parseInt(line.dataset.lineIndex || line.dataset.lineId || '-1');
+        if (lineIdx === currentLineIndex) {
+            lineDiv = line;
+            break;
+        }
+    }
+    
+    // Fallback to index
+    if (!lineDiv && lines[currentLineIndex]) {
+        lineDiv = lines[currentLineIndex];
+    }
+    
+    if (!lineDiv) return;
+    
+    const productIdInput = lineDiv.querySelector('.product-id-input');
+    const variantIdInput = lineDiv.querySelector('.variant-id-input');
+    const displayInput = lineDiv.querySelector('.product-display-input');
+    
+    if (productIdInput) productIdInput.value = productId;
+    if (variantIdInput) variantIdInput.value = variantId || '';
+    
+    // Update display
+    if (displayInput) {
+        if (variant) {
+            displayInput.value = `${product.code} - ${product.name} / ${variant.code} - ${variant.name}`;
+        } else {
+            displayInput.value = `${product.code} - ${product.name}`;
+        }
+    }
+    
+    // Update price
+    const priceInput = lineDiv.querySelector('.price-input');
+    if (priceInput) {
+        const price = variant && variant.price ? variant.price : (product.price || 0);
+        priceInput.value = price.toFixed(2);
+        calculateTotals();
+    }
+    
+    closeProductPicker();
+}
+
+// Search in product picker
+function searchProductsPicker() {
+    const searchInput = document.getElementById('product-picker-search');
+    const searchTerm = searchInput.value.toLowerCase();
+    
+    filteredProducts = productsPickerData.filter(item => {
+        const matchesProduct = item.name.toLowerCase().includes(searchTerm) || 
+                              item.code.toLowerCase().includes(searchTerm);
+        if (matchesProduct) return true;
+        
+        // Check variants
+        return item.variants.some(v => 
+            v.name.toLowerCase().includes(searchTerm) || 
+            v.code.toLowerCase().includes(searchTerm)
+        );
+    });
+    
+    renderProductsList();
+}
+</script>
+
+<!-- Product Picker Modal -->
+<div id="product-picker-modal" class="hidden fixed inset-0 z-50 overflow-y-auto" style="background: rgba(0, 0, 0, 0.5);">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between p-6 border-b border-gray-200">
+                <h3 class="text-xl font-bold text-gray-900">{{ _('Select Product / Variant') }}</h3>
+                <button onclick="closeProductPicker()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Search Bar -->
+            <div class="p-4 border-b border-gray-200">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-search text-gray-400"></i>
+                    <input type="text" 
+                           id="product-picker-search"
+                           placeholder="{{ _('Search products...') }}"
+                           oninput="searchProductsPicker()"
+                           class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+            </div>
+            
+            <!-- Products List -->
+            <div id="product-picker-list" class="flex-1 overflow-y-auto p-4">
+                <!-- Products will be rendered here -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

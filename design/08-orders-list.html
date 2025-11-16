@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commandes - CommerceFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- Sidebar -->
+    <div class="fixed inset-y-0 left-0 w-64 bg-indigo-900 text-white z-50">
+        <div class="flex flex-col h-full">
+            <div class="flex items-center justify-center h-16 bg-indigo-950 border-b border-indigo-800">
+                <i class="fas fa-chart-line text-2xl mr-2"></i>
+                <span class="text-xl font-bold">CommerceFlow</span>
+            </div>
+            <nav class="flex-1 overflow-y-auto py-4">
+                <a href="02-dashboard.html" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-home w-5"></i>
+                    <span class="ml-3">Tableau de bord</span>
+                </a>
+                <a href="03-products-list.html" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-box w-5"></i>
+                    <span class="ml-3">Produits</span>
+                </a>
+                <a href="05-customers-list.html" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-users w-5"></i>
+                    <span class="ml-3">Clients</span>
+                </a>
+                <a href="07-stock.html" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-warehouse w-5"></i>
+                    <span class="ml-3">Stock</span>
+                </a>
+                <a href="08-orders-list.html" class="flex items-center px-6 py-3 bg-indigo-800 border-r-4 border-indigo-400">
+                    <i class="fas fa-shopping-cart w-5"></i>
+                    <span class="ml-3">Commandes</span>
+                </a>
+                <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-file-invoice w-5"></i>
+                    <span class="ml-3">Factures</span>
+                </a>
+                <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-shopping-bag w-5"></i>
+                    <span class="ml-3">Achats</span>
+                </a>
+                <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-chart-bar w-5"></i>
+                    <span class="ml-3">Rapports</span>
+                </a>
+                <div class="px-6 py-3 text-xs text-indigo-300 font-semibold mt-4">PARAMÈTRES</div>
+                <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-cog w-5"></i>
+                    <span class="ml-3">Configuration</span>
+                </a>
+            </nav>
+            <div class="p-4 border-t border-indigo-800">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <div class="text-sm font-medium">Jean Dupont</div>
+                        <div class="text-xs text-indigo-300">Administrateur</div>
+                    </div>
+                    <button class="text-indigo-300 hover:text-white">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="ml-64">
+        <!-- Top Bar -->
+        <div class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+            <div class="px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Gestion des Commandes</h1>
+                        <p class="text-sm text-gray-600">Suivi des ventes et commandes clients</p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <button class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                            <i class="fas fa-file-alt mr-2"></i>
+                            Nouveau Devis
+                        </button>
+                        <a href="09-order-form.html" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                            <i class="fas fa-plus mr-2"></i>
+                            Nouvelle Commande
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="p-6">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+                <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+                    <div class="text-sm text-gray-600 mb-1">Total Ce Mois</div>
+                    <div class="text-2xl font-bold text-gray-900">156</div>
+                    <div class="text-xs text-green-600 mt-1">
+                        <i class="fas fa-arrow-up mr-1"></i>
+                        +18%
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+                    <div class="text-sm text-gray-600 mb-1">En Cours</div>
+                    <div class="text-2xl font-bold text-yellow-600">23</div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+                    <div class="text-sm text-gray-600 mb-1">À Préparer</div>
+                    <div class="text-2xl font-bold text-blue-600">15</div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+                    <div class="text-sm text-gray-600 mb-1">Livrées</div>
+                    <div class="text-2xl font-bold text-green-600">98</div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+                    <div class="text-sm text-gray-600 mb-1">CA Ce Mois</div>
+                    <div class="text-2xl font-bold text-gray-900">586K €</div>
+                    <div class="text-xs text-green-600 mt-1">
+                        <i class="fas fa-arrow-up mr-1"></i>
+                        +8%
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters & Search -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+                    <!-- Search -->
+                    <div class="md:col-span-2">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-search text-gray-400"></i>
+                            </div>
+                            <input type="text" 
+                                class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                placeholder="N° commande, client...">
+                        </div>
+                    </div>
+
+                    <!-- Status Filter -->
+                    <select class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <option>Tous les statuts</option>
+                        <option>Devis</option>
+                        <option>En cours</option>
+                        <option>Validée</option>
+                        <option>À préparer</option>
+                        <option>Expédiée</option>
+                        <option>Livrée</option>
+                        <option>Annulée</option>
+                    </select>
+
+                    <!-- Date Filter -->
+                    <select class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <option>Toutes les dates</option>
+                        <option>Aujourd'hui</option>
+                        <option>Cette semaine</option>
+                        <option>Ce mois</option>
+                        <option>Période personnalisée</option>
+                    </select>
+
+                    <!-- Commercial Filter -->
+                    <select class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <option>Tous les commerciaux</option>
+                        <option>Jean Dupont</option>
+                        <option>Marie Martin</option>
+                        <option>Pierre Durand</option>
+                    </select>
+
+                    <!-- Actions -->
+                    <button class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                        <i class="fas fa-filter mr-2"></i>
+                        Plus de filtres
+                    </button>
+                </div>
+            </div>
+
+            <!-- Orders Table -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <!-- Table Header -->
+                <div class="p-4 border-b border-gray-100 flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <input type="checkbox" class="w-4 h-4 text-indigo-600 border-gray-300 rounded">
+                        <span class="text-sm text-gray-600">156 commandes</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button class="px-3 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                            <i class="fas fa-download mr-2"></i>
+                            Exporter
+                        </button>
+                        <button class="px-3 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                            <i class="fas fa-print mr-2"></i>
+                            Imprimer
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left">
+                                    <input type="checkbox" class="w-4 h-4 text-indigo-600 border-gray-300 rounded">
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    N° Commande
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Client
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Date
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Montant TTC
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Paiement
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Statut
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-100">
+                            <!-- Order Row 1 - En Cours -->
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4">
+                                    <input type="checkbox" class="w-4 h-4 text-indigo-600 border-gray-300 rounded">
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm font-medium text-indigo-600">CMD-2025-001234</div>
+                                    <div class="text-xs text-gray-500">Devis: DEV-2025-000890</div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm font-medium text-gray-900">ABC Industries SA</div>
+                                    <div class="text-xs text-gray-600">contact@abc-industries.fr</div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm text-gray-900">15 Nov 2025</div>
+                                    <div class="text-xs text-gray-600">14:32</div>
+                                </td>
+                                <td class="px-6 py-4 text-sm font-medium text-gray-900">3,240.00 €</td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">
+                                        En attente
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
+                                        <i class="fas fa-clock mr-1"></i>
+                                        En cours
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <a href="09-order-form.html" class="text-indigo-600 hover:text-indigo-900 mr-2">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button class="text-indigo-600 hover:text-indigo-900 mr-2">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="text-gray-600 hover:text-gray-900">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- Order Row 2 - Validée -->
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4">
+                                    <input type="checkbox" class="w-4 h-4 text-indigo-600 border-gray-300 rounded">
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm font-medium text-indigo-600">CMD-2025-001233</div>
+                                    <div class="text-xs text-gray-500">Facture: FACT-2025-001105</div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm font-medium text-gray-900">Tech Solutions SARL</div>
+                                    <div class="text-xs text-gray-600">info@techsolutions.fr</div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm text-gray-900">15 Nov 2025</div>
+                                    <div class="text-xs text-gray-600">11:15</div>
+                                </td>
+                                <td class="px-6 py-4 text-sm font-medium text-gray-900">5,890.00 €</td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                                        Payée
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                                        <i class="fas fa-check-circle mr-1"></i>
+                                        Validée
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <a href="09-order-form.html" class="text-indigo-600 hover:text-indigo-900 mr-2">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button class="text-green-600 hover:text-green-900 mr-2">
+                                        <i class="fas fa-box"></i>
+                                    </button>
+                                    <button class="text-gray-600 hover:text-gray-900">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- Order Row 3 - Livrée -->
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4">
+                                    <input type="checkbox" class="w-4 h-4 text-indigo-600 border-gray-300 rounded">
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm font-medium text-indigo-600">CMD-2025-001232</div>
+                                    <div class="text-xs text-gray-500">BL: BL-2025-000456</div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm font-medium text-gray-900">Commerce Plus SAS</div>
+                                    <div class="text-xs text-gray-600">direction@commerceplus.fr</div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm text-gray-900">14 Nov 2025</div>
+                                    <div class="text-xs text-gray-600">16:45</div>
+                                </td>
+                                <td class="px-6 py-4 text-sm font-medium text-gray-900">2,150.00 €</td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                                        Payée
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                                        <i class="fas fa-truck mr-1"></i>
+                                        Livrée
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <a href="09-order-form.html" class="text-indigo-600 hover:text-indigo-900 mr-2">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button class="text-blue-600 hover:text-blue-900 mr-2">
+                                        <i class="fas fa-file-pdf"></i>
+                                    </button>
+                                    <button class="text-gray-600 hover:text-gray-900">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- Order Row 4 - À Préparer -->
+                            <tr class="hover:bg-gray-50 bg-blue-50">
+                                <td class="px-6 py-4">
+                                    <input type="checkbox" class="w-4 h-4 text-indigo-600 border-gray-300 rounded">
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm font-medium text-indigo-600">CMD-2025-001231</div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm font-medium text-gray-900">Martin Dupont</div>
+                                    <div class="text-xs text-gray-600">martin.dupont@email.fr</div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm text-gray-900">13 Nov 2025</div>
+                                    <div class="text-xs text-gray-600">09:20</div>
+                                </td>
+                                <td class="px-6 py-4 text-sm font-medium text-gray-900">890.00 €</td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                                        Payée
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                                        <i class="fas fa-box-open mr-1"></i>
+                                        À préparer
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <a href="09-order-form.html" class="text-indigo-600 hover:text-indigo-900 mr-2">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button class="text-green-600 hover:text-green-900 mr-2">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button class="text-gray-600 hover:text-gray-900">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- Order Row 5 - Devis -->
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4">
+                                    <input type="checkbox" class="w-4 h-4 text-indigo-600 border-gray-300 rounded">
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm font-medium text-indigo-600">DEV-2025-000891</div>
+                                    <div class="text-xs text-gray-500">Valide jusqu'au 30 Nov</div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm font-medium text-gray-900">Sophie Leroux</div>
+                                    <div class="text-xs text-gray-600">sophie.leroux@email.fr</div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm text-gray-900">12 Nov 2025</div>
+                                    <div class="text-xs text-gray-600">15:30</div>
+                                </td>
+                                <td class="px-6 py-4 text-sm font-medium text-gray-900">7,450.00 €</td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-medium rounded-full">
+                                        -
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
+                                        <i class="fas fa-file-alt mr-1"></i>
+                                        Devis
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <a href="09-order-form.html" class="text-indigo-600 hover:text-indigo-900 mr-2">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button class="text-green-600 hover:text-green-900 mr-2" title="Convertir en commande">
+                                        <i class="fas fa-check-double"></i>
+                                    </button>
+                                    <button class="text-gray-600 hover:text-gray-900">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+                    <div class="text-sm text-gray-600">
+                        Affichage 1 à 20 sur 156 commandes
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm">1</button>
+                        <button class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">2</button>
+                        <button class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">3</button>
+                        <span class="px-2 text-gray-600">...</span>
+                        <button class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">8</button>
+                        <button class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

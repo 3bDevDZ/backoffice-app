@@ -1,0 +1,778 @@
+{% extends "base.html" %}
+
+{% block title %}{% if customer %}{{ _('Edit Customer') }}{% else %}{{ _('New Customer') }}{% endif %} - CommerceFlow{% endblock %}
+
+{% block page_title %}{% if customer %}{{ _('Edit Customer') }}{% else %}{{ _('New Customer') }}{% endif %}{% endblock %}
+{% block page_subtitle %}{% if customer %}{{ _('Modify customer information') }}{% else %}{{ _('Add a new customer') }}{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <form id="customer-form" method="POST" action="{% if customer %}{{ url_for('customers_frontend.update_customer', customer_id=customer.id) }}{% else %}{{ url_for('customers_frontend.create') }}{% endif %}">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Column - Main Info -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Customer Type & Basic Information -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Customer Information') }}</h3>
+                    
+                    <div class="space-y-4">
+                        <!-- Customer Type -->
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Customer Type') }} <span style="color: var(--color-error);">*</span>
+                            </label>
+                            <div class="grid grid-cols-2 gap-4">
+                                <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer {% if customer and customer.type == 'B2B' or not customer %}border-indigo-500 bg-indigo-50{% else %}border-gray-200{% endif %}" id="type-b2b-label">
+                                    <input type="radio" name="type" value="B2B" class="w-4 h-4 text-indigo-600" {% if customer and customer.type == 'B2B' or not customer %}checked{% endif %} onchange="toggleCustomerType()">
+                                    <div class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %}">
+                                        <div class="font-medium text-gray-900">{{ _('B2B (Business)') }}</div>
+                                        <div class="text-sm text-gray-500">{{ _('Company, organization') }}</div>
+                                    </div>
+                                </label>
+                                <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer {% if customer and customer.type == 'B2C' %}border-indigo-500 bg-indigo-50{% else %}border-gray-200{% endif %}" id="type-b2c-label">
+                                    <input type="radio" name="type" value="B2C" class="w-4 h-4 text-indigo-600" {% if customer and customer.type == 'B2C' %}checked{% endif %} onchange="toggleCustomerType()">
+                                    <div class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %}">
+                                        <div class="font-medium text-gray-900">{{ _('B2C (Individual)') }}</div>
+                                        <div class="text-sm text-gray-500">{{ _('Individual customer') }}</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- B2B Fields -->
+                        <div id="b2b-fields" style="display: {% if customer and customer.type == 'B2B' or not customer %}block{% else %}none{% endif %};">
+                            <div>
+                                <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                    {{ _('Company Name') }} <span style="color: var(--color-error);">*</span>
+                                </label>
+                                <input type="text" 
+                                    id="company_name"
+                                    name="company_name"
+                                    value="{% if customer and customer.company_name %}{{ customer.company_name }}{% endif %}"
+                                    class="modern-input"
+                                    placeholder="{{ _('Company name') }}">
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                        {{ _('SIRET') }}
+                                    </label>
+                                    <input type="text" 
+                                        id="siret"
+                                        name="siret"
+                                        value="{% if customer and customer.siret %}{{ customer.siret }}{% endif %}"
+                                        maxlength="14"
+                                        class="modern-input"
+                                        placeholder="12345678901234">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                        {{ _('VAT Number') }}
+                                    </label>
+                                    <input type="text" 
+                                        id="vat_number"
+                                        name="vat_number"
+                                        value="{% if customer and customer.vat_number %}{{ customer.vat_number }}{% endif %}"
+                                        class="modern-input"
+                                        placeholder="FR12345678901">
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                        {{ _('RCS') }}
+                                    </label>
+                                    <input type="text" 
+                                        id="rcs"
+                                        name="rcs"
+                                        value="{% if customer and customer.rcs %}{{ customer.rcs }}{% endif %}"
+                                        class="modern-input">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                        {{ _('Legal Form') }}
+                                    </label>
+                                    <input type="text" 
+                                        id="legal_form"
+                                        name="legal_form"
+                                        value="{% if customer and customer.legal_form %}{{ customer.legal_form }}{% endif %}"
+                                        class="modern-input"
+                                        placeholder="{{ _('SARL, SAS, etc.') }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- B2C Fields -->
+                        <div id="b2c-fields" style="display: {% if customer and customer.type == 'B2C' %}block{% else %}none{% endif %};">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                        {{ _('First Name') }} <span style="color: var(--color-error);">*</span>
+                                    </label>
+                                    <input type="text" 
+                                        id="first_name"
+                                        name="first_name"
+                                        value="{% if customer and customer.first_name %}{{ customer.first_name }}{% endif %}"
+                                        class="modern-input"
+                                        placeholder="{{ _('First name') }}">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                        {{ _('Last Name') }} <span style="color: var(--color-error);">*</span>
+                                    </label>
+                                    <input type="text" 
+                                        id="last_name"
+                                        name="last_name"
+                                        value="{% if customer and customer.last_name %}{{ customer.last_name }}{% endif %}"
+                                        class="modern-input"
+                                        placeholder="{{ _('Last name') }}">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                    {{ _('Birth Date') }}
+                                </label>
+                                <input type="date" 
+                                    id="birth_date"
+                                    name="birth_date"
+                                    value="{% if customer and customer.birth_date %}{{ customer.birth_date }}{% endif %}"
+                                    class="modern-input">
+                            </div>
+                        </div>
+
+                        <!-- Common Fields -->
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Customer Name') }} <span style="color: var(--color-error);">*</span>
+                            </label>
+                            <input type="text" 
+                                id="name"
+                                name="name"
+                                value="{% if customer %}{{ customer.name }}{% endif %}"
+                                required
+                                class="modern-input"
+                                placeholder="{% if customer and customer.type == 'B2B' %}{{ _('Company name') }}{% else %}{{ _('Full name') }}{% endif %}">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                    {{ _('Customer Code') }}
+                                </label>
+                                <input type="text" 
+                                    id="code"
+                                    name="code"
+                                    value="{% if customer %}{{ customer.code }}{% endif %}"
+                                    class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-gray-50"
+                                    placeholder="{{ _('Auto-generated') }}" readonly>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                    {{ _('Category') }}
+                                </label>
+                                <select id="category" name="category" class="modern-input">
+                                    <option value="">{{ _('Select...') }}</option>
+                                    <option value="VIP" {% if customer and customer.category == 'VIP' %}selected{% endif %}>{{ _('VIP') }}</option>
+                                    <option value="Standard" {% if customer and customer.category == 'Standard' %}selected{% endif %}>{{ _('Standard') }}</option>
+                                    <option value="Premium" {% if customer and customer.category == 'Premium' %}selected{% endif %}>{{ _('Premium') }}</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Email') }} <span style="color: var(--color-error);">*</span>
+                            </label>
+                            <input type="email" 
+                                id="email"
+                                name="email"
+                                value="{% if customer %}{{ customer.email }}{% endif %}"
+                                required
+                                class="modern-input"
+                                placeholder="customer@example.com">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                    {{ _('Phone') }}
+                                </label>
+                                <input type="tel" 
+                                    id="phone"
+                                    name="phone"
+                                    value="{% if customer and customer.phone %}{{ customer.phone }}{% endif %}"
+                                    class="modern-input"
+                                    placeholder="+33 1 23 45 67 89">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                    {{ _('Mobile') }}
+                                </label>
+                                <input type="tel" 
+                                    id="mobile"
+                                    name="mobile"
+                                    value="{% if customer and customer.mobile %}{{ customer.mobile }}{% endif %}"
+                                    class="modern-input"
+                                    placeholder="+33 6 12 34 56 78">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Notes') }}
+                            </label>
+                            <textarea rows="3" 
+                                id="notes"
+                                name="notes"
+                                class="modern-input"
+                                placeholder="{{ _('Internal notes about this customer...') }}">{% if customer and customer.notes %}{{ customer.notes }}{% endif %}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Addresses Section -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-gray-900">{{ _('Addresses') }}</h3>
+                        <button type="button" onclick="addAddress()" class="btn-primary" style="padding: var(--spacing-sm) var(--spacing-md); font-size: var(--font-size-sm);">
+                            <i class="fas fa-plus {% if direction == 'rtl' %}ml-1{% else %}mr-1{% endif %}"></i>
+                            {{ _('Add Address') }}
+                        </button>
+                    </div>
+                    
+                    <div id="addresses-container" class="space-y-4">
+                        {% if customer and customer.addresses %}
+                            {% for address in customer.addresses %}
+                            <div class="border border-gray-200 rounded-lg p-4 address-item" data-address-id="{{ address.id }}">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ _('Type') }}</label>
+                                        <select name="address_type[]" class="block w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                            <option value="billing" {% if address.type == 'billing' %}selected{% endif %}>{{ _('Billing') }}</option>
+                                            <option value="delivery" {% if address.type == 'delivery' %}selected{% endif %}>{{ _('Delivery') }}</option>
+                                            <option value="both" {% if address.type == 'both' %}selected{% endif %}>{{ _('Both') }}</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex items-end space-x-2">
+                                        <label class="flex items-center">
+                                            <input type="checkbox" name="is_default_billing[]" {% if address.is_default_billing %}checked{% endif %} class="w-4 h-4 text-indigo-600">
+                                            <span class="{% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} text-sm">{{ _('Default Billing') }}</span>
+                                        </label>
+                                        <label class="flex items-center">
+                                            <input type="checkbox" name="is_default_delivery[]" {% if address.is_default_delivery %}checked{% endif %} class="w-4 h-4 text-indigo-600">
+                                            <span class="{% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} text-sm">{{ _('Default Delivery') }}</span>
+                                        </label>
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ _('Street') }}</label>
+                                        <input type="text" name="address_street[]" value="{{ address.street }}" class="block w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ _('City') }}</label>
+                                        <input type="text" name="address_city[]" value="{{ address.city }}" class="block w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ _('Postal Code') }}</label>
+                                        <input type="text" name="address_postal_code[]" value="{{ address.postal_code }}" class="block w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ _('Country') }}</label>
+                                        <input type="text" name="address_country[]" value="{{ address.country }}" class="block w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ _('State/Region') }}</label>
+                                        <input type="text" name="address_state[]" value="{{ address.state or '' }}" class="block w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                    <div class="md:col-span-2 flex justify-end">
+                                        <button type="button" onclick="removeAddress(this)" class="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg">
+                                            <i class="fas fa-trash {% if direction == 'rtl' %}ml-1{% else %}mr-1{% endif %}"></i>
+                                            {{ _('Remove') }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Contacts Section (B2B) -->
+                <div id="contacts-section" style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);" style="display: {% if customer and customer.type == 'B2B' or not customer %}block{% else %}none{% endif %};">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-gray-900">{{ _('Contacts') }}</h3>
+                        <button type="button" onclick="addContact()" class="btn-primary" style="padding: var(--spacing-sm) var(--spacing-md); font-size: var(--font-size-sm);">
+                            <i class="fas fa-plus {% if direction == 'rtl' %}ml-1{% else %}mr-1{% endif %}"></i>
+                            {{ _('Add Contact') }}
+                        </button>
+                    </div>
+                    
+                    <div id="contacts-container" class="space-y-4">
+                        {% if customer and customer.contacts %}
+                            {% for contact in customer.contacts %}
+                            <div class="border border-gray-200 rounded-lg p-4 contact-item" data-contact-id="{{ contact.id }}">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ _('First Name') }}</label>
+                                        <input type="text" name="contact_first_name[]" value="{{ contact.first_name }}" class="block w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ _('Last Name') }}</label>
+                                        <input type="text" name="contact_last_name[]" value="{{ contact.last_name }}" class="block w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ _('Function') }}</label>
+                                        <input type="text" name="contact_function[]" value="{{ contact.function or '' }}" class="block w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ _('Email') }}</label>
+                                        <input type="email" name="contact_email[]" value="{{ contact.email or '' }}" class="block w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ _('Phone') }}</label>
+                                        <input type="tel" name="contact_phone[]" value="{{ contact.phone or '' }}" class="block w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ _('Mobile') }}</label>
+                                        <input type="tel" name="contact_mobile[]" value="{{ contact.mobile or '' }}" class="block w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <div class="flex items-center space-x-4">
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="contact_is_primary[]" {% if contact.is_primary %}checked{% endif %} class="w-4 h-4 text-indigo-600">
+                                                <span class="{% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} text-sm">{{ _('Primary Contact') }}</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="contact_receives_quotes[]" {% if contact.receives_quotes %}checked{% endif %} class="w-4 h-4 text-indigo-600">
+                                                <span class="{% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} text-sm">{{ _('Receives Quotes') }}</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="contact_receives_invoices[]" {% if contact.receives_invoices %}checked{% endif %} class="w-4 h-4 text-indigo-600">
+                                                <span class="{% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} text-sm">{{ _('Receives Invoices') }}</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="md:col-span-2 flex justify-end">
+                                        <button type="button" onclick="removeContact(this)" class="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg">
+                                            <i class="fas fa-trash {% if direction == 'rtl' %}ml-1{% else %}mr-1{% endif %}"></i>
+                                            {{ _('Remove') }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Commercial Conditions & Status -->
+            <div class="space-y-6">
+                <!-- Commercial Conditions -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Commercial Conditions') }}</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Payment Terms (Days)') }}
+                            </label>
+                            <select id="payment_terms_days" name="payment_terms_days" class="modern-input">
+                                <option value="30" {% if customer and customer.commercial_conditions and customer.commercial_conditions.payment_terms_days == 30 %}selected{% endif %}>30 {{ _('days') }}</option>
+                                <option value="60" {% if customer and customer.commercial_conditions and customer.commercial_conditions.payment_terms_days == 60 %}selected{% endif %}>60 {{ _('days') }}</option>
+                                <option value="90" {% if customer and customer.commercial_conditions and customer.commercial_conditions.payment_terms_days == 90 %}selected{% endif %}>90 {{ _('days') }}</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Price List') }}
+                            </label>
+                            <select id="price_list_id" name="price_list_id" class="modern-input">
+                                <option value="">{{ _('None (Use base price)') }}</option>
+                                {% if price_lists %}
+                                    {% for price_list in price_lists %}
+                                    <option value="{{ price_list.id }}" 
+                                            {% if customer and customer.commercial_conditions and customer.commercial_conditions.price_list_id == price_list.id %}selected{% endif %}>
+                                        {{ price_list.name }}
+                                    </option>
+                                    {% endfor %}
+                                {% endif %}
+                            </select>
+                            <p class="text-xs mt-1" style="color: var(--color-text-tertiary);">
+                                {{ _('Select a price list to apply custom prices for this customer') }}
+                            </p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Default Discount (%)') }}
+                            </label>
+                            <div class="relative">
+                                <input type="number" 
+                                    id="default_discount_percent"
+                                    name="default_discount_percent"
+                                    step="0.01"
+                                    min="0"
+                                    max="100"
+                                    value="{% if customer and customer.commercial_conditions %}{{ customer.commercial_conditions.default_discount_percent }}{% else %}0{% endif %}"
+                                    class="block w-full {% if direction == 'rtl' %}pr-3 pl-10{% else %}pl-3 pr-10{% endif %} py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    placeholder="0.00">
+                                <div class="absolute inset-y-0 {% if direction == 'rtl' %}left-0 pl-3{% else %}right-0 pr-3{% endif %} flex items-center pointer-events-none">
+                                    <span class="text-gray-500">%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Credit Limit') }}
+                            </label>
+                            <div class="relative">
+                                <input type="number" 
+                                    id="credit_limit"
+                                    name="credit_limit"
+                                    step="0.01"
+                                    min="0"
+                                    value="{% if customer and customer.commercial_conditions %}{{ customer.commercial_conditions.credit_limit }}{% else %}0{% endif %}"
+                                    class="block w-full {% if direction == 'rtl' %}pr-3 pl-10{% else %}pl-3 pr-10{% endif %} py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    placeholder="0.00">
+                                <div class="absolute inset-y-0 {% if direction == 'rtl' %}left-0 pl-3{% else %}right-0 pr-3{% endif %} flex items-center pointer-events-none">
+                                    <span class="text-gray-500">€</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="flex items-center">
+                                <input type="checkbox" 
+                                    id="block_on_credit_exceeded"
+                                    name="block_on_credit_exceeded"
+                                    {% if customer and customer.commercial_conditions and customer.commercial_conditions.block_on_credit_exceeded or not customer %}checked{% endif %}
+                                    class="w-4 h-4 text-indigo-600">
+                                <span class="{% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} text-sm" style="color: var(--color-text-secondary);">
+                                    {{ _('Block orders when credit limit exceeded') }}
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Status') }}</h3>
+                    
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="radio" name="status" value="active" class="w-4 h-4 text-indigo-600" {% if not customer or customer.status == 'active' %}checked{% endif %}>
+                            <span class="{% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} text-sm" style="color: var(--color-text-secondary);">{{ _('Active') }}</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="status" value="inactive" class="w-4 h-4 text-indigo-600" {% if customer and customer.status == 'inactive' %}checked{% endif %}>
+                            <span class="{% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} text-sm" style="color: var(--color-text-secondary);">{{ _('Inactive') }}</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="status" value="archived" class="w-4 h-4 text-indigo-600" {% if customer and customer.status == 'archived' %}checked{% endif %}>
+                            <span class="{% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} text-sm" style="color: var(--color-text-secondary);">{{ _('Archived') }}</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="status" value="blocked" class="w-4 h-4 text-indigo-600" {% if customer and customer.status == 'blocked' %}checked{% endif %}>
+                            <span class="{% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} text-sm" style="color: var(--color-text-secondary);">{{ _('Blocked') }}</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div style="background: var(--color-info-light); border: 1px solid var(--color-info); border-radius: var(--radius-xl); padding: var(--spacing-lg);">
+                    <h4 class="text-sm font-bold mb-3" style="color: var(--color-primary-dark);">{{ _('Quick Actions') }}</h4>
+                    <div class="space-y-2">
+                        <a href="{{ url_for('customers_frontend.list') }}" class="block w-full text-{% if direction == 'rtl' %}right{% else %}left{% endif %} px-3 py-2 text-sm rounded-lg transition" style="color: var(--color-primary);">
+                            <i class="fas fa-arrow-{% if direction == 'rtl' %}right{% else %}left{% endif %} {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                            {{ _('Back to List') }}
+                        </a>
+                        {% if customer %}
+                        <button type="button" onclick="archiveCustomer({{ customer.id }})" class="w-full text-{% if direction == 'rtl' %}right{% else %}left{% endif %} px-3 py-2 text-sm text-orange-600 hover:bg-orange-50 rounded-lg transition">
+                            <i class="fas fa-archive {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                            {{ _('Archive') }}
+                        </button>
+                        <button type="button" onclick="deleteCustomer({{ customer.id }})" class="w-full text-{% if direction == 'rtl' %}right{% else %}left{% endif %} px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition">
+                            <i class="fas fa-trash {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                            {{ _('Delete') }}
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="mt-6 flex items-center justify-{% if direction == 'rtl' %}start{% else %}end{% endif %} {% if direction == 'rtl' %}space-x-reverse space-x-3{% else %}space-x-3{% endif %}">
+            <a href="{{ url_for('customers_frontend.list') }}" class="btn-secondary">
+                <i class="fas fa-times {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                {{ _('Cancel') }}
+            </a>
+            <button type="submit" class="btn-primary">
+                <i class="fas fa-check {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                {{ _('Save') }}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/api.js') }}"></script>
+<script>
+// Toggle B2B/B2C fields
+function toggleCustomerType() {
+    const type = document.querySelector('input[name="type"]:checked').value;
+    const b2bFields = document.getElementById('b2b-fields');
+    const b2cFields = document.getElementById('b2c-fields');
+    const contactsSection = document.getElementById('contacts-section');
+    
+    if (type === 'B2B') {
+        b2bFields.style.display = 'block';
+        b2cFields.style.display = 'none';
+        contactsSection.style.display = 'block';
+        document.getElementById('type-b2b-label').classList.add('border-indigo-500', 'bg-indigo-50');
+        document.getElementById('type-b2b-label').classList.remove('border-gray-200');
+        document.getElementById('type-b2c-label').classList.remove('border-indigo-500', 'bg-indigo-50');
+        document.getElementById('type-b2c-label').classList.add('border-gray-200');
+    } else {
+        b2bFields.style.display = 'none';
+        b2cFields.style.display = 'block';
+        contactsSection.style.display = 'none';
+        document.getElementById('type-b2c-label').classList.add('border-indigo-500', 'bg-indigo-50');
+        document.getElementById('type-b2c-label').classList.remove('border-gray-200');
+        document.getElementById('type-b2b-label').classList.remove('border-indigo-500', 'bg-indigo-50');
+        document.getElementById('type-b2b-label').classList.add('border-gray-200');
+    }
+}
+
+// Address management
+function addAddress() {
+    const container = document.getElementById('addresses-container');
+    const addressHtml = `
+        <div class="border border-gray-200 rounded-lg p-4 address-item">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ _('Type') }}</label>
+                    <select name="address_type[]" class="block w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <option value="billing">{{ _('Billing') }}</option>
+                        <option value="delivery">{{ _('Delivery') }}</option>
+                        <option value="both">{{ _('Both') }}</option>
+                    </select>
+                </div>
+                <div class="flex items-end space-x-2">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="is_default_billing[]" class="w-4 h-4 text-indigo-600">
+                        <span class="{% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} text-sm">{{ _('Default Billing') }}</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="is_default_delivery[]" class="w-4 h-4 text-indigo-600">
+                        <span class="{% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} text-sm">{{ _('Default Delivery') }}</span>
+                    </label>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ _('Street') }}</label>
+                    <input type="text" name="address_street[]" class="block w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ _('City') }}</label>
+                    <input type="text" name="address_city[]" class="block w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ _('Postal Code') }}</label>
+                    <input type="text" name="address_postal_code[]" class="block w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ _('Country') }}</label>
+                    <input type="text" name="address_country[]" value="France" class="block w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ _('State/Region') }}</label>
+                    <input type="text" name="address_state[]" class="block w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div class="md:col-span-2 flex justify-end">
+                    <button type="button" onclick="removeAddress(this)" class="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg">
+                        <i class="fas fa-trash {% if direction == 'rtl' %}ml-1{% else %}mr-1{% endif %}"></i>
+                        {{ _('Remove') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', addressHtml);
+}
+
+function removeAddress(button) {
+    button.closest('.address-item').remove();
+}
+
+// Contact management
+function addContact() {
+    const container = document.getElementById('contacts-container');
+    const contactHtml = `
+        <div class="border border-gray-200 rounded-lg p-4 contact-item">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ _('First Name') }}</label>
+                    <input type="text" name="contact_first_name[]" class="block w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ _('Last Name') }}</label>
+                    <input type="text" name="contact_last_name[]" class="block w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ _('Function') }}</label>
+                    <input type="text" name="contact_function[]" class="block w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ _('Email') }}</label>
+                    <input type="email" name="contact_email[]" class="block w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ _('Phone') }}</label>
+                    <input type="tel" name="contact_phone[]" class="block w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ _('Mobile') }}</label>
+                    <input type="tel" name="contact_mobile[]" class="block w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div class="md:col-span-2">
+                    <div class="flex items-center space-x-4">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="contact_is_primary[]" class="w-4 h-4 text-indigo-600">
+                            <span class="{% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} text-sm">{{ _('Primary Contact') }}</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="contact_receives_quotes[]" checked class="w-4 h-4 text-indigo-600">
+                            <span class="{% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} text-sm">{{ _('Receives Quotes') }}</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="contact_receives_invoices[]" class="w-4 h-4 text-indigo-600">
+                            <span class="{% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} text-sm">{{ _('Receives Invoices') }}</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="md:col-span-2 flex justify-end">
+                    <button type="button" onclick="removeContact(this)" class="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg">
+                        <i class="fas fa-trash {% if direction == 'rtl' %}ml-1{% else %}mr-1{% endif %}"></i>
+                        {{ _('Remove') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', contactHtml);
+}
+
+function removeContact(button) {
+    button.closest('.contact-item').remove();
+}
+
+// Form submission
+document.getElementById('customer-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = {};
+    
+    // Collect form data
+    for (let [key, value] of formData.entries()) {
+        if (key.endsWith('[]')) {
+            const baseKey = key.slice(0, -2);
+            if (!data[baseKey]) data[baseKey] = [];
+            data[baseKey].push(value);
+        } else {
+            data[key] = value;
+        }
+    }
+    
+    // Convert to JSON
+    const jsonData = JSON.stringify(data);
+    
+    const url = this.action;
+    const method = 'POST';
+    
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: jsonData
+    })
+        .then(async res => {
+            const contentType = res.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await res.text();
+                throw new Error(text || res.statusText);
+            }
+            return res.json();
+        })
+        .then(data => {
+            if (data.status === 'success' || data.success) {
+                window.location.href = '{{ url_for("customers_frontend.list") }}';
+            } else {
+                alert('{{ _("Error saving customer") }}: ' + (data.message || data.error?.message || 'Unknown error'));
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            alert('{{ _("Error saving customer") }}');
+        });
+});
+
+{% if customer %}
+function archiveCustomer(id) {
+    if (confirm('{{ _("Are you sure you want to archive this customer?") }}')) {
+        fetch(`{{ url_for("customers_frontend.archive_customer", customer_id=0) }}`.replace('0', id), { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(async res => {
+                const contentType = res.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await res.text();
+                    throw new Error(text || res.statusText);
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.href = '{{ url_for("customers_frontend.list") }}';
+                } else {
+                    alert('{{ _("Error archiving customer") }}: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(err => alert('{{ _("Error archiving customer") }}: ' + err.message));
+    }
+}
+
+function deleteCustomer(id) {
+    if (confirm('{{ _("Are you sure you want to delete this customer? This action cannot be undone.") }}')) {
+        fetch(`/api/customers/${id}`, { 
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = '{{ url_for("customers_frontend.list") }}';
+                } else {
+                    alert('{{ _("Error deleting customer") }}: ' + (data.error?.message || 'Unknown error'));
+                }
+            })
+            .catch(err => alert('{{ _("Error deleting customer") }}'));
+    }
+}
+{% endif %}
+</script>
+{% endblock %}
+

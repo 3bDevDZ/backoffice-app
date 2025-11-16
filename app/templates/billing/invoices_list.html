@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Invoices') }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Invoices') }}{% endblock %}
+{% block page_subtitle %}{{ _('Manage and track all invoices') }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Filters and Actions -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+            <div class="flex flex-wrap items-center gap-4 flex-1">
+                <!-- Status Filter -->
+                <select id="status-filter" class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="">{{ _('All Statuses') }}</option>
+                    <option value="draft">{{ _('Draft') }}</option>
+                    <option value="validated">{{ _('Validated') }}</option>
+                    <option value="sent">{{ _('Sent') }}</option>
+                    <option value="partially_paid">{{ _('Partially Paid') }}</option>
+                    <option value="paid">{{ _('Paid') }}</option>
+                    <option value="overdue">{{ _('Overdue') }}</option>
+                    <option value="canceled">{{ _('Canceled') }}</option>
+                </select>
+                
+                <!-- Search -->
+                <input type="text" id="search-input" placeholder="{{ _('Search by number, customer...') }}" 
+                       class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 flex-1 min-w-[200px]">
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <!-- Export FEC -->
+                <a href="{{ url_for('billing.export_fec') }}" 
+                   class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm">
+                    <i class="fas fa-file-export {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                    {{ _('Export FEC') }}
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoices Table -->
+    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Number') }}</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Customer') }}</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Date') }}</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Due Date') }}</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Total') }}</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Paid') }}</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Remaining') }}</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Status') }}</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Actions') }}</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% if invoices %}
+                        {% for invoice in invoices %}
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">{{ invoice.number }}</div>
+                                {% if invoice.order_number %}
+                                <div class="text-xs text-gray-500">{{ _('Order') }}: {{ invoice.order_number }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ invoice.customer_name or 'N/A' }}</div>
+                                {% if invoice.customer_code %}
+                                <div class="text-xs text-gray-500">{{ invoice.customer_code }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ invoice.invoice_date.strftime('%d/%m/%Y') }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ invoice.due_date.strftime('%d/%m/%Y') }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
+                                {{ "%.2f"|format(invoice.total) }} €
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
+                                {{ "%.2f"|format(invoice.paid_amount) }} €
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium {% if invoice.remaining_amount > 0 %}text-red-600{% else %}text-green-600{% endif %} text-right">
+                                {{ "%.2f"|format(invoice.remaining_amount) }} €
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full
+                                    {% if invoice.status == 'draft' %}bg-yellow-100 text-yellow-800
+                                    {% elif invoice.status == 'validated' %}bg-blue-100 text-blue-800
+                                    {% elif invoice.status == 'sent' %}bg-indigo-100 text-indigo-800
+                                    {% elif invoice.status == 'partially_paid' %}bg-purple-100 text-purple-800
+                                    {% elif invoice.status == 'paid' %}bg-green-100 text-green-800
+                                    {% elif invoice.status == 'overdue' %}bg-red-100 text-red-800
+                                    {% elif invoice.status == 'canceled' %}bg-gray-100 text-gray-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ invoice.status|upper|replace('_', ' ') }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <a href="{{ url_for('billing.invoice_view', invoice_id=invoice.id) }}" 
+                                   class="text-indigo-600 hover:text-indigo-900 {% if direction == 'rtl' %}ml-4{% else %}mr-4{% endif %}">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('billing.invoice_pdf', invoice_id=invoice.id) }}" 
+                                   class="text-red-600 hover:text-red-900" title="{{ _('Download PDF') }}">
+                                    <i class="fas fa-file-pdf"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="9" class="px-6 py-8 text-center text-gray-500">
+                                {{ _('No invoices found') }}
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

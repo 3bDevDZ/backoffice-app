@@ -1,0 +1,2 @@
+"""Stock queries module."""
+

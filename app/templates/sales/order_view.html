@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Order') }} {{ order.number }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Order') }} {{ order.number }}{% endblock %}
+{% block page_subtitle %}{{ order.customer_name }}{% endblock %}
+
+{% block content %}
+<div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); margin-bottom: var(--spacing-lg); box-shadow: var(--shadow-md);">
+    <!-- Order Header -->
+    <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %} items-start mb-6">
+        <div>
+            <h2 class="text-2xl font-bold" style="color: var(--color-text-primary);">{{ order.number }}</h2>
+            <p class="text-sm mt-1" style="color: var(--color-text-tertiary);">
+                {{ _('Customer') }}: {{ order.customer_name }} ({{ order.customer_code }})
+            </p>
+            {% if order.quote_id %}
+            <p class="text-sm text-gray-500">
+                {{ _('From Quote') }}: <a href="{{ url_for('sales.view_quote', quote_id=order.quote_id) }}" style="color: var(--color-primary);">{{ order.quote_number or order.quote_id }}</a>
+            </p>
+            {% endif %}
+        </div>
+        <div class="text-{% if direction == 'rtl' %}left{% else %}right{% endif %}">
+            {% if order.status == 'draft' %}
+                <span class="badge badge-draft">
+                    {{ _('Draft') }}
+                </span>
+            {% elif order.status == 'confirmed' %}
+                <span class="badge badge-confirmed">
+                    {{ _('Confirmed') }}
+                </span>
+            {% elif order.status == 'ready' %}
+                <span class="badge badge-received">
+                    {{ _('Ready') }}
+                </span>
+            {% elif order.status == 'shipped' %}
+                <span class="badge badge-sent">
+                    {{ _('Shipped') }}
+                </span>
+            {% elif order.status == 'delivered' %}
+                <span class="badge badge-sent">
+                    {{ _('Delivered') }}
+                </span>
+            {% elif order.status == 'canceled' %}
+                <span class="badge badge-cancelled">
+                    {{ _('Canceled') }}
+                </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Order Details -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+            <h3 class="text-sm font-medium mb-2" style="color: var(--color-text-tertiary);">{{ _('Order Information') }}</h3>
+            <dl class="space-y-2">
+                <div>
+                    <dt class="text-sm" style="color: var(--color-text-secondary);">{{ _('Created') }}:</dt>
+                    <dd class="text-sm font-medium" style="color: var(--color-text-primary);">
+                        {{ order.created_at.strftime('%d/%m/%Y %H:%M') if order.created_at else '-' }}
+                    </dd>
+                </div>
+                {% if order.confirmed_at %}
+                <div>
+                    <dt class="text-sm" style="color: var(--color-text-secondary);">{{ _('Confirmed') }}:</dt>
+                    <dd class="text-sm font-medium" style="color: var(--color-text-primary);">
+                        {{ order.confirmed_at.strftime('%d/%m/%Y %H:%M') if order.confirmed_at else '-' }}
+                    </dd>
+                </div>
+                {% endif %}
+                {% if order.delivery_date_requested %}
+                <div>
+                    <dt class="text-sm" style="color: var(--color-text-secondary);">{{ _('Delivery Date Requested') }}:</dt>
+                    <dd class="text-sm font-medium" style="color: var(--color-text-primary);">
+                        {{ order.delivery_date_requested.strftime('%d/%m/%Y') if order.delivery_date_requested else '-' }}
+                    </dd>
+                </div>
+                {% endif %}
+                {% if order.delivery_date_promised %}
+                <div>
+                    <dt class="text-sm" style="color: var(--color-text-secondary);">{{ _('Delivery Date Promised') }}:</dt>
+                    <dd class="text-sm font-medium" style="color: var(--color-text-primary);">
+                        {{ order.delivery_date_promised.strftime('%d/%m/%Y') if order.delivery_date_promised else '-' }}
+                    </dd>
+                </div>
+                {% endif %}
+            </dl>
+        </div>
+        <div>
+            <h3 class="text-sm font-medium mb-2" style="color: var(--color-text-tertiary);">{{ _('Totals') }}</h3>
+            <dl class="space-y-2">
+                <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %}">
+                    <dt class="text-sm" style="color: var(--color-text-secondary);">{{ _('Subtotal HT') }}:</dt>
+                    <dd class="text-sm font-medium" style="color: var(--color-text-primary);">{{ "%.2f"|format(order.subtotal) }} €</dd>
+                </div>
+                {% if order.discount_amount > 0 %}
+                <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %}">
+                    <dt class="text-sm" style="color: var(--color-text-secondary);">{{ _('Discount') }}:</dt>
+                    <dd class="text-sm font-medium" style="color: var(--color-error);">-{{ "%.2f"|format(order.discount_amount) }} €</dd>
+                </div>
+                {% endif %}
+                <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %}">
+                    <dt class="text-sm" style="color: var(--color-text-secondary);">{{ _('Tax') }}:</dt>
+                    <dd class="text-sm font-medium" style="color: var(--color-text-primary);">{{ "%.2f"|format(order.tax_amount) }} €</dd>
+                </div>
+                <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %} border-t pt-2">
+                    <dt class="text-base font-bold text-gray-900">{{ _('Total TTC') }}:</dt>
+                    <dd class="text-base font-bold text-indigo-600">{{ "%.2f"|format(order.total) }} €</dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+
+    <!-- Order Lines -->
+    {% if order.lines %}
+    <div class="mb-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">{{ _('Order Lines') }}</h3>
+        <div class="overflow-x-auto">
+            <table class="modern-table">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase">{{ _('Product') }}</th>
+                        <th class="px-4 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase">{{ _('Quantity') }}</th>
+                        <th class="px-4 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase">{{ _('Unit Price') }}</th>
+                        <th class="px-4 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase">{{ _('Discount') }}</th>
+                        <th class="px-4 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase">{{ _('Total HT') }}</th>
+                        <th class="px-4 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase">{{ _('Total TTC') }}</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for line in order.lines %}
+                    <tr>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <div class="text-sm font-medium" style="color: var(--color-text-primary);">{{ line.product_name }}</div>
+                            <div class="text-sm text-gray-500">{{ line.product_code }}</div>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ "%.3f"|format(line.quantity) }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ "%.2f"|format(line.unit_price) }} €</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                            {% if line.discount_percent > 0 %}
+                                {{ "%.2f"|format(line.discount_percent) }}%
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ "%.2f"|format(line.line_total_ht) }} €</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{{ "%.2f"|format(line.line_total_ttc) }} €</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Stock Reservations -->
+    {% if order.reservations %}
+    <div class="mb-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">{{ _('Stock Reservations') }}</h3>
+        <div class="overflow-x-auto">
+            <table class="modern-table">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase">{{ _('Product') }}</th>
+                        <th class="px-4 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase">{{ _('Location') }}</th>
+                        <th class="px-4 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase">{{ _('Quantity Reserved') }}</th>
+                        <th class="px-4 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase">{{ _('Status') }}</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for reservation in order.reservations %}
+                    <tr>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <div class="text-sm font-medium" style="color: var(--color-text-primary);">{{ reservation.product_name }}</div>
+                            <div class="text-sm text-gray-500">{{ reservation.product_code }}</div>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ reservation.location_name }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ "%.3f"|format(reservation.quantity_reserved) }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            {% if reservation.status == 'reserved' %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    {{ _('Reserved') }}
+                                </span>
+                            {% elif reservation.status == 'released' %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                    {{ _('Released') }}
+                                </span>
+                            {% elif reservation.status == 'fulfilled' %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    {{ _('Fulfilled') }}
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Delivery Information -->
+    {% if order.delivery_instructions %}
+    <div class="mb-6">
+        <h3 class="text-sm font-medium mb-2" style="color: var(--color-text-tertiary);">{{ _('Delivery Instructions') }}</h3>
+        <p class="text-sm text-gray-900 bg-gray-50 p-4 rounded-lg">{{ order.delivery_instructions|nl2br|safe }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Notes -->
+    {% if order.notes %}
+    <div class="mb-6">
+        <h3 class="text-sm font-medium mb-2" style="color: var(--color-text-tertiary);">{{ _('Notes') }}</h3>
+        <p class="text-sm text-gray-900 bg-gray-50 p-4 rounded-lg">{{ order.notes|nl2br|safe }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Actions -->
+    <div class="flex {% if direction == 'rtl' %}justify-start space-x-reverse space-x-3{% else %}justify-end space-x-3{% endif %} pt-6 border-t">
+        <a href="{{ url_for('sales.orders_list') }}" 
+           class="px-4 py-2 bg-white text-gray-700 rounded-lg shadow-sm border border-gray-200 hover:bg-gray-50 transition">
+            {{ _('Back to List') }}
+        </a>
+        <a href="{{ url_for('sales.download_order_pdf', order_id=order.id) }}" 
+           target="_blank"
+           class="px-4 py-2 bg-red-600 text-white rounded-lg shadow-sm hover:bg-red-700 transition">
+            <i class="fas fa-file-pdf {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+            {{ _('Download PDF') }}
+        </a>
+        {% if order.status == 'draft' %}
+        <a href="{{ url_for('sales.edit_order', order_id=order.id) }}" 
+           class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow-sm hover:bg-blue-700 transition">
+            {{ _('Edit') }}
+        </a>
+        <form method="POST" action="{{ url_for('sales.confirm_order_action', order_id=order.id) }}" class="inline">
+            <button type="submit" 
+                    class="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-sm hover:bg-indigo-700 transition">
+                {{ _('Confirm Order') }}
+            </button>
+        </form>
+        <form method="POST" action="{{ url_for('sales.cancel_order_action', order_id=order.id) }}" class="inline">
+            <button type="submit" 
+                    onclick="return confirm('{{ _('Are you sure you want to cancel this order?') }}')"
+                    class="px-4 py-2 bg-red-600 text-white rounded-lg shadow-sm hover:bg-red-700 transition">
+                {{ _('Cancel Order') }}
+            </button>
+        </form>
+        {% elif order.status == 'confirmed' %}
+        <form method="POST" action="{{ url_for('sales.update_order_status_action', order_id=order.id) }}" class="inline">
+            <input type="hidden" name="status" value="in_preparation">
+            <button type="submit" 
+                    class="px-4 py-2 bg-yellow-600 text-white rounded-lg shadow-sm hover:bg-yellow-700 transition">
+                <i class="fas fa-box {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                {{ _('Start Preparation') }}
+            </button>
+        </form>
+        <form method="POST" action="{{ url_for('sales.cancel_order_action', order_id=order.id) }}" class="inline">
+            <button type="submit" 
+                    onclick="return confirm('{{ _('Are you sure you want to cancel this order? Reserved stock will be released.') }}')"
+                    class="px-4 py-2 bg-red-600 text-white rounded-lg shadow-sm hover:bg-red-700 transition">
+                {{ _('Cancel Order') }}
+            </button>
+        </form>
+        {% elif order.status == 'in_preparation' %}
+        <form method="POST" action="{{ url_for('sales.update_order_status_action', order_id=order.id) }}" class="inline">
+            <input type="hidden" name="status" value="ready">
+            <button type="submit" 
+                    class="px-4 py-2 bg-green-600 text-white rounded-lg shadow-sm hover:bg-green-700 transition">
+                <i class="fas fa-check-circle {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                {{ _('Mark as Ready') }}
+            </button>
+        </form>
+        <form method="POST" action="{{ url_for('sales.cancel_order_action', order_id=order.id) }}" class="inline">
+            <button type="submit" 
+                    onclick="return confirm('{{ _('Are you sure you want to cancel this order? Reserved stock will be released.') }}')"
+                    class="px-4 py-2 bg-red-600 text-white rounded-lg shadow-sm hover:bg-red-700 transition">
+                {{ _('Cancel Order') }}
+            </button>
+        </form>
+        {% elif order.status == 'ready' %}
+        <form method="POST" action="{{ url_for('sales.update_order_status_action', order_id=order.id) }}" class="inline">
+            <input type="hidden" name="status" value="shipped">
+            <button type="submit" 
+                    class="px-4 py-2 bg-purple-600 text-white rounded-lg shadow-sm hover:bg-purple-700 transition">
+                <i class="fas fa-shipping-fast {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                {{ _('Mark as Shipped') }}
+            </button>
+        </form>
+        {% elif order.status == 'shipped' %}
+        <form method="POST" action="{{ url_for('sales.update_order_status_action', order_id=order.id) }}" class="inline">
+            <input type="hidden" name="status" value="delivered">
+            <button type="submit" 
+                    class="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-sm hover:bg-indigo-700 transition">
+                <i class="fas fa-truck {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                {{ _('Mark as Delivered') }}
+            </button>
+        </form>
+        {% elif order.status == 'delivered' %}
+        <a href="{{ url_for('billing.create_invoice', order_id=order.id) }}" 
+           class="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-sm hover:bg-indigo-700 transition inline-flex items-center">
+            <i class="fas fa-file-invoice-dollar {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+            {{ _('Create Invoice') }}
+        </a>
+        {% elif order.status == 'invoiced' %}
+        <span class="px-4 py-2 bg-gray-400 text-white rounded-lg shadow-sm cursor-not-allowed">
+            <i class="fas fa-check-circle {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+            {{ _('Order Completed') }}
+        </span>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

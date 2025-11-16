@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de Bord - CommerceFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- Sidebar -->
+    <div class="fixed inset-y-0 left-0 w-64 bg-indigo-900 text-white z-50">
+        <div class="flex flex-col h-full">
+            <!-- Logo -->
+            <div class="flex items-center justify-center h-16 bg-indigo-950 border-b border-indigo-800">
+                <i class="fas fa-chart-line text-2xl mr-2"></i>
+                <span class="text-xl font-bold">CommerceFlow</span>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 overflow-y-auto py-4">
+                <a href="02-dashboard.html" class="flex items-center px-6 py-3 bg-indigo-800 border-r-4 border-indigo-400">
+                    <i class="fas fa-home w-5"></i>
+                    <span class="ml-3">Tableau de bord</span>
+                </a>
+                <a href="03-products-list.html" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-box w-5"></i>
+                    <span class="ml-3">Produits</span>
+                </a>
+                <a href="05-customers-list.html" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-users w-5"></i>
+                    <span class="ml-3">Clients</span>
+                </a>
+                <a href="07-stock.html" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-warehouse w-5"></i>
+                    <span class="ml-3">Stock</span>
+                </a>
+                <a href="08-orders-list.html" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-shopping-cart w-5"></i>
+                    <span class="ml-3">Commandes</span>
+                </a>
+                <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-file-invoice w-5"></i>
+                    <span class="ml-3">Factures</span>
+                </a>
+                <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-shopping-bag w-5"></i>
+                    <span class="ml-3">Achats</span>
+                </a>
+                <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-chart-bar w-5"></i>
+                    <span class="ml-3">Rapports</span>
+                </a>
+                <div class="px-6 py-3 text-xs text-indigo-300 font-semibold mt-4">PARAMÈTRES</div>
+                <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-cog w-5"></i>
+                    <span class="ml-3">Configuration</span>
+                </a>
+            </nav>
+
+            <!-- User Profile -->
+            <div class="p-4 border-t border-indigo-800">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <div class="text-sm font-medium">Jean Dupont</div>
+                        <div class="text-xs text-indigo-300">Administrateur</div>
+                    </div>
+                    <button class="text-indigo-300 hover:text-white">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="ml-64">
+        <!-- Top Bar -->
+        <div class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+            <div class="px-6 py-4 flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Tableau de Bord</h1>
+                    <p class="text-sm text-gray-600">Vue d'ensemble de votre activité</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button class="relative p-2 text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-bell text-xl"></i>
+                        <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                    </button>
+                    <div class="text-sm text-gray-600">
+                        <i class="far fa-calendar mr-2"></i>
+                        Samedi, 15 Novembre 2025
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="p-6">
+            <!-- KPI Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <!-- CA Today -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-euro-sign text-green-600 text-xl"></i>
+                        </div>
+                        <span class="text-green-600 text-sm font-medium flex items-center">
+                            <i class="fas fa-arrow-up mr-1"></i>
+                            +12.5%
+                        </span>
+                    </div>
+                    <div class="text-3xl font-bold text-gray-900 mb-1">42 580 €</div>
+                    <div class="text-sm text-gray-600">CA du jour</div>
+                </div>
+
+                <!-- CA Month -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-chart-line text-blue-600 text-xl"></i>
+                        </div>
+                        <span class="text-blue-600 text-sm font-medium flex items-center">
+                            <i class="fas fa-arrow-up mr-1"></i>
+                            +8.3%
+                        </span>
+                    </div>
+                    <div class="text-3xl font-bold text-gray-900 mb-1">586 230 €</div>
+                    <div class="text-sm text-gray-600">CA du mois</div>
+                </div>
+
+                <!-- Orders -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-shopping-cart text-purple-600 text-xl"></i>
+                        </div>
+                        <span class="text-purple-600 text-sm font-medium">23 en cours</span>
+                    </div>
+                    <div class="text-3xl font-bold text-gray-900 mb-1">156</div>
+                    <div class="text-sm text-gray-600">Commandes ce mois</div>
+                </div>
+
+                <!-- Stock Alerts -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-exclamation-triangle text-orange-600 text-xl"></i>
+                        </div>
+                        <span class="text-orange-600 text-sm font-medium">Attention</span>
+                    </div>
+                    <div class="text-3xl font-bold text-gray-900 mb-1">12</div>
+                    <div class="text-sm text-gray-600">Produits en rupture</div>
+                </div>
+            </div>
+
+            <!-- Charts & Tables Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <!-- Sales Chart -->
+                <div class="lg:col-span-2 bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-bold text-gray-900">Évolution des Ventes</h3>
+                        <div class="flex space-x-2">
+                            <button class="px-3 py-1 text-sm bg-indigo-100 text-indigo-700 rounded-lg">7 Jours</button>
+                            <button class="px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">30 Jours</button>
+                            <button class="px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">12 Mois</button>
+                        </div>
+                    </div>
+                    <!-- Chart Placeholder -->
+                    <div class="h-64 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-lg flex items-center justify-center">
+                        <div class="text-center text-gray-400">
+                            <i class="fas fa-chart-area text-6xl mb-3"></i>
+                            <p>Graphique d'évolution des ventes</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Products -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4">Top Produits</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-box text-blue-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="text-sm font-medium text-gray-900">Produit A</div>
+                                <div class="text-xs text-gray-600">235 ventes</div>
+                            </div>
+                            <div class="text-sm font-bold text-gray-900">12 450 €</div>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-box text-green-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="text-sm font-medium text-gray-900">Produit B</div>
+                                <div class="text-xs text-gray-600">198 ventes</div>
+                            </div>
+                            <div class="text-sm font-bold text-gray-900">9 870 €</div>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-box text-purple-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="text-sm font-medium text-gray-900">Produit C</div>
+                                <div class="text-xs text-gray-600">176 ventes</div>
+                            </div>
+                            <div class="text-sm font-bold text-gray-900">8 320 €</div>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-box text-orange-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="text-sm font-medium text-gray-900">Produit D</div>
+                                <div class="text-xs text-gray-600">142 ventes</div>
+                            </div>
+                            <div class="text-sm font-bold text-gray-900">7 100 €</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity & Stock Alerts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Recent Orders -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                    <div class="p-6 border-b border-gray-100">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-bold text-gray-900">Commandes Récentes</h3>
+                            <a href="08-orders-list.html" class="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+                                Voir tout
+                                <i class="fas fa-arrow-right ml-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="divide-y divide-gray-100">
+                        <div class="p-4 hover:bg-gray-50">
+                            <div class="flex items-start justify-between mb-2">
+                                <div class="flex-1">
+                                    <div class="font-medium text-gray-900">CMD-2025-001234</div>
+                                    <div class="text-sm text-gray-600">Client: ABC Industries</div>
+                                </div>
+                                <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">En cours</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Aujourd'hui, 14:32</span>
+                                <span class="font-bold text-gray-900">3 240 €</span>
+                            </div>
+                        </div>
+                        <div class="p-4 hover:bg-gray-50">
+                            <div class="flex items-start justify-between mb-2">
+                                <div class="flex-1">
+                                    <div class="font-medium text-gray-900">CMD-2025-001233</div>
+                                    <div class="text-sm text-gray-600">Client: Tech Solutions</div>
+                                </div>
+                                <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">Validée</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Aujourd'hui, 11:15</span>
+                                <span class="font-bold text-gray-900">5 890 €</span>
+                            </div>
+                        </div>
+                        <div class="p-4 hover:bg-gray-50">
+                            <div class="flex items-start justify-between mb-2">
+                                <div class="flex-1">
+                                    <div class="font-medium text-gray-900">CMD-2025-001232</div>
+                                    <div class="text-sm text-gray-600">Client: Commerce Plus</div>
+                                </div>
+                                <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">Livrée</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Hier, 16:45</span>
+                                <span class="font-bold text-gray-900">2 150 €</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stock Alerts -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                    <div class="p-6 border-b border-gray-100">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-bold text-gray-900">Alertes Stock</h3>
+                            <a href="07-stock.html" class="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+                                Voir tout
+                                <i class="fas fa-arrow-right ml-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="divide-y divide-gray-100">
+                        <div class="p-4 hover:bg-gray-50">
+                            <div class="flex items-start">
+                                <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
+                                    <i class="fas fa-times text-red-600"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="font-medium text-gray-900">Produit XYZ-123</div>
+                                    <div class="text-sm text-gray-600">Rupture de stock</div>
+                                    <div class="text-xs text-gray-500 mt-1">Stock: 0 | Min: 50</div>
+                                </div>
+                                <button class="text-indigo-600 hover:text-indigo-700 text-sm font-medium">
+                                    Commander
+                                </button>
+                            </div>
+                        </div>
+                        <div class="p-4 hover:bg-gray-50">
+                            <div class="flex items-start">
+                                <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
+                                    <i class="fas fa-exclamation text-orange-600"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="font-medium text-gray-900">Produit ABC-456</div>
+                                    <div class="text-sm text-gray-600">Stock faible</div>
+                                    <div class="text-xs text-gray-500 mt-1">Stock: 8 | Min: 20</div>
+                                </div>
+                                <button class="text-indigo-600 hover:text-indigo-700 text-sm font-medium">
+                                    Commander
+                                </button>
+                            </div>
+                        </div>
+                        <div class="p-4 hover:bg-gray-50">
+                            <div class="flex items-start">
+                                <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
+                                    <i class="fas fa-exclamation text-orange-600"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="font-medium text-gray-900">Produit DEF-789</div>
+                                    <div class="text-sm text-gray-600">Stock faible</div>
+                                    <div class="text-xs text-gray-500 mt-1">Stock: 15 | Min: 30</div>
+                                </div>
+                                <button class="text-indigo-600 hover:text-indigo-700 text-sm font-medium">
+                                    Commander
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

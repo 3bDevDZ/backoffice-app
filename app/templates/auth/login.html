@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="{{ locale }}" dir="{{ direction }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ _('Login') }} - CommerceFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/rtl.css') }}">
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-md w-full">
+        <!-- Logo & Title -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-2xl mb-4">
+                <i class="fas fa-chart-line text-white text-2xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900">CommerceFlow</h1>
+            <p class="text-gray-600 mt-2">{{ _('Commercial Management System') }}</p>
+        </div>
+
+        <!-- Login Form -->
+        <div class="bg-white rounded-2xl shadow-xl p-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">{{ _('Login') }}</h2>
+            
+            <form id="login-form" method="POST" action="{{ url_for('auth_frontend.login') }}" class="space-y-6">
+                <input type="hidden" name="next" value="{{ next_url }}">
+                <!-- Username -->
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ _('Username') }}
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 {% if direction == 'rtl' %}right-0 pr-3{% else %}left-0 pl-3{% endif %} flex items-center pointer-events-none">
+                            <i class="fas fa-user text-gray-400"></i>
+                        </div>
+                        <input type="text" id="username" name="username" required
+                            class="block w-full {% if direction == 'rtl' %}pr-10 pl-3{% else %}pl-10 pr-3{% endif %} py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            placeholder="{{ _('Enter your username') }}">
+                    </div>
+                </div>
+
+                <!-- Password -->
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ _('Password') }}
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 {% if direction == 'rtl' %}right-0 pr-3{% else %}left-0 pl-3{% endif %} flex items-center pointer-events-none">
+                            <i class="fas fa-lock text-gray-400"></i>
+                        </div>
+                        <input type="password" id="password" name="password" required
+                            class="block w-full {% if direction == 'rtl' %}pr-10 pl-3{% else %}pl-10 pr-3{% endif %} py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            placeholder="••••••••">
+                    </div>
+                </div>
+
+                <!-- Remember & Forgot -->
+                <div class="flex items-center justify-between">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="remember" class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                        <span class="{% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} text-sm text-gray-600">{{ _('Remember me') }}</span>
+                    </label>
+                    <a href="#" class="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+                        {{ _('Forgot password?') }}
+                    </a>
+                </div>
+
+                <!-- Error Message -->
+                <div id="error-message" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm"></div>
+
+                <!-- Submit Button -->
+                <button type="submit" 
+                    class="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-200 transition font-medium">
+                    <i class="fas fa-sign-in-alt {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                    {{ _('Sign in') }}
+                </button>
+            </form>
+
+            <!-- Divider -->
+            <div class="relative my-6">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-gray-300"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                    <span class="px-2 bg-white text-gray-500">{{ _('or') }}</span>
+                </div>
+            </div>
+
+            <!-- SSO Options -->
+            <div class="space-y-3">
+                <button type="button" class="w-full bg-white border border-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-50 transition font-medium">
+                    <i class="fab fa-microsoft {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %} text-blue-600"></i>
+                    {{ _('Continue with Microsoft') }}
+                </button>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-6 text-sm text-gray-600">
+            <p>{{ _('Version 1.0') }} | © 2025 CommerceFlow</p>
+        </div>
+    </div>
+
+    <script>
+        // Show flash messages if any
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    {% if category == 'error' %}
+                        (function() {
+                            const errorDiv = document.getElementById('error-message');
+                            if (errorDiv) {
+                                errorDiv.textContent = {{ message|tojson }};
+                                errorDiv.classList.remove('hidden');
+                            }
+                        })();
+                    {% elif category == 'success' %}
+                        // Success messages are shown after redirect
+                        console.log('Login successful');
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        // Form will submit normally (POST to /login route)
+        // Server handles authentication and sets session
+    </script>
+</body>
+</html>
+

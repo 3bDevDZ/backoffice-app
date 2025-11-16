@@ -1,0 +1,409 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Products') }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Product Management') }}{% endblock %}
+{% block page_subtitle %}{{ _('Complete catalog of your products') }}{% endblock %}
+
+{% block content %}
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="stat-card">
+        <div class="stat-card-label">{{ _('Total Products') }}</div>
+        <div class="stat-card-metric" style="color: var(--color-text-primary);" id="total-products">{{ products|length if products else 0 }}</div>
+    </div>
+    <div class="stat-card stat-card-received">
+        <div class="stat-card-label">{{ _('Active Products') }}</div>
+        <div class="stat-card-metric" id="active-products">
+            {{ products|selectattr('status', 'equalto', 'active')|list|length if products else 0 }}
+        </div>
+    </div>
+    <div class="stat-card stat-card-cancelled">
+        <div class="stat-card-label">{{ _('Out of Stock') }}</div>
+        <div class="stat-card-metric" id="out-of-stock">0</div>
+    </div>
+    <div class="stat-card stat-card-draft">
+        <div class="stat-card-label">{{ _('Low Stock') }}</div>
+        <div class="stat-card-metric" id="low-stock">0</div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="mb-6 flex {% if direction == 'rtl' %}justify-start{% else %}justify-end{% endif %} {% if direction == 'rtl' %}space-x-reverse space-x-3{% else %}space-x-3{% endif %}">
+    <a href="{{ url_for('products_frontend.export') }}" class="btn-secondary">
+        <i class="fas fa-download"></i>
+        <span>{{ _('Export') }}</span>
+    </a>
+    <button onclick="showImportModal()" class="btn-secondary">
+        <i class="fas fa-upload"></i>
+        <span>{{ _('Import') }}</span>
+    </button>
+    <a href="{{ url_for('products_frontend.new') }}" class="btn-primary">
+        <i class="fas fa-plus"></i>
+        <span>{{ _('New Product') }}</span>
+    </a>
+</div>
+
+<!-- Filters & Search -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+    <form method="GET" action="{{ url_for('products_frontend.list') }}" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <!-- Search -->
+        <div class="md:col-span-2">
+            <div class="relative">
+                <div class="absolute inset-y-0 {% if direction == 'rtl' %}right-0 pr-3{% else %}left-0 pl-3{% endif %} flex items-center pointer-events-none">
+                    <i class="fas fa-search" style="color: var(--color-text-tertiary);"></i>
+                </div>
+                <input type="text" 
+                    name="search"
+                    value="{{ search or '' }}"
+                    class="modern-input {% if direction == 'rtl' %}pr-10 pl-3{% else %}pl-10 pr-3{% endif %}"
+                    placeholder="{{ _('Search by name, code, reference...') }}">
+            </div>
+        </div>
+
+        <!-- Category Filter -->
+        <select name="category_id" class="modern-select">
+            <option value="">{{ _('All Categories') }}</option>
+            {% for category in categories %}
+            <option value="{{ category.id }}" {% if category_id == category.id %}selected{% endif %}>
+                {{ category.name }}
+            </option>
+            {% endfor %}
+        </select>
+
+        <!-- Status Filter -->
+        <select name="status" class="modern-select">
+            <option value="">{{ _('All Statuses') }}</option>
+            <option value="active" {% if status == 'active' %}selected{% endif %}>{{ _('Active') }}</option>
+            <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>{{ _('Inactive') }}</option>
+            <option value="archived" {% if status == 'archived' %}selected{% endif %}>{{ _('Archived') }}</option>
+        </select>
+
+        <!-- Actions -->
+        <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+            <button type="submit" class="btn-secondary flex-1">
+                <i class="fas fa-filter {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                {{ _('Filter') }}
+            </button>
+            <a href="{{ url_for('products_frontend.list') }}" class="btn-secondary" style="padding: 0.75rem;">
+                <i class="fas fa-redo"></i>
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Products Table -->
+<div class="modern-table-container">
+    <!-- Table Header -->
+    <div class="p-4 border-b border-gray-100 flex items-center justify-between" style="border-bottom: 2px solid var(--color-border-default);">
+        <div class="flex items-center {% if direction == 'rtl' %}space-x-reverse space-x-4{% else %}space-x-4{% endif %}">
+            <input type="checkbox" class="w-4 h-4 text-indigo-600 border-gray-300 rounded" id="select-all">
+            <span class="text-sm" style="color: var(--color-text-secondary);">
+                {{ products|length if products else 0 }} {{ _('products') }}
+            </span>
+        </div>
+        <div class="flex items-center {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+            <button class="p-2 rounded-lg transition-all duration-200" style="color: var(--color-text-secondary);" onmouseover="this.style.background='var(--color-bg-primary)'" onmouseout="this.style.background='transparent'">
+                <i class="fas fa-th-large"></i>
+            </button>
+            <button class="p-2 rounded-lg transition-all duration-200" style="color: var(--color-primary); background: rgba(79, 70, 229, 0.1);">
+                <i class="fas fa-list"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="overflow-x-auto">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">
+                        <input type="checkbox" class="w-4 h-4 text-indigo-600 border-gray-300 rounded">
+                    </th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">
+                        {{ _('Product') }}
+                    </th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">
+                        {{ _('Code') }}
+                    </th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">
+                        {{ _('Category') }}
+                    </th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">
+                        {{ _('Price HT') }}
+                    </th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">
+                        {{ _('Status') }}
+                    </th>
+                    <th class="text-{% if direction == 'rtl' %}left{% else %}right{% endif %}">
+                        {{ _('Actions') }}
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if products %}
+                    {% for product in products %}
+                    <tr>
+                        <td class="px-6 py-4">
+                            <input type="checkbox" class="w-4 h-4 text-indigo-600 border-gray-300 rounded" value="{{ product.id }}">
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center">
+                                <div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center {% if direction == 'rtl' %}ml-3{% else %}mr-3{% endif %}">
+                                    <i class="fas fa-image text-gray-400"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">{{ product.name }}</div>
+                                    {% if product.description %}
+                                    <div class="text-xs text-gray-600">{{ product.description[:50] }}{% if product.description|length > 50 %}...{% endif %}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-900">{{ product.code }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">
+                            {% if product.categories %}
+                                {{ product.categories[0].name if product.categories else '-' }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900">
+                            {{ "%.2f"|format(product.price) }} €
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if product.status == 'active' %}
+                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">{{ _('Active') }}</span>
+                            {% elif product.status == 'inactive' %}
+                            <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-medium rounded-full">{{ _('Inactive') }}</span>
+                            {% elif product.status == 'archived' %}
+                            <span class="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">{{ _('Archived') }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-{% if direction == 'rtl' %}left{% else %}right{% endif %} text-sm font-medium">
+                            <div class="flex items-center {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+                                <!-- View Button -->
+                                <a href="{{ url_for('products_frontend.view', product_id=product.id) }}" 
+                                   class="text-blue-600 hover:text-blue-900" 
+                                   title="{{ _('View Details') }}">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                
+                                <!-- Variants Button -->
+                                <a href="{{ url_for('products_frontend.list_variants', product_id=product.id) }}" 
+                                   class="text-purple-600 hover:text-purple-900" 
+                                   title="{{ _('Variants') }}">
+                                    <i class="fas fa-layer-group"></i>
+                                </a>
+                                
+                                <!-- Edit Button -->
+                                <a href="{{ url_for('products_frontend.edit', product_id=product.id) }}" 
+                                   class="text-indigo-600 hover:text-indigo-900" 
+                                   title="{{ _('Edit') }}">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                
+                                <!-- Actions Dropdown -->
+                                <div class="relative" x-data="{ open: false }">
+                                    <button @click="open = !open" 
+                                            class="text-gray-600 hover:text-gray-900"
+                                            title="{{ _('More actions') }}">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    
+                                    <div x-show="open" 
+                                         @click.away="open = false"
+                                         x-transition
+                                         class="absolute {% if direction == 'rtl' %}left-0{% else %}right-0{% endif %} mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                                        <div class="py-1">
+                                            {% if product.status == 'active' %}
+                                            <button onclick="deactivateProduct({{ product.id }})" 
+                                                    class="block w-full text-{% if direction == 'rtl' %}right{% else %}left{% endif %} px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                <i class="fas fa-pause {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                                                {{ _('Deactivate') }}
+                                            </button>
+                                            {% elif product.status == 'inactive' %}
+                                            <button onclick="activateProduct({{ product.id }})" 
+                                                    class="block w-full text-{% if direction == 'rtl' %}right{% else %}left{% endif %} px-4 py-2 text-sm text-green-700 hover:bg-green-50">
+                                                <i class="fas fa-play {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                                                {{ _('Activate') }}
+                                            </button>
+                                            {% endif %}
+                                            
+                                            {% if product.status != 'archived' %}
+                                            <button onclick="archiveProduct({{ product.id }})" 
+                                                    class="block w-full text-{% if direction == 'rtl' %}right{% else %}left{% endif %} px-4 py-2 text-sm text-orange-700 hover:bg-orange-50">
+                                                <i class="fas fa-archive {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                                                {{ _('Archive') }}
+                                            </button>
+                                            {% endif %}
+                                            
+                                            <hr class="my-1 border-gray-200">
+                                            
+                                            <button onclick="deleteProduct({{ product.id }})" 
+                                                    class="block w-full text-{% if direction == 'rtl' %}right{% else %}left{% endif %} px-4 py-2 text-sm text-red-700 hover:bg-red-50">
+                                                <i class="fas fa-trash {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                                                {{ _('Delete') }}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                            {{ _('No products found') }}
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if products and products|length > 0 %}
+    <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+        <div class="text-sm text-gray-600">
+            {{ _('Showing') }} {{ ((page - 1) * per_page) + 1 }} {{ _('to') }} {{ [page * per_page, products|length]|min }} {{ _('of') }} {{ products|length }} {{ _('products') }}
+        </div>
+        <div class="flex items-center {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+            {% if page > 1 %}
+            <a href="{{ url_for('products_frontend.list', page=page-1, search=search, category_id=category_id, status=status) }}" 
+               class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+                <i class="fas fa-chevron-{% if direction == 'rtl' %}right{% else %}left{% endif %}"></i>
+            </a>
+            {% endif %}
+            <span class="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm">{{ page }}</span>
+            {% if products|length >= per_page %}
+            <a href="{{ url_for('products_frontend.list', page=page+1, search=search, category_id=category_id, status=status) }}" 
+               class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+                <i class="fas fa-chevron-{% if direction == 'rtl' %}left{% else %}right{% endif %}"></i>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showImportModal() {
+    // TODO: Implement import modal
+    alert('{{ _("Import functionality coming soon") }}');
+}
+
+function activateProduct(id) {
+    if (confirm('{{ _("Are you sure you want to activate this product?") }}')) {
+        fetch(`{{ url_for("products_frontend.activate_product", product_id=0) }}`.replace('0', id), { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(async res => {
+                const contentType = res.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await res.text();
+                    throw new Error(text || res.statusText);
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.reload();
+                } else {
+                    alert('{{ _("Error activating product") }}: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(err => alert('{{ _("Error activating product") }}: ' + err.message));
+    }
+}
+
+function deactivateProduct(id) {
+    if (confirm('{{ _("Are you sure you want to deactivate this product?") }}')) {
+        fetch(`{{ url_for("products_frontend.deactivate_product", product_id=0) }}`.replace('0', id), { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(async res => {
+                const contentType = res.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await res.text();
+                    throw new Error(text || res.statusText);
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.reload();
+                } else {
+                    alert('{{ _("Error deactivating product") }}: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(err => alert('{{ _("Error deactivating product") }}: ' + err.message));
+    }
+}
+
+function archiveProduct(id) {
+    if (confirm('{{ _("Are you sure you want to archive this product?") }}')) {
+        fetch(`{{ url_for("products_frontend.archive_product", product_id=0) }}`.replace('0', id), { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(async res => {
+                const contentType = res.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await res.text();
+                    throw new Error(text || res.statusText);
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.reload();
+                } else {
+                    alert('{{ _("Error archiving product") }}: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(err => alert('{{ _("Error archiving product") }}: ' + err.message));
+    }
+}
+
+function deleteProduct(id) {
+    if (confirm('{{ _("Are you sure you want to delete this product? This action cannot be undone.") }}')) {
+        fetch(`{{ url_for("products_frontend.delete_product", product_id=0) }}`.replace('0', id), { 
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(async res => {
+                const contentType = res.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await res.text();
+                    throw new Error(text || res.statusText);
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.reload();
+                } else {
+                    alert('{{ _("Error deleting product") }}: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(err => alert('{{ _("Error deleting product") }}: ' + err.message));
+    }
+}
+</script>
+{% endblock %}
+

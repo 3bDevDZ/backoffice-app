@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Orders') }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Order Management') }}{% endblock %}
+{% block page_subtitle %}{{ _('Create and manage customer orders') }}{% endblock %}
+
+{% block content %}
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+    <div class="stat-card">
+        <div class="stat-card-label">{{ _('Total Orders') }}</div>
+        <div class="stat-card-metric" style="color: var(--color-text-primary);">{{ pagination.total }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">{{ _('Draft') }}</div>
+        <div class="stat-card-metric" style="color: var(--color-info);">
+            {{ orders|selectattr('status', 'equalto', 'draft')|list|length }}
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">{{ _('Confirmed') }}</div>
+        <div class="stat-card-metric" style="color: var(--color-warning);">
+            {{ orders|selectattr('status', 'equalto', 'confirmed')|list|length }}
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">{{ _('Ready') }}</div>
+        <div class="stat-card-metric" style="color: var(--color-success);">
+            {{ orders|selectattr('status', 'equalto', 'ready')|list|length }}
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">{{ _('Shipped') }}</div>
+        <div class="stat-card-metric" style="color: #7C3AED;">
+            {{ orders|selectattr('status', 'equalto', 'shipped')|list|length }}
+        </div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="mb-6 flex {% if direction == 'rtl' %}justify-start{% else %}justify-end{% endif %} {% if direction == 'rtl' %}space-x-reverse space-x-3{% else %}space-x-3{% endif %}">
+    <a href="{{ url_for('sales.create_order') }}" 
+       class="btn-primary {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+        <i class="fas fa-plus"></i>
+        <span>{{ _('New Order') }}</span>
+    </a>
+</div>
+
+<!-- Filters & Search -->
+<div class="modern-table-container">
+    <div class="overflow-x-auto">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th class="px-6 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {{ _('Order Number') }}
+                    </th>
+                    <th class="px-6 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {{ _('Customer') }}
+                    </th>
+                    <th class="px-6 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {{ _('Status') }}
+                    </th>
+                    <th class="px-6 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {{ _('Total') }}
+                    </th>
+                    <th class="px-6 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {{ _('Delivery Date') }}
+                    </th>
+                    <th class="px-6 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {{ _('Created') }}
+                    </th>
+                    <th class="px-6 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {{ _('Actions') }}
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for order in orders %}
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">{{ order.number }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">{{ order.customer_name or '-' }}</div>
+                        <div class="text-sm text-gray-500">{{ order.customer_code or '' }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if order.status == 'draft' %}
+                            <span class="badge badge-confirmed">{{ _('Draft') }}</span>
+                        {% elif order.status == 'confirmed' %}
+                            <span class="badge badge-draft">{{ _('Confirmed') }}</span>
+                        {% elif order.status == 'ready' %}
+                            <span class="badge badge-received">{{ _('Ready') }}</span>
+                        {% elif order.status == 'shipped' %}
+                            <span class="badge badge-partially_received">{{ _('Shipped') }}</span>
+                        {% elif order.status == 'delivered' %}
+                            <span class="badge badge-received">{{ _('Delivered') }}</span>
+                        {% elif order.status == 'canceled' %}
+                            <span class="badge badge-cancelled">{{ _('Canceled') }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {{ "%.2f"|format(order.total) }} €
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ order.delivery_date_promised.strftime('%d/%m/%Y') if order.delivery_date_promised else '-' }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ order.created_at.strftime('%d/%m/%Y') if order.created_at else '-' }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+                            <a href="{{ url_for('sales.view_order', order_id=order.id) }}" 
+                               class="text-indigo-600 hover:text-indigo-900" title="{{ _('View') }}">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            {% if order.status == 'draft' %}
+                            <a href="{{ url_for('sales.edit_order', order_id=order.id) }}" 
+                               class="text-blue-600 hover:text-blue-900" title="{{ _('Edit') }}">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">
+                        {{ _('No orders found') }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if pagination.pages > 1 %}
+    <div class="bg-gray-50 px-4 py-3 flex items-center {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %} border-t border-gray-200 sm:px-6">
+        <div class="flex-1 flex {% if direction == 'rtl' %}justify-end{% else %}justify-start{% endif %} sm:hidden">
+            {% if pagination.page > 1 %}
+            <a href="{{ url_for('sales.orders_list', page=pagination.page-1, search=search, status=status, date_from=date_from, date_to=date_to) }}" 
+               class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                {{ _('Previous') }}
+            </a>
+            {% endif %}
+            {% if pagination.page < pagination.pages %}
+            <a href="{{ url_for('sales.orders_list', page=pagination.page+1, search=search, status=status, date_from=date_from, date_to=date_to) }}" 
+               class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                {{ _('Next') }}
+            </a>
+            {% endif %}
+        </div>
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+                <p class="text-sm text-gray-700">
+                    {{ _('Showing') }}
+                    <span class="font-medium">{{ (pagination.page - 1) * pagination.per_page + 1 }}</span>
+                    {{ _('to') }}
+                    <span class="font-medium">{{ [pagination.page * pagination.per_page, pagination.total]|min }}</span>
+                    {{ _('of') }}
+                    <span class="font-medium">{{ pagination.total }}</span>
+                    {{ _('results') }}
+                </p>
+            </div>
+            <div>
+                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                    {% if pagination.page > 1 %}
+                    <a href="{{ url_for('sales.orders_list', page=pagination.page-1, search=search, status=status, date_from=date_from, date_to=date_to) }}" 
+                       class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <i class="fas fa-chevron-{% if direction == 'rtl' %}right{% else %}left{% endif %}"></i>
+                    </a>
+                    {% endif %}
+                    {% for page_num in range(1, pagination.pages + 1) %}
+                        {% if page_num == pagination.page %}
+                        <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-indigo-50 text-sm font-medium text-indigo-600">
+                            {{ page_num }}
+                        </span>
+                        {% elif page_num <= 3 or page_num > pagination.pages - 3 or (page_num >= pagination.page - 1 and page_num <= pagination.page + 1) %}
+                        <a href="{{ url_for('sales.orders_list', page=page_num, search=search, status=status, date_from=date_from, date_to=date_to) }}" 
+                           class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            {{ page_num }}
+                        </a>
+                        {% elif page_num == 4 or page_num == pagination.pages - 3 %}
+                        <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                            ...
+                        </span>
+                        {% endif %}
+                    {% endfor %}
+                    {% if pagination.page < pagination.pages %}
+                    <a href="{{ url_for('sales.orders_list', page=pagination.page+1, search=search, status=status, date_from=date_from, date_to=date_to) }}" 
+                       class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <i class="fas fa-chevron-{% if direction == 'rtl' %}left{% else %}right{% endif %}"></i>
+                    </a>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

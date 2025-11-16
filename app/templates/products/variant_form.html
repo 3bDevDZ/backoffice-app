@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}{% if variant %}{{ _('Edit Variant') }}{% else %}{{ _('New Variant') }}{% endif %} - CommerceFlow{% endblock %}
+
+{% block page_title %}{% if variant %}{{ _('Edit Variant') }}{% else %}{{ _('New Variant') }}{% endif %}{% endblock %}
+{% block page_subtitle %}{{ product.name }} ({{ product.code }}){% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <form method="POST" action="{{ url_for('products_frontend.save_variant') }}" class="space-y-6">
+        {% if variant %}
+        <input type="hidden" name="id" value="{{ variant.id }}">
+        {% endif %}
+        <input type="hidden" name="product_id" value="{{ product.id }}">
+
+        <!-- Product Info -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6" style="border-radius: var(--radius-xl); box-shadow: var(--shadow-md);">
+            <h3 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">{{ _('Product Information') }}</h3>
+            <p class="text-sm" style="color: var(--color-text-secondary);">
+                <span class="font-medium">{{ _('Product') }}:</span> {{ product.name }} ({{ product.code }})
+            </p>
+            <p class="text-sm mt-1" style="color: var(--color-text-secondary);">
+                <span class="font-medium">{{ _('Default Price') }}:</span> {{ "%.2f"|format(product.price) }} €
+            </p>
+        </div>
+
+        <!-- Variant Details -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6" style="border-radius: var(--radius-xl); box-shadow: var(--shadow-md);">
+            <h3 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">{{ _('Variant Details') }}</h3>
+            
+            <div class="space-y-4">
+                <!-- Code -->
+                <div>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                        {{ _('Variant Code') }} <span style="color: var(--color-error);">*</span>
+                    </label>
+                    {% if variant %}
+                    <input type="text" value="{{ variant.code }}" disabled
+                           class="modern-input bg-gray-100"
+                           style="color: var(--color-text-tertiary);">
+                    <p class="text-xs mt-1" style="color: var(--color-text-tertiary);">{{ _('Code cannot be changed after creation') }}</p>
+                    {% else %}
+                    <input type="text" name="code" required maxlength="50"
+                           class="modern-input"
+                           placeholder="VAR-001"
+                           value="{{ request.form.get('code', '') }}">
+                    <p class="text-xs mt-1" style="color: var(--color-text-tertiary);">{{ _('Unique code for this variant (e.g., VAR-001, RED-L)') }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Name -->
+                <div>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                        {{ _('Variant Name') }} <span style="color: var(--color-error);">*</span>
+                    </label>
+                    <input type="text" name="name" required maxlength="200"
+                           class="modern-input"
+                           placeholder="{{ _('Ex: Red - Large') }}"
+                           value="{{ variant.name if variant else request.form.get('name', '') }}">
+                    <p class="text-xs mt-1" style="color: var(--color-text-tertiary);">{{ _('Descriptive name for this variant') }}</p>
+                </div>
+
+                <!-- Attributes -->
+                <div>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                        {{ _('Attributes') }}
+                    </label>
+                    <div id="attributes-container" class="space-y-2">
+                        <!-- Attributes will be added here dynamically -->
+                    </div>
+                    <button type="button" onclick="addAttribute()" class="mt-2 text-sm text-indigo-600 hover:text-indigo-800">
+                        <i class="fas fa-plus"></i> {{ _('Add Attribute') }}
+                    </button>
+                    <input type="hidden" name="attributes" id="attributes-json" value="{{ variant.attributes if variant else request.form.get('attributes', '') }}">
+                    <p class="text-xs mt-1" style="color: var(--color-text-tertiary);">{{ _('Add attributes like Color, Size, Material, etc.') }}</p>
+                </div>
+
+                <!-- Price Override -->
+                <div>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                        {{ _('Price Override') }}
+                    </label>
+                    <input type="number" name="price" step="0.01" min="0"
+                           class="modern-input"
+                           placeholder="{{ "%.2f"|format(product.price) }}"
+                           value="{{ "%.2f"|format(variant.price) if variant and variant.price else request.form.get('price', '') }}">
+                    <p class="text-xs mt-1" style="color: var(--color-text-tertiary);">{{ _('Leave empty to use product default price') }}</p>
+                </div>
+
+                <!-- Cost Override -->
+                <div>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                        {{ _('Cost Override') }}
+                    </label>
+                    <input type="number" name="cost" step="0.01" min="0"
+                           class="modern-input"
+                           placeholder="{% if product.cost %}{{ "%.2f"|format(product.cost) }}{% else %}{{ _('N/A') }}{% endif %}"
+                           value="{{ "%.2f"|format(variant.cost) if variant and variant.cost else request.form.get('cost', '') }}">
+                    <p class="text-xs mt-1" style="color: var(--color-text-tertiary);">{{ _('Leave empty to use product default cost') }}</p>
+                </div>
+
+                <!-- Barcode -->
+                <div>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                        {{ _('Barcode') }} (EAN/UPC)
+                    </label>
+                    <input type="text" name="barcode" maxlength="50"
+                           class="modern-input"
+                           placeholder="{{ _('Optional unique barcode') }}"
+                           value="{{ variant.barcode if variant else request.form.get('barcode', '') }}">
+                    <p class="text-xs mt-1" style="color: var(--color-text-tertiary);">{{ _('Optional unique barcode for this variant') }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex {% if direction == 'rtl' %}justify-start space-x-reverse space-x-3{% else %}justify-end space-x-3{% endif %}">
+            <a href="{{ url_for('products_frontend.list_variants', product_id=product.id) }}" class="btn-secondary">
+                <i class="fas fa-times"></i>
+                <span>{{ _('Cancel') }}</span>
+            </a>
+            <button type="submit" class="btn-primary">
+                <i class="fas fa-save"></i>
+                <span>{% if variant %}{{ _('Update Variant') }}{% else %}{{ _('Create Variant') }}{% endif %}</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+// Parse existing attributes JSON and populate the form
+function loadAttributes() {
+    const attributesJson = document.getElementById('attributes-json').value;
+    const container = document.getElementById('attributes-container');
+    container.innerHTML = '';
+    
+    if (attributesJson) {
+        try {
+            const attrs = JSON.parse(attributesJson);
+            for (const [key, value] of Object.entries(attrs)) {
+                addAttributeRow(key, value);
+            }
+        } catch (e) {
+            console.error('Error parsing attributes:', e);
+        }
+    }
+}
+
+// Add a new attribute row
+function addAttribute(key = '', value = '') {
+    addAttributeRow(key, value);
+}
+
+function addAttributeRow(key = '', value = '') {
+    const container = document.getElementById('attributes-container');
+    const index = container.children.length;
+    
+    const row = document.createElement('div');
+    const direction = '{{ direction }}';
+    const spaceClass = direction === 'rtl' ? 'space-x-reverse space-x-2' : 'space-x-2';
+    row.className = `flex ${spaceClass} items-center`;
+    
+    // Escape HTML to prevent XSS
+    const escapeHtml = (text) => {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    };
+    
+    row.innerHTML = `
+        <input type="text" 
+               class="modern-input flex-1" 
+               placeholder="{{ _('Attribute name') }} (ex: Color)"
+               value="${escapeHtml(key)}"
+               onchange="updateAttributesJson()">
+        <span class="text-gray-500">:</span>
+        <input type="text" 
+               class="modern-input flex-1" 
+               placeholder="{{ _('Value') }} (ex: Red)"
+               value="${escapeHtml(value)}"
+               onchange="updateAttributesJson()">
+        <button type="button" 
+                onclick="removeAttribute(this)" 
+                class="text-red-600 hover:text-red-800 p-2">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+    container.appendChild(row);
+    updateAttributesJson();
+}
+
+// Remove an attribute row
+function removeAttribute(button) {
+    button.closest('div').remove();
+    updateAttributesJson();
+}
+
+// Update the hidden JSON field from the form inputs
+function updateAttributesJson() {
+    const container = document.getElementById('attributes-container');
+    const rows = container.querySelectorAll('.flex');
+    const attrs = {};
+    
+    rows.forEach(row => {
+        const inputs = row.querySelectorAll('input[type="text"]');
+        if (inputs.length >= 2) {
+            const key = inputs[0].value.trim();
+            const value = inputs[1].value.trim();
+            if (key && value) {
+                attrs[key] = value;
+            }
+        }
+    });
+    
+    document.getElementById('attributes-json').value = JSON.stringify(attrs);
+}
+
+// Load attributes on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadAttributes();
+    
+    // If no attributes exist, add one empty row
+    if (document.getElementById('attributes-container').children.length === 0) {
+        addAttribute();
+    }
+});
+</script>
+{% endblock %}
+

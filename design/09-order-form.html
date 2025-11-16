@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nouvelle Commande - CommerceFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- Sidebar -->
+    <div class="fixed inset-y-0 left-0 w-64 bg-indigo-900 text-white z-50">
+        <div class="flex flex-col h-full">
+            <div class="flex items-center justify-center h-16 bg-indigo-950 border-b border-indigo-800">
+                <i class="fas fa-chart-line text-2xl mr-2"></i>
+                <span class="text-xl font-bold">CommerceFlow</span>
+            </div>
+            <nav class="flex-1 overflow-y-auto py-4">
+                <a href="02-dashboard.html" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-home w-5"></i>
+                    <span class="ml-3">Tableau de bord</span>
+                </a>
+                <a href="03-products-list.html" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-box w-5"></i>
+                    <span class="ml-3">Produits</span>
+                </a>
+                <a href="05-customers-list.html" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-users w-5"></i>
+                    <span class="ml-3">Clients</span>
+                </a>
+                <a href="07-stock.html" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-warehouse w-5"></i>
+                    <span class="ml-3">Stock</span>
+                </a>
+                <a href="08-orders-list.html" class="flex items-center px-6 py-3 bg-indigo-800 border-r-4 border-indigo-400">
+                    <i class="fas fa-shopping-cart w-5"></i>
+                    <span class="ml-3">Commandes</span>
+                </a>
+                <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-file-invoice w-5"></i>
+                    <span class="ml-3">Factures</span>
+                </a>
+                <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-shopping-bag w-5"></i>
+                    <span class="ml-3">Achats</span>
+                </a>
+                <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-chart-bar w-5"></i>
+                    <span class="ml-3">Rapports</span>
+                </a>
+                <div class="px-6 py-3 text-xs text-indigo-300 font-semibold mt-4">PARAMÈTRES</div>
+                <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-cog w-5"></i>
+                    <span class="ml-3">Configuration</span>
+                </a>
+            </nav>
+            <div class="p-4 border-t border-indigo-800">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <div class="text-sm font-medium">Jean Dupont</div>
+                        <div class="text-xs text-indigo-300">Administrateur</div>
+                    </div>
+                    <button class="text-indigo-300 hover:text-white">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="ml-64">
+        <!-- Top Bar -->
+        <div class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+            <div class="px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <a href="08-orders-list.html" class="text-gray-600 hover:text-gray-900">
+                            <i class="fas fa-arrow-left"></i>
+                        </a>
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-900">Nouvelle Commande</h1>
+                            <p class="text-sm text-gray-600">CMD-2025-001235 • Brouillon</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <button class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                            <i class="fas fa-times mr-2"></i>
+                            Annuler
+                        </button>
+                        <button class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                            <i class="fas fa-save mr-2"></i>
+                            Enregistrer
+                        </button>
+                        <button class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                            <i class="fas fa-check mr-2"></i>
+                            Valider
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="p-6">
+            <div class="max-w-7xl mx-auto">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Left Column - Main Form -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <!-- Client Selection -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                            <h3 class="text-lg font-bold text-gray-900 mb-4">Client</h3>
+                            
+                            <div class="space-y-4">
+                                <div class="flex items-center space-x-4">
+                                    <div class="flex-1">
+                                        <div class="relative">
+                                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <i class="fas fa-search text-gray-400"></i>
+                                            </div>
+                                            <input type="text" 
+                                                class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                                placeholder="Rechercher un client...">
+                                        </div>
+                                    </div>
+                                    <button class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition whitespace-nowrap">
+                                        <i class="fas fa-plus mr-2"></i>
+                                        Nouveau
+                                    </button>
+                                </div>
+
+                                <!-- Selected Client Card -->
+                                <div class="border-2 border-indigo-200 bg-indigo-50 rounded-lg p-4">
+                                    <div class="flex items-start justify-between">
+                                        <div class="flex items-start space-x-3">
+                                            <div class="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center">
+                                                <span class="text-white font-bold">AI</span>
+                                            </div>
+                                            <div>
+                                                <div class="font-bold text-gray-900">ABC Industries SA</div>
+                                                <div class="text-sm text-gray-600 mt-1">contact@abc-industries.fr</div>
+                                                <div class="text-sm text-gray-600">+33 1 23 45 67 89</div>
+                                                <div class="text-xs text-gray-500 mt-2">
+                                                    123 Rue de la République, 75001 Paris, France
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button class="text-gray-600 hover:text-gray-900">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Products Selection -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-bold text-gray-900">Produits</h3>
+                                <button class="text-indigo-600 hover:text-indigo-700 font-medium text-sm">
+                                    <i class="fas fa-plus mr-2"></i>
+                                    Ajouter un produit
+                                </button>
+                            </div>
+
+                            <!-- Product Search/Add -->
+                            <div class="relative mb-4">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-search text-gray-400"></i>
+                                </div>
+                                <input type="text" 
+                                    class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    placeholder="Rechercher ou scanner un produit...">
+                            </div>
+
+                            <!-- Products Table -->
+                            <div class="border border-gray-200 rounded-lg overflow-hidden">
+                                <table class="w-full">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produit</th>
+                                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Qté</th>
+                                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">P.U. HT</th>
+                                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">TVA</th>
+                                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total HT</th>
+                                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        <!-- Product Line 1 -->
+                                        <tr>
+                                            <td class="px-4 py-3">
+                                                <div class="text-sm font-medium text-gray-900">Ordinateur Portable XPS 15</div>
+                                                <div class="text-xs text-gray-600">PRD-2025-0001</div>
+                                            </td>
+                                            <td class="px-4 py-3 text-center">
+                                                <input type="number" value="2" 
+                                                    class="w-20 px-2 py-1 text-center border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500">
+                                            </td>
+                                            <td class="px-4 py-3 text-right">
+                                                <input type="number" value="1299.00" step="0.01"
+                                                    class="w-28 px-2 py-1 text-right border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500">
+                                            </td>
+                                            <td class="px-4 py-3 text-center text-sm text-gray-600">20%</td>
+                                            <td class="px-4 py-3 text-right text-sm font-medium text-gray-900">2,598.00 €</td>
+                                            <td class="px-4 py-3 text-center">
+                                                <button class="text-red-600 hover:text-red-900">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+
+                                        <!-- Product Line 2 -->
+                                        <tr>
+                                            <td class="px-4 py-3">
+                                                <div class="text-sm font-medium text-gray-900">Chaise de Bureau Ergonomique</div>
+                                                <div class="text-xs text-gray-600">PRD-2025-0002</div>
+                                            </td>
+                                            <td class="px-4 py-3 text-center">
+                                                <input type="number" value="5" 
+                                                    class="w-20 px-2 py-1 text-center border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500">
+                                            </td>
+                                            <td class="px-4 py-3 text-right">
+                                                <input type="number" value="849.00" step="0.01"
+                                                    class="w-28 px-2 py-1 text-right border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500">
+                                            </td>
+                                            <td class="px-4 py-3 text-center text-sm text-gray-600">20%</td>
+                                            <td class="px-4 py-3 text-right text-sm font-medium text-gray-900">4,245.00 €</td>
+                                            <td class="px-4 py-3 text-center">
+                                                <button class="text-red-600 hover:text-red-900">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+
+                                        <!-- Product Line 3 -->
+                                        <tr>
+                                            <td class="px-4 py-3">
+                                                <div class="text-sm font-medium text-gray-900">Lot Stylos Bille - Pack 50</div>
+                                                <div class="text-xs text-gray-600">PRD-2025-0004</div>
+                                            </td>
+                                            <td class="px-4 py-3 text-center">
+                                                <input type="number" value="10" 
+                                                    class="w-20 px-2 py-1 text-center border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500">
+                                            </td>
+                                            <td class="px-4 py-3 text-right">
+                                                <input type="number" value="15.90" step="0.01"
+                                                    class="w-28 px-2 py-1 text-right border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500">
+                                            </td>
+                                            <td class="px-4 py-3 text-center text-sm text-gray-600">20%</td>
+                                            <td class="px-4 py-3 text-right text-sm font-medium text-gray-900">159.00 €</td>
+                                            <td class="px-4 py-3 text-center">
+                                                <button class="text-red-600 hover:text-red-900">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Add Product Button -->
+                            <button class="mt-4 w-full py-2 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-indigo-400 hover:text-indigo-600 transition">
+                                <i class="fas fa-plus mr-2"></i>
+                                Ajouter une ligne
+                            </button>
+                        </div>
+
+                        <!-- Additional Info -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                            <h3 class="text-lg font-bold text-gray-900 mb-4">Informations Complémentaires</h3>
+                            
+                            <div class="space-y-4">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            Date de Livraison Souhaitée
+                                        </label>
+                                        <input type="date" 
+                                            class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            Mode de Livraison
+                                        </label>
+                                        <select class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                            <option>Livraison Standard</option>
+                                            <option>Livraison Express</option>
+                                            <option>Retrait sur Place</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Notes / Instructions
+                                    </label>
+                                    <textarea rows="3" 
+                                        class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                        placeholder="Ajouter des notes ou instructions spécifiques..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column - Summary -->
+                    <div class="space-y-6">
+                        <!-- Order Summary -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sticky top-24">
+                            <h3 class="text-lg font-bold text-gray-900 mb-4">Récapitulatif</h3>
+                            
+                            <div class="space-y-3 mb-4">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">Sous-total HT</span>
+                                    <span class="font-medium text-gray-900">7,002.00 €</span>
+                                </div>
+                                
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-600">Remise</span>
+                                    <div class="flex items-center space-x-2">
+                                        <input type="number" value="0" step="0.1"
+                                            class="w-16 px-2 py-1 text-right text-sm border border-gray-300 rounded">
+                                        <span class="text-gray-600">%</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">Total HT après remise</span>
+                                    <span class="font-medium text-gray-900">7,002.00 €</span>
+                                </div>
+
+                                <div class="border-t border-gray-200 pt-2">
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span class="text-gray-600">TVA (20%)</span>
+                                        <span class="text-gray-900">1,400.40 €</span>
+                                    </div>
+                                </div>
+
+                                <div class="border-t-2 border-gray-300 pt-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-lg font-bold text-gray-900">Total TTC</span>
+                                        <span class="text-2xl font-bold text-indigo-600">8,402.40 €</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Payment Terms -->
+                            <div class="border-t border-gray-200 pt-4 space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Conditions de Paiement
+                                    </label>
+                                    <select class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                                        <option>30 jours</option>
+                                        <option>45 jours</option>
+                                        <option>60 jours</option>
+                                        <option>Comptant</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Mode de Paiement
+                                    </label>
+                                    <select class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                                        <option>Virement</option>
+                                        <option>Chèque</option>
+                                        <option>Carte Bancaire</option>
+                                        <option>Prélèvement</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="border-t border-gray-200 pt-4 mt-4 space-y-2">
+                                <button class="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium">
+                                    <i class="fas fa-check mr-2"></i>
+                                    Valider la Commande
+                                </button>
+                                <button class="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                                    <i class="fas fa-save mr-2"></i>
+                                    Enregistrer en Brouillon
+                                </button>
+                                <button class="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                                    <i class="fas fa-file-pdf mr-2"></i>
+                                    Aperçu PDF
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Quick Info -->
+                        <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-6">
+                            <h4 class="text-sm font-bold text-indigo-900 mb-3">Informations</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-700">N° Commande:</span>
+                                    <span class="font-medium text-gray-900">CMD-2025-001235</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-700">Date:</span>
+                                    <span class="font-medium text-gray-900">15/11/2025</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-700">Commercial:</span>
+                                    <span class="font-medium text-gray-900">Jean Dupont</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-700">Statut:</span>
+                                    <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
+                                        Brouillon
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

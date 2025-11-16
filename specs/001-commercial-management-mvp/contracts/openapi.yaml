@@ -1,0 +1,958 @@
+openapi: 3.0.3
+info:
+  title: Commercial Management MVP API
+  version: 1.0.0
+  description: REST API for Commercial Management MVP - Products, Customers, Stock, Sales (Quotes/Orders), and Dashboard
+
+servers:
+  - url: http://localhost:5000/api
+    description: Development server
+  - url: https://api.example.com/api
+    description: Production server
+
+parameters:
+  locale:
+    name: locale
+    in: query
+    description: Language locale (fr for French, ar for Arabic). Defaults to user preference or 'fr'
+    schema:
+      type: string
+      enum: [fr, ar]
+      default: fr
+
+tags:
+  - name: Products
+    description: Product catalog management
+  - name: Customers
+    description: Customer management (B2B/B2C)
+  - name: Stock
+    description: Inventory and stock management
+  - name: Sales - Quotes
+    description: Quote management and workflow
+  - name: Sales - Orders
+    description: Order management and fulfillment
+  - name: Dashboard
+    description: Business KPIs and metrics
+
+paths:
+  # Products
+  /products:
+    get:
+      tags: [Products]
+      summary: List products
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/parameters/locale'
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by name, code, or description
+        - name: category_id
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, inactive, archived]
+      responses:
+        '200':
+          description: List of products
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+    post:
+      tags: [Products]
+      summary: Create product
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductCreate'
+      responses:
+        '201':
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /products/{id}:
+    get:
+      tags: [Products]
+      summary: Get product by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Product details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Products]
+      summary: Update product
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductUpdate'
+      responses:
+        '200':
+          description: Product updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # Customers
+  /customers:
+    get:
+      tags: [Customers]
+      summary: List customers
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [B2B, B2C]
+      responses:
+        '200':
+          description: List of customers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Customer'
+                  total:
+                    type: integer
+    post:
+      tags: [Customers]
+      summary: Create customer
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerCreate'
+      responses:
+        '201':
+          description: Customer created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+
+  /customers/{id}:
+    get:
+      tags: [Customers]
+      summary: Get customer by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Customer details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+
+  # Stock
+  /stock:
+    get:
+      tags: [Stock]
+      summary: Get stock levels
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: product_id
+          in: query
+          schema:
+            type: integer
+        - name: location_id
+          in: query
+          schema:
+            type: integer
+        - name: low_stock_only
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Stock levels
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StockItem'
+
+  /stock/movements:
+    post:
+      tags: [Stock]
+      summary: Create stock movement
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockMovementCreate'
+      responses:
+        '201':
+          description: Movement created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockMovement'
+
+  /stock/alerts:
+    get:
+      tags: [Stock]
+      summary: Get low stock alerts
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Products below minimum stock
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StockAlert'
+
+  # Quotes
+  /sales/quotes:
+    get:
+      tags: [Sales - Quotes]
+      summary: List quotes
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: customer_id
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, sent, accepted, rejected, expired, canceled]
+      responses:
+        '200':
+          description: List of quotes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Quote'
+    post:
+      tags: [Sales - Quotes]
+      summary: Create quote
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuoteCreate'
+      responses:
+        '201':
+          description: Quote created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+
+  /sales/quotes/{id}:
+    get:
+      tags: [Sales - Quotes]
+      summary: Get quote by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Quote details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+
+  /sales/quotes/{id}/send:
+    post:
+      tags: [Sales - Quotes]
+      summary: Send quote to customer
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Quote sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+
+  /sales/quotes/{id}/convert-to-order:
+    post:
+      tags: [Sales - Quotes]
+      summary: Convert accepted quote to order
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '201':
+          description: Order created from quote
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+
+  # Orders
+  /sales/orders:
+    get:
+      tags: [Sales - Orders]
+      summary: List orders
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: customer_id
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, confirmed, in_preparation, ready, shipped, delivered, invoiced, canceled]
+      responses:
+        '200':
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Order'
+    post:
+      tags: [Sales - Orders]
+      summary: Create order
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCreate'
+      responses:
+        '201':
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+
+  /sales/orders/{id}/confirm:
+    post:
+      tags: [Sales - Orders]
+      summary: Confirm order (reserves stock)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Order confirmed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: Stock insufficient or credit limit exceeded
+
+  /sales/orders/{id}/cancel:
+    post:
+      tags: [Sales - Orders]
+      summary: Cancel order (releases stock)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Order canceled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+
+  # Dashboard
+  /dashboard/kpi:
+    get:
+      tags: [Dashboard]
+      summary: Get dashboard KPIs
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [day, week, month, year]
+            default: month
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Dashboard KPIs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardKPI'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+        code:
+          type: string
+          maxLength: 50
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+        price:
+          type: number
+          format: decimal
+        cost:
+          type: number
+          format: decimal
+        status:
+          type: string
+          enum: [active, inactive, archived]
+
+    ProductCreate:
+      type: object
+      required: [name, price]
+      properties:
+        code:
+          type: string
+          maxLength: 50
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+        price:
+          type: number
+          format: decimal
+          minimum: 0
+        cost:
+          type: number
+          format: decimal
+          minimum: 0
+
+    ProductUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+        price:
+          type: number
+          format: decimal
+          minimum: 0
+        cost:
+          type: number
+          format: decimal
+          minimum: 0
+
+    Customer:
+      type: object
+      properties:
+        id:
+          type: integer
+        code:
+          type: string
+        type:
+          type: string
+          enum: [B2B, B2C]
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        status:
+          type: string
+          enum: [active, inactive, archived, blocked]
+
+    CustomerCreate:
+      type: object
+      required: [type, name, email]
+      properties:
+        type:
+          type: string
+          enum: [B2B, B2C]
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        company_name:
+          type: string
+          description: Required if type is B2B
+        first_name:
+          type: string
+          description: Required if type is B2C
+        last_name:
+          type: string
+          description: Required if type is B2C
+
+    StockItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        product_id:
+          type: integer
+        location_id:
+          type: integer
+        physical_quantity:
+          type: number
+          format: decimal
+        reserved_quantity:
+          type: number
+          format: decimal
+        available_quantity:
+          type: number
+          format: decimal
+
+    StockMovementCreate:
+      type: object
+      required: [product_id, type, quantity]
+      properties:
+        product_id:
+          type: integer
+        location_from_id:
+          type: integer
+        location_to_id:
+          type: integer
+        type:
+          type: string
+          enum: [entry, exit, transfer, adjustment]
+        quantity:
+          type: number
+          format: decimal
+        reason:
+          type: string
+
+    StockMovement:
+      type: object
+      properties:
+        id:
+          type: integer
+        product_id:
+          type: integer
+        type:
+          type: string
+        quantity:
+          type: number
+        created_at:
+          type: string
+          format: date-time
+
+    StockAlert:
+      type: object
+      properties:
+        product_id:
+          type: integer
+        product_name:
+          type: string
+        location_id:
+          type: integer
+        current_stock:
+          type: number
+        min_stock:
+          type: number
+
+    Quote:
+      type: object
+      properties:
+        id:
+          type: integer
+        number:
+          type: string
+        customer_id:
+          type: integer
+        status:
+          type: string
+          enum: [draft, sent, accepted, rejected, expired, canceled]
+        total:
+          type: number
+          format: decimal
+        valid_until:
+          type: string
+          format: date
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuoteLine'
+
+    QuoteCreate:
+      type: object
+      required: [customer_id, lines]
+      properties:
+        customer_id:
+          type: integer
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuoteLineCreate'
+        valid_until:
+          type: string
+          format: date
+
+    QuoteLine:
+      type: object
+      properties:
+        product_id:
+          type: integer
+        quantity:
+          type: number
+          format: decimal
+        unit_price:
+          type: number
+          format: decimal
+        discount_percent:
+          type: number
+          format: decimal
+
+    QuoteLineCreate:
+      type: object
+      required: [product_id, quantity, unit_price]
+      properties:
+        product_id:
+          type: integer
+        quantity:
+          type: number
+          format: decimal
+          minimum: 0.001
+        unit_price:
+          type: number
+          format: decimal
+          minimum: 0
+        discount_percent:
+          type: number
+          format: decimal
+          minimum: 0
+          maximum: 100
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+        number:
+          type: string
+        customer_id:
+          type: integer
+        status:
+          type: string
+          enum: [draft, confirmed, in_preparation, ready, shipped, delivered, invoiced, canceled]
+        total:
+          type: number
+          format: decimal
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderLine'
+
+    OrderCreate:
+      type: object
+      required: [customer_id, lines]
+      properties:
+        customer_id:
+          type: integer
+        quote_id:
+          type: integer
+          description: Optional - if creating from quote
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderLineCreate'
+
+    OrderLine:
+      type: object
+      properties:
+        product_id:
+          type: integer
+        quantity:
+          type: number
+          format: decimal
+        unit_price:
+          type: number
+          format: decimal
+
+    OrderLineCreate:
+      type: object
+      required: [product_id, quantity, unit_price]
+      properties:
+        product_id:
+          type: integer
+        quantity:
+          type: number
+          format: decimal
+          minimum: 0.001
+        unit_price:
+          type: number
+          format: decimal
+          minimum: 0
+
+    DashboardKPI:
+      type: object
+      properties:
+        revenue:
+          type: object
+          properties:
+            daily:
+              type: number
+              format: decimal
+            monthly:
+              type: number
+              format: decimal
+            annual:
+              type: number
+              format: decimal
+        low_stock_count:
+          type: integer
+        orders_in_progress:
+          type: integer
+
+  schemas:
+    APIResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          description: Response data
+        meta:
+          type: object
+          properties:
+            locale:
+              type: string
+              enum: [fr, ar]
+              description: Current locale
+            direction:
+              type: string
+              enum: [ltr, rtl]
+              description: Text direction (rtl for Arabic)
+            pagination:
+              type: object
+              properties:
+                page:
+                  type: integer
+                page_size:
+                  type: integer
+                total:
+                  type: integer
+                total_pages:
+                  type: integer
+
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+                description: Translated error message based on locale
+              details:
+                type: object
+              meta:
+                type: object
+                properties:
+                  locale:
+                    type: string
+                  direction:
+                    type: string
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+

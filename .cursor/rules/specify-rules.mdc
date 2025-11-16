@@ -1,0 +1,28 @@
+﻿# TMS Development Guidelines
+
+Auto-generated from all feature plans. Last updated: 2025-10-20
+
+## Active Technologies
+- Node.js 18+ with TypeScript 5.0+ + Express.js, React 18, React Native, PostgreSQL 15, Redis 7, Socket.io (001-tms-logistics-platform)
+- Python 3.10+ (as per pyproject.toml target-version) + Flask 3.0+, SQLAlchemy 2.0+, Alembic, Marshmallow, Flask-JWT-Extended, Celery, WeasyPrint (001-commercial-management-mvp)
+- PostgreSQL (via SQLAlchemy ORM with existing Base declarative model) (001-commercial-management-mvp)
+
+## Project Structure
+```
+backend/
+frontend/
+tests/
+```
+
+## Commands
+npm test; npm run lint
+
+## Code Style
+Node.js 18+ with TypeScript 5.0+: Follow standard conventions
+
+## Recent Changes
+- 001-commercial-management-mvp: Added Python 3.10+ (as per pyproject.toml target-version) + Flask 3.0+, SQLAlchemy 2.0+, Alembic, Marshmallow, Flask-JWT-Extended, Celery, WeasyPrint
+- 001-tms-logistics-platform: Added Node.js 18+ with TypeScript 5.0+ + Express.js, React 18, React Native, PostgreSQL 15, Redis 7, Socket.io
+
+<!-- MANUAL ADDITIONS START -->
+<!-- MANUAL ADDITIONS END -->

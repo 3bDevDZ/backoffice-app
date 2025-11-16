@@ -1,0 +1,389 @@
+{% extends "base.html" %}
+
+{% block title %}{{ price_list.name }} - {{ _('Products') }} - CommerceFlow{% endblock %}
+
+{% block extra_css %}
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<style>
+    .select2-container {
+        width: 100% !important;
+    }
+    .select2-container--default .select2-selection--single {
+        height: 38px;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 36px;
+        padding-left: 12px;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 36px;
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}{{ price_list.name }}{% endblock %}
+{% block page_subtitle %}{{ _('Manage products and prices in this price list') }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6" style="border-radius: var(--radius-xl); box-shadow: var(--shadow-md);">
+        <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %} items-center">
+            <div>
+                <h2 class="text-xl font-bold mb-1" style="color: var(--color-text-primary);">{{ price_list.name }}</h2>
+                <p class="text-sm" style="color: var(--color-text-tertiary);">
+                    {% if price_list.description %}{{ price_list.description }}{% endif %}
+                </p>
+            </div>
+            <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-3{% else %}space-x-3{% endif %}">
+                <a href="{{ url_for('products_frontend.list_price_lists') }}" class="btn-secondary">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>{{ _('Back to Price Lists') }}</span>
+                </a>
+                <button onclick="showAddProductModal()" class="btn-primary">
+                    <i class="fas fa-plus"></i>
+                    <span>{{ _('Add Product') }}</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters & Search -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+        <form method="GET" action="{{ url_for('products_frontend.list_products_in_price_list', price_list_id=price_list.id) }}" class="flex {% if direction == 'rtl' %}space-x-reverse space-x-3{% else %}space-x-3{% endif %} items-center">
+            <input type="text" 
+                   name="search" 
+                   value="{{ search or '' }}" 
+                   placeholder="{{ _('Search products...') }}"
+                   class="modern-input flex-1">
+            <button type="submit" class="btn-primary">
+                <i class="fas fa-search"></i>
+                <span>{{ _('Search') }}</span>
+            </button>
+        </form>
+    </div>
+
+    <!-- Products Table -->
+    {% if products %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+        <div class="modern-table-container">
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Product Code') }}</th>
+                        <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Product Name') }}</th>
+                        <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Base Price') }}</th>
+                        <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Price List Price') }}</th>
+                        <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Difference') }}</th>
+                        <th class="text-center">{{ _('Actions') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td class="font-medium">{{ product.product_code }}</td>
+                        <td>{{ product.product_name }}</td>
+                        <td>
+                            <span class="text-sm" style="color: var(--color-text-secondary);">
+                                {{ "%.2f"|format(product.base_price) }} €
+                            </span>
+                        </td>
+                        <td>
+                            <span class="font-semibold" style="color: var(--color-text-primary);">
+                                {{ "%.2f"|format(product.price) }} €
+                            </span>
+                        </td>
+                        <td>
+                            {% set diff = product.price - product.base_price %}
+                            {% set diff_percent = (diff / product.base_price * 100) if product.base_price > 0 else 0 %}
+                            <span class="{% if diff > 0 %}text-red-600{% elif diff < 0 %}text-green-600{% else %}text-gray-500{% endif %}">
+                                {% if diff > 0 %}+{% endif %}{{ "%.2f"|format(diff) }} €
+                                ({% if diff_percent > 0 %}+{% endif %}{{ "%.1f"|format(diff_percent) }}%)
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <div class="flex {% if direction == 'rtl' %}justify-start{% else %}justify-center{% endif %} {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+                                <!-- Edit Price -->
+                                <button onclick="showEditProductModal({{ product.product_id }}, '{{ product.product_name }}', {{ product.price }})" 
+                                        class="text-indigo-600 hover:text-indigo-900" 
+                                        title="{{ _('Edit Price') }}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                
+                                <!-- Remove -->
+                                <form method="POST" 
+                                      action="{{ url_for('products_frontend.remove_product_from_price_list', price_list_id=price_list.id, product_id=product.product_id) }}" 
+                                      class="inline"
+                                      onsubmit="return confirm('{{ _('Are you sure you want to remove this product from the price list?') }}');">
+                                    <button type="submit" 
+                                            class="text-red-600 hover:text-red-900" 
+                                            title="{{ _('Remove') }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if total > per_page %}
+        <div class="px-6 py-4 border-t border-gray-200">
+            <div class="flex {% if direction == 'rtl' %}justify-start{% else %}justify-between{% endif %} items-center">
+                <div class="text-sm" style="color: var(--color-text-secondary);">
+                    {{ _('Showing') }} {{ ((page - 1) * per_page) + 1 }} {{ _('to') }} {{ [page * per_page, total]|min }} {{ _('of') }} {{ total }} {{ _('products') }}
+                </div>
+                <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+                    {% if page > 1 %}
+                    <a href="{{ url_for('products_frontend.list_products_in_price_list', price_list_id=price_list.id, page=page-1, search=search) }}" 
+                       class="btn-secondary">
+                        <i class="fas fa-chevron-{% if direction == 'rtl' %}right{% else %}left{% endif %}"></i>
+                        {{ _('Previous') }}
+                    </a>
+                    {% endif %}
+                    {% if page * per_page < total %}
+                    <a href="{{ url_for('products_frontend.list_products_in_price_list', price_list_id=price_list.id, page=page+1, search=search) }}" 
+                       class="btn-secondary">
+                        {{ _('Next') }}
+                        <i class="fas fa-chevron-{% if direction == 'rtl' %}left{% else %}right{% endif %}"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+        <i class="fas fa-box-open text-4xl mb-4" style="color: var(--color-text-tertiary);"></i>
+        <p class="text-gray-500 mb-4">{{ _('No products in this price list.') }}</p>
+        <button onclick="showAddProductModal()" class="btn-primary">
+            <i class="fas fa-plus"></i>
+            <span>{{ _('Add First Product') }}</span>
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Add Product Modal -->
+<div id="addProductModal" class="hidden fixed inset-0 z-50 overflow-y-auto" style="background: rgba(0, 0, 0, 0.5);">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-md" style="border-radius: var(--radius-xl);">
+            <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %} items-center mb-4">
+                <h3 class="text-lg font-bold" style="color: var(--color-text-primary);">{{ _('Add Product to Price List') }}</h3>
+                <button onclick="closeAddProductModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form method="POST" action="{{ url_for('products_frontend.save_product_to_price_list', price_list_id=price_list.id) }}">
+                <input type="hidden" name="action" value="add">
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                            {{ _('Product') }} <span style="color: var(--color-error);">*</span>
+                        </label>
+                        <select id="addProductSelect" name="product_id" required class="modern-select w-full">
+                            <option value="">{{ _('Select a product...') }}</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                            {{ _('Price') }} <span style="color: var(--color-error);">*</span>
+                        </label>
+                        <input type="number" 
+                               name="price" 
+                               step="0.01" 
+                               min="0" 
+                               required
+                               class="modern-input w-full"
+                               placeholder="0.00">
+                    </div>
+                </div>
+                
+                <div class="flex {% if direction == 'rtl' %}justify-start{% else %}justify-end{% endif %} {% if direction == 'rtl' %}space-x-reverse space-x-3{% else %}space-x-3{% endif %} mt-6">
+                    <button type="button" onclick="closeAddProductModal()" class="btn-secondary">
+                        {{ _('Cancel') }}
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        {{ _('Add Product') }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Product Price Modal -->
+<div id="editProductModal" class="hidden fixed inset-0 z-50 overflow-y-auto" style="background: rgba(0, 0, 0, 0.5);">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-md" style="border-radius: var(--radius-xl);">
+            <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %} items-center mb-4">
+                <h3 class="text-lg font-bold" style="color: var(--color-text-primary);">{{ _('Edit Product Price') }}</h3>
+                <button onclick="closeEditProductModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form method="POST" action="{{ url_for('products_frontend.save_product_to_price_list', price_list_id=price_list.id) }}" id="editProductForm">
+                <input type="hidden" name="action" value="update">
+                <input type="hidden" name="product_id" id="editProductId">
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                            {{ _('Product') }}
+                        </label>
+                        <input type="text" id="editProductName" readonly class="modern-input w-full" style="background: var(--color-bg-tertiary);">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                            {{ _('Price') }} <span style="color: var(--color-error);">*</span>
+                        </label>
+                        <input type="number" 
+                               name="price" 
+                               id="editProductPrice"
+                               step="0.01" 
+                               min="0" 
+                               required
+                               class="modern-input w-full"
+                               placeholder="0.00">
+                    </div>
+                </div>
+                
+                <div class="flex {% if direction == 'rtl' %}justify-start{% else %}justify-end{% endif %} {% if direction == 'rtl' %}space-x-reverse space-x-3{% else %}space-x-3{% endif %} mt-6">
+                    <button type="button" onclick="closeEditProductModal()" class="btn-secondary">
+                        {{ _('Cancel') }}
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        {{ _('Update Price') }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- jQuery and Select2 JS -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+let products = [];
+let productsInPriceList = [];
+
+// Load products from frontend route (session-based)
+async function loadProducts() {
+    try {
+        const response = await fetch('/price-lists/data/products');
+        const data = await response.json();
+        
+        if (data.success && data.data && data.data.items) {
+            products = data.data.items;
+        } else {
+            console.error('Error loading products:', data);
+        }
+    } catch (error) {
+        console.error('Error loading products:', error);
+    }
+}
+
+// Initialize product select with Select2
+function initializeProductSelect() {
+    const productSelect = document.getElementById('addProductSelect');
+    if (!productSelect) return;
+    
+    // Clear existing options except placeholder
+    productSelect.innerHTML = '<option value="">{{ _("Select a product...") }}</option>';
+    
+    // Get products already in price list
+    const existingProductIds = productsInPriceList.map(p => p.product_id);
+    
+    // Add products that are not already in the price list
+    products.forEach(product => {
+        if (!existingProductIds.includes(product.id)) {
+            const option = document.createElement('option');
+            option.value = product.id;
+            option.textContent = `${product.code} - ${product.name}`;
+            productSelect.appendChild(option);
+        }
+    });
+    
+    // Initialize Select2
+    if (typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined') {
+        if ($(productSelect).hasClass('select2-hidden-accessible')) {
+            $(productSelect).select2('destroy');
+        }
+        $(productSelect).select2({
+            theme: 'bootstrap-5',
+            placeholder: '{{ _("Select a product...") }}',
+            allowClear: true,
+            width: '100%'
+        });
+    }
+}
+
+function showAddProductModal() {
+    // Update products in price list
+    productsInPriceList = [
+        {% for product in products %}
+        { product_id: {{ product.product_id }} },
+        {% endfor %}
+    ];
+    
+    // Initialize product select
+    initializeProductSelect();
+    
+    document.getElementById('addProductModal').classList.remove('hidden');
+}
+
+function closeAddProductModal() {
+    const productSelect = document.getElementById('addProductSelect');
+    if (productSelect && typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined') {
+        if ($(productSelect).hasClass('select2-hidden-accessible')) {
+            $(productSelect).select2('destroy');
+        }
+    }
+    document.getElementById('addProductModal').classList.add('hidden');
+}
+
+function showEditProductModal(productId, productName, price) {
+    document.getElementById('editProductId').value = productId;
+    document.getElementById('editProductName').value = productName;
+    document.getElementById('editProductPrice').value = price;
+    document.getElementById('editProductModal').classList.remove('hidden');
+}
+
+function closeEditProductModal() {
+    document.getElementById('editProductModal').classList.add('hidden');
+}
+
+// Close modals when clicking outside
+window.onclick = function(event) {
+    const addModal = document.getElementById('addProductModal');
+    const editModal = document.getElementById('editProductModal');
+    if (event.target == addModal) {
+        closeAddProductModal();
+    }
+    if (event.target == editModal) {
+        closeEditProductModal();
+    }
+}
+
+// Load products on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadProducts();
+});
+</script>
+{% endblock %}
+

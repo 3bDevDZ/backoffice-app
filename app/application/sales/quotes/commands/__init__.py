@@ -1,0 +1,2 @@
+"""Quote commands module."""
+

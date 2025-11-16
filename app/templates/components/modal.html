@@ -1,0 +1,32 @@
+{#
+  Modern Modal Component
+  
+  Usage:
+  {% include 'components/modal.html' with {
+    'id': 'my-modal',
+    'title': 'Modal Title',
+    'size': 'md',  # sm, md, lg, xl
+    'body': '<p>Modal content</p>',
+    'footer': '<button class="btn-primary">Save</button>'
+  } %}
+#}
+
+<div id="{{ id }}" class="modern-modal">
+  <div class="modern-modal-content modern-modal-{{ size|default('md') }}">
+    <div class="modern-modal-header">
+      <h3 class="modern-modal-title">{{ title }}</h3>
+      <button class="modern-modal-close" onclick="closeModal('{{ id }}')" aria-label="Close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="modern-modal-body">
+      {{ body|safe }}
+    </div>
+    {% if footer %}
+    <div class="modern-modal-footer">
+      {{ footer|safe }}
+    </div>
+    {% endif %}
+  </div>
+</div>
+

@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Purchase Orders') }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Purchase Orders') }}{% endblock %}
+{% block page_subtitle %}{{ _('Manage purchase orders from suppliers') }}{% endblock %}
+
+{% block content %}
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="stat-card">
+        <div class="stat-card-label">{{ _('Total Orders') }}</div>
+        <div class="stat-card-metric" style="color: var(--color-text-primary);">{{ orders|length if orders else 0 }}</div>
+    </div>
+    <div class="stat-card stat-card-draft">
+        <div class="stat-card-label">{{ _('Draft') }}</div>
+        <div class="stat-card-metric">
+            {{ orders|selectattr('status', 'equalto', 'draft')|list|length if orders else 0 }}
+        </div>
+    </div>
+    <div class="stat-card stat-card-confirmed">
+        <div class="stat-card-label">{{ _('Confirmed') }}</div>
+        <div class="stat-card-metric">
+            {{ orders|selectattr('status', 'equalto', 'confirmed')|list|length if orders else 0 }}
+        </div>
+    </div>
+    <div class="stat-card stat-card-received">
+        <div class="stat-card-label">{{ _('Received') }}</div>
+        <div class="stat-card-metric">
+            {{ orders|selectattr('status', 'equalto', 'received')|list|length if orders else 0 }}
+        </div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="mb-6 flex {% if direction == 'rtl' %}justify-start{% else %}justify-end{% endif %} {% if direction == 'rtl' %}space-x-reverse space-x-3{% else %}space-x-3{% endif %}">
+    <a href="{{ url_for('purchases_frontend.new_purchase_order') }}" class="btn-primary">
+        <i class="fas fa-plus"></i>
+        <span>{{ _('New Purchase Order') }}</span>
+    </a>
+</div>
+
+<!-- Filters & Search -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+    <form method="GET" action="{{ url_for('purchases_frontend.list_purchase_orders') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <!-- Search -->
+        <div class="md:col-span-2">
+            <div class="relative">
+                <div class="absolute inset-y-0 {% if direction == 'rtl' %}right-0 pr-3{% else %}left-0 pl-3{% endif %} flex items-center pointer-events-none">
+                    <i class="fas fa-search" style="color: var(--color-text-tertiary);"></i>
+                </div>
+                <input type="text" 
+                    name="search"
+                    value="{{ search or '' }}"
+                    class="modern-input {% if direction == 'rtl' %}pr-10 pl-3{% else %}pl-10 pr-3{% endif %}"
+                    placeholder="{{ _('Search by order number...') }}">
+            </div>
+        </div>
+
+        <!-- Status Filter -->
+        <select name="status" class="modern-select">
+            <option value="">{{ _('All Statuses') }}</option>
+            <option value="draft" {% if status == 'draft' %}selected{% endif %}>{{ _('Draft') }}</option>
+            <option value="sent" {% if status == 'sent' %}selected{% endif %}>{{ _('Sent') }}</option>
+            <option value="confirmed" {% if status == 'confirmed' %}selected{% endif %}>{{ _('Confirmed') }}</option>
+            <option value="partially_received" {% if status == 'partially_received' %}selected{% endif %}>{{ _('Partially Received') }}</option>
+            <option value="received" {% if status == 'received' %}selected{% endif %}>{{ _('Received') }}</option>
+            <option value="cancelled" {% if status == 'cancelled' %}selected{% endif %}>{{ _('Cancelled') }}</option>
+        </select>
+
+        <!-- Actions -->
+        <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+            <button type="submit" class="btn-secondary flex-1">
+                <i class="fas fa-filter {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                {{ _('Filter') }}
+            </button>
+            <a href="{{ url_for('purchases_frontend.list_purchase_orders') }}" class="btn-secondary" style="padding: 0.75rem;">
+                <i class="fas fa-redo"></i>
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Purchase Orders Table -->
+<div class="modern-table-container">
+    <div class="overflow-x-auto">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">
+                        {{ _('Order Number') }}
+                    </th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">
+                        {{ _('Supplier') }}
+                    </th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">
+                        {{ _('Order Date') }}
+                    </th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">
+                        {{ _('Expected Delivery') }}
+                    </th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">
+                        {{ _('Total TTC') }}
+                    </th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">
+                        {{ _('Status') }}
+                    </th>
+                    <th class="text-{% if direction == 'rtl' %}left{% else %}right{% endif %}">
+                        {{ _('Actions') }}
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if orders %}
+                    {% for order in orders %}
+                    <tr>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-gray-900">{{ order.number }}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-gray-900">{{ order.supplier_name or '-' }}</div>
+                            {% if order.supplier_code %}
+                            <div class="text-xs text-gray-500">{{ order.supplier_code }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600">
+                            {{ order.order_date.strftime('%d/%m/%Y') if order.order_date else '-' }}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600">
+                            {{ order.expected_delivery_date.strftime('%d/%m/%Y') if order.expected_delivery_date else '-' }}
+                        </td>
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900">
+                            {{ "%.2f"|format(order.total_ttc) }} €
+                        </td>
+                        <td>
+                            {% if order.status == 'draft' %}
+                            <span class="badge badge-draft">{{ _('Draft') }}</span>
+                            {% elif order.status == 'sent' %}
+                            <span class="badge badge-confirmed">{{ _('Sent') }}</span>
+                            {% elif order.status == 'confirmed' %}
+                            <span class="badge badge-confirmed">{{ _('Confirmed') }}</span>
+                            {% elif order.status == 'partially_received' %}
+                            <span class="badge badge-partially_received">{{ _('Partially Received') }}</span>
+                            {% elif order.status == 'received' %}
+                            <span class="badge badge-received">{{ _('Received') }}</span>
+                            {% elif order.status == 'cancelled' %}
+                            <span class="badge badge-cancelled">{{ _('Cancelled') }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-{% if direction == 'rtl' %}left{% else %}right{% endif %} text-sm font-medium">
+                            <div class="flex items-center {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+                                <a href="{{ url_for('purchases_frontend.edit_purchase_order', order_id=order.id) }}" 
+                                   class="text-indigo-600 hover:text-indigo-900" 
+                                   title="{{ _('Edit') }}">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% if order.status == 'draft' %}
+                                <button onclick="confirmOrder({{ order.id }})" 
+                                        class="text-green-600 hover:text-green-900" 
+                                        title="{{ _('Confirm') }}">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                {% endif %}
+                                {% if order.status != 'received' and order.status != 'cancelled' %}
+                                <button onclick="cancelOrder({{ order.id }})" 
+                                        class="text-red-600 hover:text-red-900" 
+                                        title="{{ _('Cancel') }}">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+                            {{ _('No purchase orders found.') }}
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmOrder(id) {
+    if (confirm('{{ _("Are you sure you want to confirm this purchase order?") }}')) {
+        // Create a form and submit it to use session-based authentication
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/purchase-orders/${id}/confirm`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function cancelOrder(id) {
+    if (confirm('{{ _("Are you sure you want to cancel this purchase order?") }}')) {
+        // Create a form and submit it to use session-based authentication
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/purchase-orders/${id}/cancel`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}
+

@@ -1,0 +1,1600 @@
+{% extends "base.html" %}
+
+{% block title %}{% if order %}{{ _('Edit Purchase Order') }}{% else %}{{ _('New Purchase Order') }}{% endif %} - CommerceFlow{% endblock %}
+
+{% block extra_css %}
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<style>
+    .select2-container {
+        width: 100% !important;
+    }
+    .select2-container--default .select2-selection--single {
+        height: 38px;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 36px;
+        padding-left: 12px;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 36px;
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}{% if order %}{{ _('Edit Purchase Order') }}{% else %}{{ _('New Purchase Order') }}{% endif %}{% endblock %}
+{% block page_subtitle %}{% if order %}{{ _('Modify purchase order') }}{% else %}{{ _('Create a new purchase order') }}{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <form id="purchase-order-form">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <!-- Left Column - Main Info & Lines -->
+            <div class="lg:col-span-3 space-y-6">
+                <!-- Order Header -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Order Information') }}</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Supplier') }} <span style="color: var(--color-error);">*</span>
+                            </label>
+                            <select id="supplier_id" name="supplier_id" required
+                                    class="modern-input"
+                                    {% if order and order.status != 'draft' %}disabled{% endif %}>
+                                <option value="">{{ _('Select supplier') }}</option>
+                                {% for supplier in suppliers %}
+                                <option value="{{ supplier.id }}" {% if order and order.supplier_id == supplier.id %}selected{% endif %}>
+                                    {{ supplier.name }} {% if supplier.code %}({{ supplier.code }}){% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                    {{ _('Order Date') }}
+                                </label>
+                                <input type="date" 
+                                    id="order_date"
+                                    name="order_date"
+                                    value="{% if order and order.order_date %}{{ order.order_date.strftime('%Y-%m-%d') }}{% elif today %}{{ today }}{% endif %}"
+                                    class="modern-input"
+                                    {% if order and order.status != 'draft' %}disabled{% endif %}>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                    {{ _('Expected Delivery Date') }}
+                                </label>
+                                <input type="date" 
+                                    id="expected_delivery_date"
+                                    name="expected_delivery_date"
+                                    value="{% if order and order.expected_delivery_date %}{{ order.expected_delivery_date.strftime('%Y-%m-%d') }}{% endif %}"
+                                    class="modern-input"
+                                    {% if order and order.status != 'draft' %}disabled{% endif %}>
+                            </div>
+                        </div>
+
+                        {% if order %}
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Order Number') }}
+                            </label>
+                            <input type="text" 
+                                value="{{ order.number }}"
+                                disabled
+                                class="block w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50">
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Order Lines -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-gray-900">{{ _('Order Lines') }}</h3>
+                        {% if not order or order.status == 'draft' %}
+                        <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+                            <button type="button" id="quick-add-product-btn" onclick="showQuickProductModal(null)" 
+                                    class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm hidden">
+                                <i class="fas fa-box {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                                {{ _('Add Product') }}
+                            </button>
+                            <button type="button" onclick="addLine()" 
+                                    class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm">
+                                <i class="fas fa-plus {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                                {{ _('Add Line') }}
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div id="lines-container" class="space-y-4">
+                        {% if order and order.lines %}
+                            {% for line in order.lines %}
+                            <div class="line-item border border-gray-200 rounded-lg p-4" data-line-id="{{ line.id }}">
+                                <div class="grid grid-cols-12 gap-4">
+                                    <div class="col-span-{% if order.status in ['confirmed', 'partially_received'] %}3{% else %}5{% endif %}">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Product / Variant') }}</label>
+                                        <div class="flex items-center gap-2">
+                                            <input type="hidden" name="product_id" 
+                                                   class="product-id-input" 
+                                                   value="{{ line.product_id if line.product_id else '' }}" required>
+                                            <input type="hidden" name="variant_id" 
+                                                   class="variant-id-input" 
+                                                   value="{{ line.variant_id if line.variant_id else '' }}">
+                                            <input type="text" 
+                                                   class="product-display-input flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 cursor-pointer" 
+                                                   readonly
+                                                   placeholder="{{ _('Click to select product...') }}"
+                                                   onclick="openProductPicker({{ loop.index0 }})"
+                                                   data-line-index="{{ loop.index0 }}"
+                                                   {% if order.status != 'draft' %}disabled{% endif %}>
+                                            <button type="button" 
+                                                    class="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                                                    onclick="openProductPicker({{ loop.index0 }})"
+                                                    title="{{ _('Select Product') }}"
+                                                    {% if order.status != 'draft' %}disabled{% endif %}>
+                                                <i class="fas fa-search"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Quantity Ordered') }}</label>
+                                        <input type="number" name="quantity" value="{{ line.quantity }}" step="0.001" min="0" required
+                                               class="line-quantity block w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                                               {% if order.status != 'draft' %}disabled{% endif %} onchange="calculateLineTotal(this)">
+                                    </div>
+                                    {% if order.status in ['confirmed', 'partially_received'] %}
+                                    <div class="col-span-2">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Progress') }}</label>
+                                        <div class="mt-2">
+                                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                                <div class="bg-{% if line.quantity_received == line.quantity %}green{% elif line.quantity_received > 0 %}yellow{% else %}gray{% endif %}-600 h-2 rounded-full" 
+                                                     style="width: {{ (line.quantity_received / line.quantity * 100) if line.quantity > 0 else 0 }}%"></div>
+                                            </div>
+                                            <div class="text-xs text-gray-600 mt-1">
+                                                {{ "%.3f"|format(line.quantity_received) }} / {{ "%.3f"|format(line.quantity) }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Status') }}</label>
+                                        <div class="mt-2">
+                                            {% if line.quantity_received == line.quantity %}
+                                                <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">{{ _('Fully Received') }}</span>
+                                            {% elif line.quantity_received > 0 %}
+                                                <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">{{ _('Partially Received') }}</span>
+                                            {% else %}
+                                                <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-medium rounded-full">{{ _('Not Received') }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Unit Price') }}</label>
+                                        <div class="px-2 py-1 text-sm text-gray-900">
+                                            {{ "%.2f"|format(line.unit_price) }} €
+                                        </div>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Total HT') }}</label>
+                                        <div class="px-2 py-1 text-sm font-medium text-gray-900">
+                                            {{ "%.2f"|format(line.line_total_ht) }} €
+                                        </div>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">&nbsp;</label>
+                                        <button type="button" 
+                                                onclick="openReceiveModal({{ order.id }}, {{ line.id }}, '{{ line.product_name }}', {{ line.quantity }}, {{ line.quantity_received }})" 
+                                                class="w-full px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition">
+                                            <i class="fas fa-box {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                                            {{ _('Receive') }}
+                                        </button>
+                                    </div>
+                                    {% else %}
+                                    <div class="col-span-2">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Unit Price') }}</label>
+                                        <input type="number" name="unit_price" value="{{ line.unit_price }}" step="0.01" min="0" required
+                                               class="line-unit-price block w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                                               {% if order.status != 'draft' %}disabled{% endif %} onchange="calculateLineTotal(this)">
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Discount %') }}</label>
+                                        <input type="number" name="discount_percent" value="{{ line.discount_percent }}" step="0.01" min="0" max="100"
+                                               class="line-discount block w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                                               {% if order.status != 'draft' %}disabled{% endif %} onchange="calculateLineTotal(this)">
+                                    </div>
+                                    <div class="col-span-1">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Total HT') }}</label>
+                                        <div class="line-total-ht px-2 py-1 text-sm font-medium text-gray-900">
+                                            {{ "%.2f"|format(line.line_total_ht) }} €
+                                        </div>
+                                    </div>
+                                    <div class="col-span-1">
+                                        {% if order.status == 'draft' %}
+                                        <button type="button" onclick="removeLine(this)" class="mt-5 text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+
+                    {% if not order or (order and order.status == 'draft' and not order.lines) %}
+                    <div id="no-lines-message" class="text-center text-gray-500 py-8 {% if order and order.lines %}hidden{% endif %}">
+                        {{ _('No lines added yet. Click "Add Line" to start.') }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Notes -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Notes') }}</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Notes (visible to supplier)') }}
+                            </label>
+                            <textarea rows="3" 
+                                id="notes"
+                                name="notes"
+                                class="modern-input"
+                                {% if order and order.status != 'draft' %}disabled{% endif %}>{% if order %}{{ order.notes or '' }}{% endif %}</textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Internal Notes') }}
+                            </label>
+                            <textarea rows="3" 
+                                id="internal_notes"
+                                name="internal_notes"
+                                class="modern-input"
+                                {% if order and order.status != 'draft' %}disabled{% endif %}>{% if order %}{{ order.internal_notes or '' }}{% endif %}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Summary & Actions -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Order Summary -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Order Summary') }}</h3>
+                    
+                    <div class="space-y-3">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">{{ _('Subtotal HT') }}</span>
+                            <span class="font-medium" id="subtotal-ht">0.00 €</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">{{ _('Tax') }}</span>
+                            <span class="font-medium" id="total-tax">0.00 €</span>
+                        </div>
+                        <div class="border-t border-gray-200 pt-3">
+                            <div class="flex justify-between">
+                                <span class="font-bold" style="color: var(--color-text-primary);">{{ _('Total TTC') }}</span>
+                                <span class="font-bold text-lg text-indigo-600" id="total-ttc">0.00 €</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status -->
+                {% if order %}
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Status') }}</h3>
+                    <div>
+                        {% if order.status == 'draft' %}
+                        <span class="px-3 py-1 bg-yellow-100 text-yellow-800 text-sm font-medium rounded-full">{{ _('Draft') }}</span>
+                        {% elif order.status == 'sent' %}
+                        <span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">{{ _('Sent') }}</span>
+                        {% elif order.status == 'confirmed' %}
+                        <span class="px-3 py-1 bg-indigo-100 text-indigo-800 text-sm font-medium rounded-full">{{ _('Confirmed') }}</span>
+                        {% elif order.status == 'partially_received' %}
+                        <span class="px-3 py-1 bg-orange-100 text-orange-800 text-sm font-medium rounded-full">{{ _('Partially Received') }}</span>
+                        {% elif order.status == 'received' %}
+                        <span class="px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">{{ _('Received') }}</span>
+                        {% elif order.status == 'cancelled' %}
+                        <span class="px-3 py-1 bg-red-100 text-red-800 text-sm font-medium rounded-full">{{ _('Cancelled') }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Quick Actions -->
+                <div style="background: var(--color-info-light); border: 1px solid var(--color-info); border-radius: var(--radius-xl); padding: var(--spacing-lg);">
+                    <h4 class="text-sm font-bold mb-3" style="color: var(--color-primary-dark);">{{ _('Quick Actions') }}</h4>
+                    <div class="space-y-2">
+                        <a href="{{ url_for('purchases_frontend.list_purchase_orders') }}" class="block w-full text-{% if direction == 'rtl' %}right{% else %}left{% endif %} px-3 py-2 text-sm rounded-lg transition" style="color: var(--color-primary);">
+                            <i class="fas fa-arrow-{% if direction == 'rtl' %}right{% else %}left{% endif %} {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                            {{ _('Back to List') }}
+                        </a>
+                        {% if order and order.status == 'draft' %}
+                        <button type="button" onclick="confirmOrder({{ order.id }})" class="w-full text-{% if direction == 'rtl' %}right{% else %}left{% endif %} px-3 py-2 text-sm text-green-600 hover:bg-green-50 rounded-lg transition">
+                            <i class="fas fa-check {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                            {{ _('Confirm Order') }}
+                        </button>
+                        {% endif %}
+                        {% if order and order.status != 'received' and order.status != 'cancelled' %}
+                        <button type="button" onclick="cancelOrder({{ order.id }})" class="w-full text-{% if direction == 'rtl' %}right{% else %}left{% endif %} px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition">
+                            <i class="fas fa-times {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                            {{ _('Cancel Order') }}
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        {% if not order or order.status == 'draft' %}
+        <div class="mt-6 flex {% if direction == 'rtl' %}justify-start{% else %}justify-end{% endif %} {% if direction == 'rtl' %}space-x-reverse space-x-3{% else %}space-x-3{% endif %}">
+            <a href="{{ url_for('purchases_frontend.list_purchase_orders') }}" 
+               class="btn-secondary">
+                {{ _('Cancel') }}
+            </a>
+            <button type="submit" 
+                    class="btn-primary">
+                {% if order %}{{ _('Update Order') }}{% else %}{{ _('Create Order') }}{% endif %}
+            </button>
+        </div>
+        {% endif %}
+    </form>
+</div>
+
+<!-- Receive Line Modal -->
+<div id="receive-line-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+    <div class="relative top-20 mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-gray-900">{{ _('Receive Line') }}</h3>
+            <button onclick="closeReceiveModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+            <div class="text-sm text-gray-600">{{ _('Product') }}:</div>
+            <div class="text-base font-medium text-gray-900" id="receive-modal-product-name"></div>
+            <div class="text-sm text-gray-600 mt-1">
+                {{ _('Ordered') }}: <span id="receive-modal-quantity-ordered"></span> | 
+                {{ _('Already Received') }}: <span id="receive-modal-quantity-received"></span>
+            </div>
+        </div>
+        
+        <form id="receive-line-form" onsubmit="submitReceiveLine(event)">
+            <input type="hidden" id="receive-modal-order-id" name="order_id">
+            <input type="hidden" id="receive-modal-line-id" name="line_id">
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                        {{ _('Quantity Received') }} <span style="color: var(--color-error);">*</span>
+                    </label>
+                    <input type="number" 
+                           id="receive-modal-quantity"
+                           name="quantity_received"
+                           step="0.001"
+                           min="0.001"
+                           required
+                           class="modern-input"
+                           placeholder="0.000">
+                    <p class="mt-1 text-xs text-gray-500">{{ _('Enter the quantity you are receiving now') }}</p>
+                </div>
+                
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-sm font-medium text-gray-700">
+                            {{ _('Location') }}
+                        </label>
+                        <button type="button" onclick="showAddLocationForm()" class="text-xs text-indigo-600 hover:text-indigo-800">
+                            <i class="fas fa-plus {% if direction == 'rtl' %}ml-1{% else %}mr-1{% endif %}"></i>
+                            {{ _('Add Location') }}
+                        </button>
+                    </div>
+                    <select id="receive-modal-location" 
+                            name="location_id"
+                            class="modern-input">
+                        <option value="">{{ _('Select location (optional)') }}</option>
+                        {% for location in locations %}
+                        <option value="{{ location.id }}">{{ location.name }} ({{ location.code }})</option>
+                        {% endfor %}
+                    </select>
+                    <p class="mt-1 text-xs text-gray-500">{{ _('Select where the goods will be stored') }}</p>
+                </div>
+                
+                <!-- Add Location Form (hidden by default) -->
+                <div id="add-location-form" class="hidden p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <h4 class="text-sm font-bold text-gray-900 mb-3">{{ _('Add New Location') }}</h4>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">
+                                {{ _('Location Code') }} <span style="color: var(--color-error);">*</span>
+                            </label>
+                            <input type="text" 
+                                   id="new-location-code"
+                                   maxlength="50"
+                                   class="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                   placeholder="WH-001">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">
+                                {{ _('Location Name') }} <span style="color: var(--color-error);">*</span>
+                            </label>
+                            <input type="text" 
+                                   id="new-location-name"
+                                   class="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                   placeholder="{{ _('Warehouse Name') }}">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">
+                                {{ _('Type') }} <span style="color: var(--color-error);">*</span>
+                            </label>
+                            <select id="new-location-type" 
+                                    class="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                <option value="warehouse">{{ _('Warehouse') }}</option>
+                                <option value="zone">{{ _('Zone') }}</option>
+                                <option value="aisle">{{ _('Aisle') }}</option>
+                                <option value="shelf">{{ _('Shelf') }}</option>
+                                <option value="level">{{ _('Level') }}</option>
+                            </select>
+                        </div>
+                        <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+                            <button type="button" onclick="createLocation()" class="flex-1 px-3 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition">
+                                {{ _('Create') }}
+                            </button>
+                            <button type="button" onclick="hideAddLocationForm()" class="flex-1 px-3 py-2 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300 transition">
+                                {{ _('Cancel') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex {% if direction == 'rtl' %}justify-start space-x-reverse space-x-3{% else %}justify-end space-x-3{% endif %}">
+                <button type="button" onclick="closeReceiveModal()" class="btn-secondary">
+                    {{ _('Cancel') }}
+                </button>
+                <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                    <i class="fas fa-check {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                    {{ _('Receive') }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Quick Product Creation Modal -->
+<div id="quick-product-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+    <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-gray-900">{{ _('Quick Add Product') }}</h3>
+            <button onclick="closeQuickProductModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <form id="quick-product-form" onsubmit="createQuickProduct(event)">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ _('Product Name') }} <span style="color: var(--color-error);">*</span>
+                    </label>
+                    <input type="text" 
+                        id="quick-product-name"
+                        name="name"
+                        required
+                        class="modern-input"
+                        placeholder="{{ _('Product name') }}">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ _('Product Code') }} <span style="color: var(--color-error);">*</span>
+                    </label>
+                    <input type="text" 
+                        id="quick-product-code"
+                        name="code"
+                        required
+                        maxlength="50"
+                        class="modern-input"
+                        placeholder="PRD-2025-">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ _('Purchase Price HT') }} <span style="color: var(--color-error);">*</span>
+                        </label>
+                        <input type="number" 
+                            id="quick-product-cost"
+                            name="cost"
+                            step="0.01"
+                            min="0"
+                            required
+                            class="modern-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ _('Sale Price HT') }} <span style="color: var(--color-error);">*</span>
+                        </label>
+                        <input type="number" 
+                            id="quick-product-price"
+                            name="price"
+                            step="0.01"
+                            min="0"
+                            required
+                            class="modern-input">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ _('Category') }}
+                    </label>
+                    <select id="quick-product-category" name="category_ids" class="modern-input">
+                        <option value="">{{ _('Select category') }}</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}">{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex {% if direction == 'rtl' %}justify-start{% else %}justify-end{% endif %} {% if direction == 'rtl' %}space-x-reverse space-x-3{% else %}space-x-3{% endif %}">
+                <button type="button" onclick="closeQuickProductModal()" class="btn-secondary">
+                    {{ _('Cancel') }}
+                </button>
+                <button type="submit" class="btn-primary">
+                    {{ _('Create Product') }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- jQuery and Select2 JS -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+// Ensure jQuery is available
+if (typeof jQuery === 'undefined') {
+    console.error('jQuery is not loaded!');
+}
+if (typeof jQuery.fn.select2 === 'undefined') {
+    console.error('Select2 is not loaded!');
+}
+let lineCounter = 0;
+const products = {{ products|tojson|safe }};
+const allProducts = {{ products|tojson|safe }};
+const selectProductText = '{{ _("Select product") }}';
+
+// Get selected product IDs from all lines
+function getSelectedProductIds(excludeSelect = null) {
+    const selectedIds = [];
+    document.querySelectorAll('.line-product').forEach(select => {
+        if (select !== excludeSelect && $(select).val()) {
+            selectedIds.push(parseInt($(select).val()));
+        }
+    });
+    return selectedIds;
+}
+
+// Flag to prevent recursion
+let isUpdatingOptions = false;
+
+// Update product options in a select, excluding already selected products
+function updateProductOptions(select, excludeSelect = null) {
+    // Prevent recursion
+    if (isUpdatingOptions) {
+        return;
+    }
+    
+    isUpdatingOptions = true;
+    
+    try {
+        const selectedIds = getSelectedProductIds(excludeSelect);
+        const currentValue = $(select).val();
+        const currentProductId = currentValue ? parseInt(currentValue) : null;
+        const isSelect2Initialized = $(select).hasClass('select2-hidden-accessible');
+        
+        // Clear and rebuild options
+        $(select).empty().append(`<option value="">${selectProductText}</option>`);
+        
+        allProducts.forEach(product => {
+            // Include the product if:
+            // 1. It's the currently selected product in this select, OR
+            // 2. It's not selected in any other line
+            if (product.id === currentProductId || !selectedIds.includes(product.id)) {
+                const option = $('<option></option>');
+                option.val(product.id);
+                option.text(`${product.name} (${product.code})`);
+                option.data('price', product.cost || product.price);
+                
+                $(select).append(option);
+            }
+        });
+        
+        // Reinitialize Select2 only if jQuery and Select2 are available
+        if (typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined') {
+            if (isSelect2Initialized) {
+                // If Select2 is already initialized, just update it without destroying
+                $(select).trigger('change.select2');
+            } else {
+                // Only initialize if not already initialized
+                $(select).select2({
+                    theme: 'bootstrap-5',
+                    placeholder: selectProductText,
+                    allowClear: true,
+                    width: '100%'
+                });
+            }
+            
+            // Restore value if it was set
+            if (currentValue) {
+                $(select).val(currentValue).trigger('change');
+            }
+        }
+    } finally {
+        isUpdatingOptions = false;
+    }
+}
+
+// Initialize Select2 on all product selects
+function initializeProductSelects() {
+    if (typeof jQuery === 'undefined' || typeof jQuery.fn.select2 === 'undefined') {
+        console.warn('jQuery or Select2 not loaded yet, retrying...');
+        setTimeout(initializeProductSelects, 100);
+        return;
+    }
+    
+    document.querySelectorAll('.line-product').forEach(select => {
+        // Skip if already initialized to avoid recursion
+        if ($(select).hasClass('select2-hidden-accessible')) {
+            return;
+        }
+        
+        // Ensure all products are in the select before initializing Select2
+        const currentValue = select.value;
+        const existingProductIds = new Set();
+        
+        // Get all existing option values
+        Array.from(select.options).forEach(option => {
+            if (option.value) {
+                existingProductIds.add(parseInt(option.value));
+            }
+        });
+        
+        // Get selected product IDs from other selects
+        const selectedIds = getSelectedProductIds();
+        const currentProductId = currentValue ? parseInt(currentValue) : null;
+        
+        // Add products (excluding already selected ones, except current)
+        allProducts.forEach(product => {
+            if (!existingProductIds.has(product.id)) {
+                // Include the product if:
+                // 1. It's the currently selected product in this select, OR
+                // 2. It's not selected in any other line
+                if (product.id === currentProductId || !selectedIds.includes(product.id)) {
+                    const option = document.createElement('option');
+                    option.value = product.id;
+                    option.textContent = `${product.name} (${product.code})`;
+                    select.appendChild(option);
+                }
+            }
+        });
+        
+        // Initialize Select2 with current options
+        try {
+            $(select).select2({
+                theme: 'bootstrap-5',
+                placeholder: selectProductText,
+                allowClear: true,
+                width: '100%'
+            });
+            
+            // Restore value if it was set
+            if (currentValue) {
+                $(select).val(currentValue).trigger('change');
+            }
+        } catch (e) {
+            console.error('Error initializing Select2:', e);
+        }
+    });
+}
+
+// Wait for jQuery and Select2 to be loaded
+function waitForSelect2(callback) {
+    if (typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined') {
+        callback();
+    } else {
+        setTimeout(function() {
+            waitForSelect2(callback);
+        }, 100);
+    }
+}
+
+// Show "Add Product" button if order already has lines (edit mode)
+waitForSelect2(function() {
+    // Ensure DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initSelect2);
+    } else {
+        initSelect2();
+    }
+});
+
+// Flag to prevent multiple initializations
+let isInitializing = false;
+let isEventHandlerBound = false;
+
+function initSelect2() {
+    // Prevent multiple simultaneous initializations
+    if (isInitializing) {
+        return;
+    }
+    
+    isInitializing = true;
+    
+    try {
+        const container = document.getElementById('lines-container');
+        const addProductBtn = document.getElementById('quick-add-product-btn');
+        if (container && addProductBtn && container.querySelectorAll('.line-item').length > 0) {
+            addProductBtn.classList.remove('hidden');
+        }
+        
+        // Initialize Select2 on existing selects (only once)
+        if (typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined') {
+            initializeProductSelects();
+        }
+        
+        // Bind event handler only once to prevent multiple bindings
+        if (!isEventHandlerBound) {
+            // Remove any existing handlers first
+            $(document).off('change', '.line-product');
+            
+            // Update all selects when any select changes
+            $(document).on('change', '.line-product', function() {
+                // Prevent recursion during option updates
+                if (isUpdatingOptions) {
+                    return;
+                }
+                
+                const changedSelect = this;
+                const selectedValue = $(this).val();
+                
+                // Update product price if a product is selected
+                if (selectedValue) {
+                    updateProductPrice(this);
+                }
+                
+                // Update all other selects to exclude the newly selected product
+                document.querySelectorAll('.line-product').forEach(select => {
+                    if (select !== changedSelect) {
+                        updateProductOptions(select, changedSelect);
+                    }
+                });
+            });
+            
+            isEventHandlerBound = true;
+        }
+    } finally {
+        isInitializing = false;
+    }
+}
+
+// Quick Product Creation
+let currentProductSelect = null;
+
+function showQuickProductModal(button) {
+    // If button is provided, find the select in the same line item
+    if (button) {
+        currentProductSelect = button.closest('.line-item').querySelector('.line-product');
+    } else {
+        // If called from header button, use the first empty select or last select
+        const selects = document.querySelectorAll('.line-product');
+        if (selects.length > 0) {
+            // Find first empty select, or use the last one
+            currentProductSelect = Array.from(selects).find(s => !s.value) || selects[selects.length - 1];
+        }
+    }
+    document.getElementById('quick-product-modal').classList.remove('hidden');
+    // Reset form
+    document.getElementById('quick-product-form').reset();
+}
+
+function closeQuickProductModal() {
+    document.getElementById('quick-product-modal').classList.add('hidden');
+    currentProductSelect = null;
+}
+
+async function createQuickProduct(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const categoryIds = [];
+    const categorySelect = document.getElementById('quick-product-category');
+    if (categorySelect.value) {
+        categoryIds.push(parseInt(categorySelect.value));
+    }
+    
+    const data = {
+        name: formData.get('name'),
+        code: formData.get('code'),
+        cost: parseFloat(formData.get('cost')),
+        price: parseFloat(formData.get('price')),
+        category_ids: categoryIds,
+        status: 'active'
+    };
+    
+    try {
+        const response = await fetch('{{ url_for("products_frontend.create") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            console.error('Non-JSON response:', text);
+            alert('{{ _("Error creating product") }}: ' + (text || response.statusText));
+            return;
+        }
+        
+        const result = await response.json();
+        
+        if (result.status === 'success' || response.ok) {
+            const product = result.data || result;
+            
+            // Add product to all products array
+            allProducts.push({
+                id: product.id,
+                name: product.name,
+                code: product.code,
+                cost: product.cost,
+                price: product.price
+            });
+            
+            // Update all selects to include the new product (only if not currently updating)
+            if (!isUpdatingOptions) {
+                document.querySelectorAll('.line-product').forEach(select => {
+                    // Only update if Select2 is initialized
+                    if ($(select).hasClass('select2-hidden-accessible')) {
+                        updateProductOptions(select);
+                    }
+                });
+            }
+            
+            // Select the new product in the current select
+            if (currentProductSelect) {
+                $(currentProductSelect).val(product.id).trigger('change');
+                updateProductPrice(currentProductSelect);
+            }
+            
+            closeQuickProductModal();
+            alert('{{ _("Product created successfully") }}');
+        } else {
+            alert(result.message || '{{ _("Error creating product") }}');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('{{ _("Error creating product") }}');
+    }
+}
+
+function addLine() {
+    lineCounter++;
+    const container = document.getElementById('lines-container');
+    const noLinesMessage = document.getElementById('no-lines-message');
+    if (noLinesMessage) noLinesMessage.classList.add('hidden');
+    
+    // Show the "Add Product" button when first line is added
+    const addProductBtn = document.getElementById('quick-add-product-btn');
+    if (addProductBtn) {
+        addProductBtn.classList.remove('hidden');
+    }
+    
+    const lineHtml = `
+        <div class="line-item border border-gray-200 rounded-lg p-4" data-line-index="${lineCounter}">
+            <div class="grid grid-cols-12 gap-4">
+                <div class="col-span-5">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Product / Variant') }}</label>
+                    <div class="flex items-center gap-2">
+                        <input type="hidden" name="product_id" 
+                               class="product-id-input" 
+                               value="" required>
+                        <input type="hidden" name="variant_id" 
+                               class="variant-id-input" 
+                               value="">
+                        <input type="text" 
+                               class="product-display-input flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 cursor-pointer" 
+                               readonly
+                               placeholder="{{ _('Click to select product...') }}"
+                               onclick="openProductPicker(${lineCounter})"
+                               data-line-index="${lineCounter}">
+                        <button type="button" 
+                                class="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                                onclick="openProductPicker(${lineCounter})"
+                                title="{{ _('Select Product') }}">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Quantity') }}</label>
+                    <input type="number" name="quantity" value="1" step="0.001" min="0" required
+                           class="line-quantity block w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                           onchange="calculateLineTotal(this)">
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Unit Price') }}</label>
+                    <input type="number" name="unit_price" value="0" step="0.01" min="0" required
+                           class="line-unit-price block w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                           onchange="calculateLineTotal(this)">
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Discount %') }}</label>
+                    <input type="number" name="discount_percent" value="0" step="0.01" min="0" max="100"
+                           class="line-discount block w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                           onchange="calculateLineTotal(this)">
+                </div>
+                <div class="col-span-1">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Total HT') }}</label>
+                    <div class="line-total-ht px-2 py-1 text-sm font-medium text-gray-900">0.00 €</div>
+                </div>
+                <div class="col-span-1">
+                    <button type="button" onclick="removeLine(this)" class="mt-5 text-red-600 hover:text-red-900">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', lineHtml);
+    
+    // Initialize Select2 on the new select after DOM update
+    setTimeout(function() {
+        const newSelect = container.querySelector(`.line-item[data-line-index="${lineCounter}"] .line-product`);
+        if (newSelect && typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined') {
+            // Check if Select2 is already initialized to avoid recursion
+            if (!$(newSelect).hasClass('select2-hidden-accessible')) {
+                // Get selected product IDs from other selects
+                const selectedIds = getSelectedProductIds();
+                
+                // Filter options before initializing Select2
+                const currentOptions = Array.from(newSelect.options);
+                currentOptions.forEach(option => {
+                    if (option.value && selectedIds.includes(parseInt(option.value))) {
+                        option.remove();
+                    }
+                });
+                
+                // Initialize Select2
+                $(newSelect).select2({
+                    theme: 'bootstrap-5',
+                    placeholder: selectProductText,
+                    allowClear: true,
+                    width: '100%'
+                });
+            }
+        }
+    }, 100);
+}
+
+function removeLine(button) {
+    const lineItem = button.closest('.line-item');
+    const removedSelect = lineItem.querySelector('.line-product');
+    lineItem.remove();
+    calculateTotals();
+    
+    // Update all remaining selects to include the removed product
+    document.querySelectorAll('.line-product').forEach(select => {
+        updateProductOptions(select);
+    });
+    
+    const container = document.getElementById('lines-container');
+    if (container.children.length === 0) {
+        const noLinesMessage = document.getElementById('no-lines-message');
+        if (noLinesMessage) noLinesMessage.classList.remove('hidden');
+        
+        // Hide the "Add Product" button when all lines are removed
+        const addProductBtn = document.getElementById('quick-add-product-btn');
+        if (addProductBtn) {
+            addProductBtn.classList.add('hidden');
+        }
+    }
+}
+
+function updateProductPrice(select) {
+    const selectedValue = $(select).val();
+    if (!selectedValue) return;
+    
+    const product = allProducts.find(p => p.id === parseInt(selectedValue));
+    if (!product) return;
+    
+    const price = parseFloat(product.cost || product.price || 0);
+    const lineItem = select.closest('.line-item');
+    const unitPriceInput = lineItem.querySelector('.line-unit-price');
+    if (unitPriceInput && price > 0) {
+        unitPriceInput.value = price.toFixed(2);
+        calculateLineTotal(unitPriceInput);
+    }
+}
+
+function calculateLineTotal(input) {
+    const lineItem = input.closest('.line-item');
+    const quantity = parseFloat(lineItem.querySelector('.line-quantity').value || 0);
+    const unitPrice = parseFloat(lineItem.querySelector('.line-unit-price').value || 0);
+    const discount = parseFloat(lineItem.querySelector('.line-discount').value || 0);
+    
+    const subtotal = quantity * unitPrice;
+    const discountAmount = subtotal * (discount / 100);
+    const totalHT = subtotal - discountAmount;
+    
+    lineItem.querySelector('.line-total-ht').textContent = totalHT.toFixed(2) + ' €';
+    
+    calculateTotals();
+}
+
+function calculateTotals() {
+    let subtotalHT = 0;
+    let totalTax = 0;
+    
+    document.querySelectorAll('.line-item').forEach(lineItem => {
+        const totalHTText = lineItem.querySelector('.line-total-ht').textContent;
+        const totalHT = parseFloat(totalHTText.replace(' €', '').replace(',', '.')) || 0;
+        subtotalHT += totalHT;
+        // Assume 20% VAT for now
+        totalTax += totalHT * 0.20;
+    });
+    
+    const totalTTC = subtotalHT + totalTax;
+    
+    document.getElementById('subtotal-ht').textContent = subtotalHT.toFixed(2) + ' €';
+    document.getElementById('total-tax').textContent = totalTax.toFixed(2) + ' €';
+    document.getElementById('total-ttc').textContent = totalTTC.toFixed(2) + ' €';
+}
+
+// Initialize totals on page load
+document.addEventListener('DOMContentLoaded', function() {
+    calculateTotals();
+    // Recalculate for existing lines
+    document.querySelectorAll('.line-quantity, .line-unit-price, .line-discount').forEach(input => {
+        if (input.value) {
+            calculateLineTotal(input);
+        }
+    });
+});
+
+// Form submission
+document.getElementById('purchase-order-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const supplierId = document.getElementById('supplier_id').value;
+    if (!supplierId) {
+        alert('{{ _("Please select a supplier") }}');
+        return;
+    }
+    
+    const lines = [];
+    document.querySelectorAll('.line-item').forEach((lineItem, index) => {
+        const productId = lineItem.querySelector('.line-product').value;
+        const quantity = parseFloat(lineItem.querySelector('.line-quantity').value || 0);
+        const unitPrice = parseFloat(lineItem.querySelector('.line-unit-price').value || 0);
+        const discount = parseFloat(lineItem.querySelector('.line-discount').value || 0);
+        
+        if (productId && quantity > 0 && unitPrice > 0) {
+            lines.push({
+                product_id: parseInt(productId),
+                quantity: quantity,
+                unit_price: unitPrice,
+                discount_percent: discount
+            });
+        }
+    });
+    
+    {% if not order %}
+    // For new orders, lines are required
+    if (lines.length === 0) {
+        alert('{{ _("Please add at least one line") }}');
+        return;
+    }
+    {% endif %}
+    
+    const data = {
+        supplier_id: parseInt(supplierId),
+        order_date: document.getElementById('order_date').value,
+        expected_delivery_date: document.getElementById('expected_delivery_date').value || null,
+        notes: document.getElementById('notes').value || null,
+        internal_notes: document.getElementById('internal_notes').value || null
+    };
+    
+    try {
+        {% if order %}
+        // Update existing order - use frontend route with session
+        const url = '{{ url_for("purchases_frontend.update_purchase_order", order_id=order.id) }}';
+        const method = 'POST';
+        
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            console.error('Non-JSON response:', text);
+            alert('{{ _("Error") }}: ' + (text || response.statusText));
+            return;
+        }
+        
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            alert(result.message || '{{ _("Purchase order updated successfully") }}');
+            window.location.href = '{{ url_for("purchases_frontend.list_purchase_orders") }}';
+        } else {
+            alert(result.message || '{{ _("An error occurred") }}');
+        }
+        {% else %}
+        // Create new order - use frontend route with session
+        const url = '{{ url_for("purchases_frontend.create_purchase_order") }}';
+        const method = 'POST';
+        
+        // Prepare data with lines
+        const orderData = {
+            ...data,
+            lines: lines
+        };
+        
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(orderData)
+        });
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            console.error('Non-JSON response:', text);
+            alert('{{ _("Error") }}: ' + (text || response.statusText));
+            return;
+        }
+        
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            const orderId = result.data?.id;
+            
+            // Lines are already added in the create_purchase_order route
+            
+            alert(result.message || '{{ _("Purchase order created successfully") }}');
+            window.location.href = '{{ url_for("purchases_frontend.list_purchase_orders") }}';
+        } else {
+            alert(result.message || result.error || '{{ _("An error occurred") }}');
+        }
+        {% endif %}
+    } catch (error) {
+        console.error('Error:', error);
+        let errorMessage = '{{ _("An error occurred") }}';
+        if (error.message) {
+            errorMessage += ': ' + error.message;
+        }
+        alert(errorMessage);
+    }
+});
+
+{% if order %}
+function confirmOrder(id) {
+    if (confirm('{{ _("Are you sure you want to confirm this purchase order?") }}')) {
+        // Create a form and submit it to use session-based authentication
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/purchase-orders/${id}/confirm`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function cancelOrder(id) {
+    if (confirm('{{ _("Are you sure you want to cancel this purchase order?") }}')) {
+        // Create a form and submit it to use session-based authentication
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/purchase-orders/${id}/cancel`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Receive Line Modal Functions
+let currentReceiveLineId = null;
+let currentReceiveOrderId = null;
+let currentReceiveMaxQuantity = 0;
+let currentReceiveAlreadyReceived = 0;
+
+function openReceiveModal(orderId, lineId, productName, quantityOrdered, quantityAlreadyReceived) {
+    currentReceiveOrderId = orderId;
+    currentReceiveLineId = lineId;
+    currentReceiveMaxQuantity = parseFloat(quantityOrdered);
+    currentReceiveAlreadyReceived = parseFloat(quantityAlreadyReceived);
+    
+    // Populate modal with line data
+    document.getElementById('receive-modal-product-name').textContent = productName;
+    document.getElementById('receive-modal-quantity-ordered').textContent = quantityOrdered;
+    document.getElementById('receive-modal-quantity-received').textContent = quantityAlreadyReceived;
+    document.getElementById('receive-modal-order-id').value = orderId;
+    document.getElementById('receive-modal-line-id').value = lineId;
+    
+    // Reset form
+    document.getElementById('receive-modal-quantity').value = '';
+    document.getElementById('receive-modal-quantity').max = currentReceiveMaxQuantity - currentReceiveAlreadyReceived;
+    document.getElementById('receive-modal-location').value = '';
+    document.getElementById('add-location-form').classList.add('hidden');
+    
+    // Show modal
+    document.getElementById('receive-line-modal').classList.remove('hidden');
+}
+
+function closeReceiveModal() {
+    document.getElementById('receive-line-modal').classList.add('hidden');
+    currentReceiveLineId = null;
+    currentReceiveOrderId = null;
+}
+
+function showAddLocationForm() {
+    document.getElementById('add-location-form').classList.remove('hidden');
+}
+
+function hideAddLocationForm() {
+    document.getElementById('add-location-form').classList.add('hidden');
+    // Clear form
+    document.getElementById('new-location-code').value = '';
+    document.getElementById('new-location-name').value = '';
+    document.getElementById('new-location-type').value = 'warehouse';
+}
+
+async function createLocation() {
+    const code = document.getElementById('new-location-code').value.trim();
+    const name = document.getElementById('new-location-name').value.trim();
+    const type = document.getElementById('new-location-type').value;
+    
+    if (!code || !name) {
+        alert('{{ _("Location code and name are required") }}');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/stock/data/locations', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                code: code,
+                name: name,
+                type: type,
+                is_active: true
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success || result.status === 'success') {
+            const location = result.data || result;
+            // Add to select
+            const select = document.getElementById('receive-modal-location');
+            const option = document.createElement('option');
+            option.value = location.id;
+            option.textContent = `${location.name} (${location.code})`;
+            option.selected = true;
+            select.appendChild(option);
+            
+            // Hide form and clear
+            hideAddLocationForm();
+            alert('{{ _("Location created successfully") }}');
+        } else {
+            alert(result.message || result.error || '{{ _("Error creating location") }}');
+        }
+    } catch (error) {
+        console.error('Error creating location:', error);
+        alert('{{ _("Error creating location") }}');
+    }
+}
+
+function submitReceiveLine(event) {
+    event.preventDefault();
+    
+    const quantityReceived = parseFloat(document.getElementById('receive-modal-quantity').value || 0);
+    const locationId = document.getElementById('receive-modal-location').value;
+    
+    if (quantityReceived <= 0) {
+        alert('{{ _("Please enter a quantity received greater than 0") }}');
+        return;
+    }
+    
+    // Calculate max allowed (ordered - already received)
+    const maxAllowed = currentReceiveMaxQuantity - currentReceiveAlreadyReceived;
+    if (quantityReceived > maxAllowed) {
+        alert(`{{ _("Quantity received cannot exceed remaining quantity") }} (${maxAllowed})`);
+        return;
+    }
+    
+    // Create a form and submit it to use session-based authentication
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/purchase-orders/${currentReceiveOrderId}/receive-line`;
+    
+    // Add hidden fields
+    const lineIdInput = document.createElement('input');
+    lineIdInput.type = 'hidden';
+    lineIdInput.name = 'line_id';
+    lineIdInput.value = currentReceiveLineId;
+    form.appendChild(lineIdInput);
+    
+    const quantityInput = document.createElement('input');
+    quantityInput.type = 'hidden';
+    quantityInput.name = 'quantity_received';
+    // Add to already received quantity
+    quantityInput.value = currentReceiveAlreadyReceived + quantityReceived;
+    form.appendChild(quantityInput);
+    
+    if (locationId) {
+        const locationInput = document.createElement('input');
+        locationInput.type = 'hidden';
+        locationInput.name = 'location_id';
+        locationInput.value = locationId;
+        form.appendChild(locationInput);
+    }
+    
+    document.body.appendChild(form);
+    form.submit();
+}
+{% endif %}
+
+// Product Picker Modal
+let currentLineIndex = null;
+let productsPickerData = [];
+let filteredProducts = [];
+
+// Open product picker modal
+function openProductPicker(lineIndex) {
+    currentLineIndex = lineIndex;
+    document.getElementById('product-picker-modal').classList.remove('hidden');
+    loadProductsForPicker();
+}
+
+// Close product picker modal
+function closeProductPicker() {
+    document.getElementById('product-picker-modal').classList.add('hidden');
+    currentLineIndex = null;
+}
+
+// Load products for picker
+async function loadProductsForPicker(search = '') {
+    try {
+        const response = await fetch(`/products/data/picker?search=${encodeURIComponent(search)}&page=1&per_page=100`);
+        const data = await response.json();
+        
+        if (data.error) {
+            console.error('Error loading products:', data.error);
+            return;
+        }
+        
+        productsPickerData = data.items || [];
+        filteredProducts = productsPickerData;
+        renderProductsList();
+    } catch (error) {
+        console.error('Error loading products:', error);
+    }
+}
+
+// Render products list in modal
+function renderProductsList() {
+    const container = document.getElementById('product-picker-list');
+    container.innerHTML = '';
+    
+    if (filteredProducts.length === 0) {
+        container.innerHTML = '<div class="text-center py-8 text-gray-500">{{ _("No products found") }}</div>';
+        return;
+    }
+    
+    filteredProducts.forEach(item => {
+        // Product row
+        const productRow = document.createElement('div');
+        productRow.className = 'border-b border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer';
+        productRow.onclick = () => selectProduct(item.id, null, item);
+        
+        const stockIcon = item.stock > 0 ? '📦' : '📦';
+        const stockText = `${item.stock} ${item.stock === 1 ? '{{ _("unit") }}' : '{{ _("units") }}'}`;
+        const priceText = item.price ? `${item.price.toFixed(2)} €` : '{{ _("N/A") }}';
+        const variantText = item.has_variants 
+            ? `{{ _("Variants") }}: ${item.variant_attrs.join(', ')}` 
+            : '{{ _("No variants") }}';
+        
+        productRow.innerHTML = `
+            <div class="flex items-center justify-between p-4">
+                <div class="flex-1">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">📷</span>
+                        <div>
+                            <div class="font-semibold text-gray-900">${item.name} (${item.code})</div>
+                            <div class="text-sm text-gray-600 mt-1">
+                                💰 ${priceText} | ${variantText}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm font-medium text-gray-700">${stockIcon} ${stockText}</div>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(productRow);
+        
+        // Variants rows (if any)
+        if (item.has_variants && item.variants.length > 0) {
+            item.variants.forEach(variant => {
+                const variantRow = document.createElement('div');
+                variantRow.className = 'border-b border-gray-100 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer pl-12';
+                variantRow.onclick = (e) => {
+                    e.stopPropagation();
+                    selectProduct(item.id, variant.id, item, variant);
+                };
+                
+                const variantStockIcon = variant.stock > 0 ? '📦' : '📦';
+                const variantStockText = `${variant.stock} ${variant.stock === 1 ? '{{ _("unit") }}' : '{{ _("units") }}'}`;
+                const variantPriceText = variant.price ? `${variant.price.toFixed(2)} €` : priceText;
+                
+                variantRow.innerHTML = `
+                    <div class="flex items-center justify-between p-3">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm">└─</span>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-800">${variant.name} (${variant.code})</div>
+                                    <div class="text-xs text-gray-600 mt-0.5">💰 ${variantPriceText}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs font-medium text-gray-600">${variantStockIcon} ${variantStockText}</div>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(variantRow);
+            });
+        }
+    });
+}
+
+// Select product/variant
+function selectProduct(productId, variantId, product, variant = null) {
+    if (!currentLineIndex && currentLineIndex !== 0) return;
+    
+    const container = document.getElementById('lines-container');
+    const lines = container.querySelectorAll('.line-item');
+    let lineDiv = null;
+    
+    // Try to find by data-line-index or data-line-id
+    for (let line of lines) {
+        const lineIdx = parseInt(line.dataset.lineIndex || line.dataset.lineId || '-1');
+        if (lineIdx === currentLineIndex) {
+            lineDiv = line;
+            break;
+        }
+    }
+    
+    // Fallback to index
+    if (!lineDiv && lines[currentLineIndex]) {
+        lineDiv = lines[currentLineIndex];
+    }
+    
+    if (!lineDiv) return;
+    
+    const productIdInput = lineDiv.querySelector('.product-id-input');
+    const variantIdInput = lineDiv.querySelector('.variant-id-input');
+    const displayInput = lineDiv.querySelector('.product-display-input');
+    
+    if (productIdInput) productIdInput.value = productId;
+    if (variantIdInput) variantIdInput.value = variantId || '';
+    
+    // Update display
+    if (displayInput) {
+        if (variant) {
+            displayInput.value = `${product.code} - ${product.name} / ${variant.code} - ${variant.name}`;
+        } else {
+            displayInput.value = `${product.code} - ${product.name}`;
+        }
+    }
+    
+    // Update price (cost for purchase orders)
+    const priceInput = lineDiv.querySelector('.line-price');
+    if (priceInput) {
+        const price = variant && variant.price ? variant.price : (product.price || 0);
+        priceInput.value = price.toFixed(2);
+        calculateLineTotal(priceInput);
+    }
+    
+    closeProductPicker();
+}
+
+// Search in product picker
+function searchProductsPicker() {
+    const searchInput = document.getElementById('product-picker-search');
+    const searchTerm = searchInput.value.toLowerCase();
+    
+    filteredProducts = productsPickerData.filter(item => {
+        const matchesProduct = item.name.toLowerCase().includes(searchTerm) || 
+                              item.code.toLowerCase().includes(searchTerm);
+        if (matchesProduct) return true;
+        
+        // Check variants
+        return item.variants.some(v => 
+            v.name.toLowerCase().includes(searchTerm) || 
+            v.code.toLowerCase().includes(searchTerm)
+        );
+    });
+    
+    renderProductsList();
+}
+</script>
+
+<!-- Product Picker Modal -->
+<div id="product-picker-modal" class="hidden fixed inset-0 z-50 overflow-y-auto" style="background: rgba(0, 0, 0, 0.5);">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between p-6 border-b border-gray-200">
+                <h3 class="text-xl font-bold text-gray-900">{{ _('Select Product / Variant') }}</h3>
+                <button onclick="closeProductPicker()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Search Bar -->
+            <div class="p-4 border-b border-gray-200">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-search text-gray-400"></i>
+                    <input type="text" 
+                           id="product-picker-search"
+                           placeholder="{{ _('Search products...') }}"
+                           oninput="searchProductsPicker()"
+                           class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+            </div>
+            
+            <!-- Products List -->
+            <div id="product-picker-list" class="flex-1 overflow-y-auto p-4">
+                <!-- Products will be rendered here -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

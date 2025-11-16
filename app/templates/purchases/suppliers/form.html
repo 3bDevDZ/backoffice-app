@@ -1,0 +1,340 @@
+{% extends "base.html" %}
+
+{% block title %}{% if supplier %}{{ _('Edit Supplier') }}{% else %}{{ _('New Supplier') }}{% endif %} - CommerceFlow{% endblock %}
+
+{% block page_title %}{% if supplier %}{{ _('Edit Supplier') }}{% else %}{{ _('New Supplier') }}{% endif %}{% endblock %}
+{% block page_subtitle %}{% if supplier %}{{ _('Modify supplier information') }}{% else %}{{ _('Add a new supplier') }}{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <form id="supplier-form" method="POST" action="{% if supplier %}{{ url_for('purchases_frontend.update_supplier', supplier_id=supplier.id) }}{% else %}{{ url_for('purchases_frontend.create_supplier') }}{% endif %}">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Column - Main Info -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Basic Information -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Supplier Information') }}</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Supplier Name') }} <span style="color: var(--color-error);">*</span>
+                            </label>
+                            <input type="text" 
+                                id="name"
+                                name="name"
+                                value="{% if supplier %}{{ supplier.name }}{% endif %}"
+                                required
+                                class="modern-input"
+                                placeholder="{{ _('Supplier name') }}">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Email Address') }} <span style="color: var(--color-error);">*</span>
+                            </label>
+                            <input type="email" 
+                                id="email"
+                                name="email"
+                                value="{% if supplier %}{{ supplier.email }}{% endif %}"
+                                required
+                                class="modern-input"
+                                placeholder="{{ _('contact@supplier.com') }}">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                    {{ _('Phone Number') }}
+                                </label>
+                                <input type="tel" 
+                                    id="phone"
+                                    name="phone"
+                                    value="{% if supplier %}{{ supplier.phone or '' }}{% endif %}"
+                                    class="modern-input"
+                                    placeholder="+33 1 23 45 67 89">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                    {{ _('Mobile Number') }}
+                                </label>
+                                <input type="tel" 
+                                    id="mobile"
+                                    name="mobile"
+                                    value="{% if supplier %}{{ supplier.mobile or '' }}{% endif %}"
+                                    class="modern-input"
+                                    placeholder="+33 6 12 34 56 78">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Company Name') }}
+                            </label>
+                            <input type="text" 
+                                id="company_name"
+                                name="company_name"
+                                value="{% if supplier %}{{ supplier.company_name or '' }}{% endif %}"
+                                class="modern-input"
+                                placeholder="{{ _('Company name') }}">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                    {{ _('SIRET Number') }}
+                                </label>
+                                <input type="text" 
+                                    id="siret"
+                                    name="siret"
+                                    value="{% if supplier %}{{ supplier.siret or '' }}{% endif %}"
+                                    maxlength="14"
+                                    class="modern-input"
+                                    placeholder="14 {{ _('digits') }}">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                    {{ _('VAT Number') }}
+                                </label>
+                                <input type="text" 
+                                    id="vat_number"
+                                    name="vat_number"
+                                    value="{% if supplier %}{{ supplier.vat_number or '' }}{% endif %}"
+                                    class="modern-input"
+                                    placeholder="FR12345678901">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                    {{ _('RCS') }}
+                                </label>
+                                <input type="text" 
+                                    id="rcs"
+                                    name="rcs"
+                                    value="{% if supplier %}{{ supplier.rcs or '' }}{% endif %}"
+                                    class="modern-input">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                    {{ _('Legal Form') }}
+                                </label>
+                                <input type="text" 
+                                    id="legal_form"
+                                    name="legal_form"
+                                    value="{% if supplier %}{{ supplier.legal_form or '' }}{% endif %}"
+                                    class="modern-input"
+                                    placeholder="SARL, SAS, etc.">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Organization & Conditions -->
+            <div class="space-y-6">
+                <!-- Organization -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Organization') }}</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Category') }}
+                            </label>
+                            <select id="category" name="category" class="modern-input">
+                                <option value="">{{ _('Select category') }}</option>
+                                <option value="Primary" {% if supplier and supplier.category == 'Primary' %}selected{% endif %}>{{ _('Primary') }}</option>
+                                <option value="Secondary" {% if supplier and supplier.category == 'Secondary' %}selected{% endif %}>{{ _('Secondary') }}</option>
+                                <option value="Backup" {% if supplier and supplier.category == 'Backup' %}selected{% endif %}>{{ _('Backup') }}</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Status') }}
+                            </label>
+                            <div class="space-y-2">
+                                <label class="flex items-center">
+                                    <input type="radio" name="status" value="active" class="w-4 h-4 text-indigo-600" {% if not supplier or supplier.status == 'active' %}checked{% endif %}>
+                                    <span class="{% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} text-sm" style="color: var(--color-text-secondary);">{{ _('Active') }}</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="status" value="inactive" class="w-4 h-4 text-indigo-600" {% if supplier and supplier.status == 'inactive' %}checked{% endif %}>
+                                    <span class="{% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} text-sm" style="color: var(--color-text-secondary);">{{ _('Inactive') }}</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Internal Notes') }}
+                            </label>
+                            <textarea rows="3" 
+                                id="notes"
+                                name="notes"
+                                class="modern-input"
+                                placeholder="{{ _('Any internal notes about this supplier...') }}">{% if supplier %}{{ supplier.notes or '' }}{% endif %}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Commercial Conditions -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Commercial Conditions') }}</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Payment Terms (days)') }}
+                            </label>
+                            <input type="number" 
+                                id="payment_terms_days"
+                                name="payment_terms_days"
+                                value="{% if supplier and supplier.conditions %}{{ supplier.conditions.payment_terms_days }}{% else %}30{% endif %}"
+                                min="0"
+                                class="modern-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Default Discount (%)') }}
+                            </label>
+                            <input type="number" 
+                                id="default_discount_percent"
+                                name="default_discount_percent"
+                                value="{% if supplier and supplier.conditions %}{{ supplier.conditions.default_discount_percent }}{% else %}0{% endif %}"
+                                step="0.01" min="0" max="100"
+                                class="modern-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Minimum Order Amount (€)') }}
+                            </label>
+                            <input type="number" 
+                                id="minimum_order_amount"
+                                name="minimum_order_amount"
+                                value="{% if supplier and supplier.conditions %}{{ supplier.conditions.minimum_order_amount }}{% else %}0{% endif %}"
+                                step="0.01" min="0"
+                                class="modern-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Delivery Lead Time (days)') }}
+                            </label>
+                            <input type="number" 
+                                id="delivery_lead_time_days"
+                                name="delivery_lead_time_days"
+                                value="{% if supplier and supplier.conditions %}{{ supplier.conditions.delivery_lead_time_days }}{% else %}7{% endif %}"
+                                min="0"
+                                class="modern-input">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div style="background: var(--color-info-light); border: 1px solid var(--color-info); border-radius: var(--radius-xl); padding: var(--spacing-lg);">
+                    <h4 class="text-sm font-bold mb-3" style="color: var(--color-primary-dark);">{{ _('Quick Actions') }}</h4>
+                    <div class="space-y-2">
+                        <a href="{{ url_for('purchases_frontend.list_suppliers') }}" class="block w-full text-{% if direction == 'rtl' %}right{% else %}left{% endif %} px-3 py-2 text-sm rounded-lg transition" style="color: var(--color-primary);">
+                            <i class="fas fa-arrow-{% if direction == 'rtl' %}right{% else %}left{% endif %} {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                            {{ _('Back to List') }}
+                        </a>
+                        {% if supplier %}
+                        <button type="button" onclick="archiveSupplier({{ supplier.id }})" class="w-full text-{% if direction == 'rtl' %}right{% else %}left{% endif %} px-3 py-2 text-sm text-orange-600 hover:bg-orange-50 rounded-lg transition">
+                            <i class="fas fa-archive {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                            {{ _('Archive') }}
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="mt-6 flex {% if direction == 'rtl' %}justify-start{% else %}justify-end{% endif %} {% if direction == 'rtl' %}space-x-reverse space-x-3{% else %}space-x-3{% endif %}">
+            <a href="{{ url_for('purchases_frontend.list_suppliers') }}" 
+               class="btn-secondary">
+                {{ _('Cancel') }}
+            </a>
+            <button type="submit" 
+                    class="btn-primary">
+                {% if supplier %}{{ _('Update Supplier') }}{% else %}{{ _('Create Supplier') }}{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('supplier-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    // Convert empty strings to null for optional fields
+    Object.keys(data).forEach(key => {
+        if (data[key] === '') {
+            data[key] = null;
+        }
+    });
+    
+    const url = this.action;
+    const method = '{% if supplier %}PUT{% else %}POST{% endif %}';
+    
+    // Get JWT token from localStorage
+    const token = localStorage.getItem('access_token');
+    const headers = {
+        'Content-Type': 'application/json',
+    };
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    fetch(url, {
+        method: method,
+        headers: headers,
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert(data.message || '{% if supplier %}{{ _("Supplier updated successfully") }}{% else %}{{ _("Supplier created successfully") }}{% endif %}');
+            window.location.href = '{{ url_for("purchases_frontend.list_suppliers") }}';
+        } else {
+            alert(data.message || '{{ _("An error occurred") }}');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('{{ _("An error occurred") }}');
+    });
+});
+
+{% if supplier %}
+function archiveSupplier(id) {
+    if (confirm('{{ _("Are you sure you want to archive this supplier?") }}')) {
+        fetch(`{{ url_for("purchases_frontend.archive_supplier", supplier_id=0) }}`.replace('0', id), { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message);
+                    window.location.href = '{{ url_for("purchases_frontend.list_suppliers") }}';
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+}
+{% endif %}
+</script>
+{% endblock %}
+

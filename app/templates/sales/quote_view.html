@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Quote') }} {{ quote.number }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Quote') }} {{ quote.number }}{% endblock %}
+{% block page_subtitle %}{{ _('Version') }} {{ quote.version }} - {{ quote.customer_name }}{% endblock %}
+
+{% block content %}
+<div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); margin-bottom: var(--spacing-lg); box-shadow: var(--shadow-md);">
+    <!-- Quote Header -->
+    <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %} items-start mb-6">
+        <div>
+            <h2 class="text-2xl font-bold" style="color: var(--color-text-primary);">{{ quote.number }}</h2>
+            <p class="text-sm mt-1" style="color: var(--color-text-tertiary);">
+                {{ _('Customer') }}: {{ quote.customer_name }} ({{ quote.customer_code }})
+            </p>
+        </div>
+        <div class="text-{% if direction == 'rtl' %}left{% else %}right{% endif %}">
+            {% if quote.status == 'draft' %}
+                <span class="badge badge-draft">
+                    {{ _('Draft') }}
+                </span>
+            {% elif quote.status == 'sent' %}
+                <span class="badge badge-confirmed">
+                    {{ _('Sent') }}
+                </span>
+            {% elif quote.status == 'accepted' %}
+                <span class="badge badge-received">
+                    {{ _('Accepted') }}
+                </span>
+            {% elif quote.status == 'rejected' %}
+                <span class="badge badge-cancelled">
+                    {{ _('Rejected') }}
+                </span>
+            {% elif quote.status == 'expired' %}
+                <span class="badge" style="background: var(--color-bg-tertiary); color: var(--color-text-secondary);">
+                    {{ _('Expired') }}
+                </span>
+            {% elif quote.status == 'canceled' %}
+                <span class="badge" style="background: var(--color-bg-tertiary); color: var(--color-text-secondary);">
+                    {{ _('Canceled') }}
+                </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quote Details -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+            <h3 class="text-sm font-medium mb-2" style="color: var(--color-text-tertiary);">{{ _('Quote Information') }}</h3>
+            <dl class="space-y-2">
+                <div>
+                    <dt class="text-sm" style="color: var(--color-text-secondary);">{{ _('Valid Until') }}:</dt>
+                    <dd class="text-sm font-medium" style="color: var(--color-text-primary);">
+                        {{ quote.valid_until.strftime('%d/%m/%Y') if quote.valid_until else '-' }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-sm" style="color: var(--color-text-secondary);">{{ _('Created') }}:</dt>
+                    <dd class="text-sm font-medium" style="color: var(--color-text-primary);">
+                        {{ quote.created_at.strftime('%d/%m/%Y %H:%M') if quote.created_at else '-' }}
+                    </dd>
+                </div>
+                {% if quote.sent_at %}
+                <div>
+                    <dt class="text-sm" style="color: var(--color-text-secondary);">{{ _('Sent') }}:</dt>
+                    <dd class="text-sm font-medium" style="color: var(--color-text-primary);">
+                        {{ quote.sent_at.strftime('%d/%m/%Y %H:%M') if quote.sent_at else '-' }}
+                    </dd>
+                </div>
+                {% endif %}
+            </dl>
+        </div>
+        <div>
+            <h3 class="text-sm font-medium mb-2" style="color: var(--color-text-tertiary);">{{ _('Totals') }}</h3>
+            <dl class="space-y-2">
+                <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %}">
+                    <dt class="text-sm" style="color: var(--color-text-secondary);">{{ _('Subtotal HT') }}:</dt>
+                    <dd class="text-sm font-medium" style="color: var(--color-text-primary);">{{ "%.2f"|format(quote.subtotal) }} €</dd>
+                </div>
+                {% if quote.discount_amount > 0 %}
+                <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %}">
+                    <dt class="text-sm" style="color: var(--color-text-secondary);">{{ _('Discount') }}:</dt>
+                    <dd class="text-sm font-medium" style="color: var(--color-error);">-{{ "%.2f"|format(quote.discount_amount) }} €</dd>
+                </div>
+                {% endif %}
+                <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %}">
+                    <dt class="text-sm" style="color: var(--color-text-secondary);">{{ _('Tax') }}:</dt>
+                    <dd class="text-sm font-medium" style="color: var(--color-text-primary);">{{ "%.2f"|format(quote.tax_amount) }} €</dd>
+                </div>
+                <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %} border-t pt-2">
+                    <dt class="text-base font-bold text-gray-900">{{ _('Total TTC') }}:</dt>
+                    <dd class="text-base font-bold text-indigo-600">{{ "%.2f"|format(quote.total) }} €</dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+
+    <!-- Quote Lines -->
+    {% if quote.lines %}
+    <div class="mb-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">{{ _('Quote Lines') }}</h3>
+        <div class="overflow-x-auto">
+            <table class="modern-table">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase">{{ _('Product') }}</th>
+                        <th class="px-4 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase">{{ _('Quantity') }}</th>
+                        <th class="px-4 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase">{{ _('Unit Price') }}</th>
+                        <th class="px-4 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase">{{ _('Discount') }}</th>
+                        <th class="px-4 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase">{{ _('Total HT') }}</th>
+                        <th class="px-4 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase">{{ _('Total TTC') }}</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for line in quote.lines %}
+                    <tr>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <div class="text-sm font-medium" style="color: var(--color-text-primary);">{{ line.product_name }}</div>
+                            <div class="text-sm text-gray-500">{{ line.product_code }}</div>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ "%.3f"|format(line.quantity) }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ "%.2f"|format(line.unit_price) }} €</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                            {% if line.discount_percent > 0 %}
+                                {{ "%.2f"|format(line.discount_percent) }}%
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ "%.2f"|format(line.line_total_ht) }} €</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{{ "%.2f"|format(line.line_total_ttc) }} €</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Notes -->
+    {% if quote.notes %}
+    <div class="mb-6">
+        <h3 class="text-sm font-medium mb-2" style="color: var(--color-text-tertiary);">{{ _('Notes') }}</h3>
+        <p class="text-sm text-gray-900 bg-gray-50 p-4 rounded-lg">{{ quote.notes|nl2br|safe }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Actions -->
+    <div class="flex {% if direction == 'rtl' %}justify-start space-x-reverse space-x-3{% else %}justify-end space-x-3{% endif %} pt-6 border-t">
+        <a href="{{ url_for('sales.quotes_list') }}" 
+           class="px-4 py-2 bg-white text-gray-700 rounded-lg shadow-sm border border-gray-200 hover:bg-gray-50 transition">
+            {{ _('Back to List') }}
+        </a>
+        {% if quote.status == 'draft' %}
+        <a href="{{ url_for('sales.edit_quote', quote_id=quote.id) }}" 
+           class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow-sm hover:bg-blue-700 transition">
+            {{ _('Edit') }}
+        </a>
+        <form method="POST" action="{{ url_for('sales.send_quote', quote_id=quote.id) }}" class="inline">
+            <button type="submit" 
+                    class="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-sm hover:bg-indigo-700 transition">
+                {{ _('Send Quote') }}
+            </button>
+        </form>
+        {% elif quote.status == 'sent' %}
+        <form method="POST" action="{{ url_for('sales.accept_quote', quote_id=quote.id) }}" class="inline">
+            <button type="submit" 
+                    class="px-4 py-2 bg-green-600 text-white rounded-lg shadow-sm hover:bg-green-700 transition">
+                {{ _('Accept') }}
+            </button>
+        </form>
+        <form method="POST" action="{{ url_for('sales.reject_quote', quote_id=quote.id) }}" class="inline">
+            <button type="submit" 
+                    class="px-4 py-2 bg-red-600 text-white rounded-lg shadow-sm hover:bg-red-700 transition">
+                {{ _('Reject') }}
+            </button>
+        </form>
+        {% elif quote.status == 'accepted' %}
+        <a href="{{ url_for('sales.convert_quote_to_order', quote_id=quote.id) }}" 
+           class="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-sm hover:bg-indigo-700 transition">
+            {{ _('Convert to Order') }}
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

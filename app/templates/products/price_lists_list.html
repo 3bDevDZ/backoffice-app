@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Price Lists') }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Price Lists') }}{% endblock %}
+{% block page_subtitle %}{{ _('Manage multiple pricing tiers for different customers') }}{% endblock %}
+
+{% block content %}
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="stat-card">
+        <div class="stat-card-label">{{ _('Total Price Lists') }}</div>
+        <div class="stat-card-metric" style="color: var(--color-text-primary);">{{ total }}</div>
+    </div>
+    <div class="stat-card stat-card-received">
+        <div class="stat-card-label">{{ _('Active Price Lists') }}</div>
+        <div class="stat-card-metric">
+            {{ price_lists|selectattr('is_active', 'equalto', True)|list|length }}
+        </div>
+    </div>
+    <div class="stat-card stat-card-draft">
+        <div class="stat-card-label">{{ _('Inactive Price Lists') }}</div>
+        <div class="stat-card-metric">
+            {{ price_lists|selectattr('is_active', 'equalto', False)|list|length }}
+        </div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="mb-6 flex {% if direction == 'rtl' %}justify-start{% else %}justify-end{% endif %} {% if direction == 'rtl' %}space-x-reverse space-x-3{% else %}space-x-3{% endif %}">
+    <a href="{{ url_for('products_frontend.list') }}" class="btn-secondary">
+        <i class="fas fa-arrow-left"></i>
+        <span>{{ _('Back to Products') }}</span>
+    </a>
+    <a href="{{ url_for('products_frontend.new_price_list') }}" class="btn-primary">
+        <i class="fas fa-plus"></i>
+        <span>{{ _('New Price List') }}</span>
+    </a>
+</div>
+
+<!-- Filters & Search -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+    <form method="GET" action="{{ url_for('products_frontend.list_price_lists') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <!-- Search -->
+        <div class="md:col-span-2">
+            <input type="text" 
+                   name="search" 
+                   value="{{ search or '' }}" 
+                   placeholder="{{ _('Search by name or description...') }}"
+                   class="modern-input w-full">
+        </div>
+        
+        <!-- Active Filter -->
+        <div>
+            <select name="is_active" class="modern-select w-full">
+                <option value="">{{ _('All Status') }}</option>
+                <option value="true" {% if is_active == True %}selected{% endif %}>{{ _('Active') }}</option>
+                <option value="false" {% if is_active == False %}selected{% endif %}>{{ _('Inactive') }}</option>
+            </select>
+        </div>
+        
+        <!-- Submit Button -->
+        <div>
+            <button type="submit" class="btn-primary w-full">
+                <i class="fas fa-search"></i>
+                <span>{{ _('Search') }}</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Price Lists Table -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+    <div class="modern-table-container">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Name') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Description') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Products') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Status') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Created') }}</th>
+                    <th class="text-center">{{ _('Actions') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if price_lists %}
+                    {% for price_list in price_lists %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('products_frontend.list_products_in_price_list', price_list_id=price_list.id) }}" 
+                               class="font-semibold hover:underline" 
+                               style="color: var(--color-primary);">
+                                {{ price_list.name }}
+                            </a>
+                        </td>
+                        <td>
+                            <span class="text-sm" style="color: var(--color-text-secondary);">
+                                {{ price_list.description or '-' }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="text-sm font-medium" style="color: var(--color-text-primary);">
+                                {{ price_list.product_count }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge {% if price_list.is_active %}badge-confirmed{% else %}badge-cancelled{% endif %}">
+                                {% if price_list.is_active %}{{ _('Active') }}{% else %}{{ _('Inactive') }}{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="text-sm" style="color: var(--color-text-tertiary);">
+                                {{ price_list.created_at.strftime('%Y-%m-%d') if price_list.created_at else '-' }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <div class="flex {% if direction == 'rtl' %}justify-start{% else %}justify-center{% endif %} {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+                                <!-- View Products -->
+                                <a href="{{ url_for('products_frontend.list_products_in_price_list', price_list_id=price_list.id) }}" 
+                                   class="text-blue-600 hover:text-blue-900" 
+                                   title="{{ _('View Products') }}">
+                                    <i class="fas fa-list"></i>
+                                </a>
+                                
+                                <!-- Edit -->
+                                <a href="{{ url_for('products_frontend.edit_price_list', price_list_id=price_list.id) }}" 
+                                   class="text-indigo-600 hover:text-indigo-900" 
+                                   title="{{ _('Edit') }}">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                
+                                <!-- Delete -->
+                                <form method="POST" 
+                                      action="{{ url_for('products_frontend.delete_price_list', price_list_id=price_list.id) }}" 
+                                      class="inline"
+                                      onsubmit="return confirm('{{ _('Are you sure you want to delete this price list?') }}');">
+                                    <button type="submit" 
+                                            class="text-red-600 hover:text-red-900" 
+                                            title="{{ _('Delete') }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-12">
+                            <div class="text-center">
+                                <i class="fas fa-tags text-4xl mb-4" style="color: var(--color-text-tertiary);"></i>
+                                <p class="text-gray-500 mb-4">{{ _('No price lists found.') }}</p>
+                                <a href="{{ url_for('products_frontend.new_price_list') }}" class="btn-primary inline-block">
+                                    <i class="fas fa-plus"></i>
+                                    <span>{{ _('Create First Price List') }}</span>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    {% if total > per_page %}
+    <div class="px-6 py-4 border-t border-gray-200">
+        <div class="flex {% if direction == 'rtl' %}justify-start{% else %}justify-between{% endif %} items-center">
+            <div class="text-sm" style="color: var(--color-text-secondary);">
+                {{ _('Showing') }} {{ ((page - 1) * per_page) + 1 }} {{ _('to') }} {{ [page * per_page, total]|min }} {{ _('of') }} {{ total }} {{ _('price lists') }}
+            </div>
+            <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+                {% if page > 1 %}
+                <a href="{{ url_for('products_frontend.list_price_lists', page=page-1, search=search, is_active=is_active) }}" 
+                   class="btn-secondary">
+                    <i class="fas fa-chevron-{% if direction == 'rtl' %}right{% else %}left{% endif %}"></i>
+                    {{ _('Previous') }}
+                </a>
+                {% endif %}
+                {% if page * per_page < total %}
+                <a href="{{ url_for('products_frontend.list_price_lists', page=page+1, search=search, is_active=is_active) }}" 
+                   class="btn-secondary">
+                    {{ _('Next') }}
+                    <i class="fas fa-chevron-{% if direction == 'rtl' %}left{% else %}right{% endif %}"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

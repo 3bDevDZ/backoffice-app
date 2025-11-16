@@ -1,0 +1,2 @@
+"""Quote queries module."""
+

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Promotions') }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Promotional Prices') }}{% endblock %}
+{% block page_subtitle %}{{ _('Manage time-limited promotional prices') }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header with actions -->
+    <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %} items-center mb-6">
+        <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-4{% else %}space-x-4{% endif %}">
+            <a href="{{ url_for('promotions.list', status='all') }}" 
+               class="px-4 py-2 rounded-lg {% if status == 'all' or not status %}bg-indigo-600 text-white{% else %}bg-gray-200 text-gray-700{% endif %}">
+                {{ _('All') }}
+            </a>
+            <a href="{{ url_for('promotions.list', status='active') }}" 
+               class="px-4 py-2 rounded-lg {% if status == 'active' %}bg-indigo-600 text-white{% else %}bg-gray-200 text-gray-700{% endif %}">
+                {{ _('Active') }}
+            </a>
+            <a href="{{ url_for('promotions.list', status='upcoming') }}" 
+               class="px-4 py-2 rounded-lg {% if status == 'upcoming' %}bg-indigo-600 text-white{% else %}bg-gray-200 text-gray-700{% endif %}">
+                {{ _('Upcoming') }}
+            </a>
+            <a href="{{ url_for('promotions.list', status='expired') }}" 
+               class="px-4 py-2 rounded-lg {% if status == 'expired' %}bg-indigo-600 text-white{% else %}bg-gray-200 text-gray-700{% endif %}">
+                {{ _('Expired') }}
+            </a>
+        </div>
+        <a href="{{ url_for('promotions.new') }}" class="btn-primary">
+            <i class="fas fa-plus {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+            {{ _('New Promotion') }}
+        </a>
+    </div>
+
+    <!-- Promotions table -->
+    <div class="modern-table-container">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Product') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Price') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Start Date') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('End Date') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Status') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Description') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Actions') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if promotions %}
+                    {% for promo in promotions %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('products_frontend.edit', product_id=promo.product_id) }}" 
+                               class="text-indigo-600 hover:text-indigo-900">
+                                {{ promo.product_code }} - {{ promo.product_name }}
+                            </a>
+                        </td>
+                        <td class="font-semibold">{{ "%.2f"|format(promo.price) }} €</td>
+                        <td>{{ promo.start_date.strftime('%Y-%m-%d %H:%M') if promo.start_date else '-' }}</td>
+                        <td>{{ promo.end_date.strftime('%Y-%m-%d %H:%M') if promo.end_date else '-' }}</td>
+                        <td>
+                            {% if promo.status == 'active' %}
+                                <span class="px-2 py-1 rounded text-xs bg-green-100 text-green-800">{{ _('Active') }}</span>
+                            {% elif promo.status == 'expired' %}
+                                <span class="px-2 py-1 rounded text-xs bg-red-100 text-red-800">{{ _('Expired') }}</span>
+                            {% elif promo.status == 'upcoming' %}
+                                <span class="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">{{ _('Upcoming') }}</span>
+                            {% else %}
+                                <span class="px-2 py-1 rounded text-xs bg-gray-100 text-gray-800">{{ _('Inactive') }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ promo.description or '-' }}</td>
+                        <td>
+                            <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+                                <a href="{{ url_for('promotions.edit', promo_id=promo.id) }}" 
+                                   class="text-indigo-600 hover:text-indigo-900" 
+                                   title="{{ _('Edit') }}">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('promotions.delete', promo_id=promo.id) }}" 
+                                      style="display: inline;" 
+                                      onsubmit="return confirm('{{ _('Are you sure you want to delete this promotion?') }}');">
+                                    <button type="submit" class="text-red-600 hover:text-red-900" title="{{ _('Delete') }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-8">
+                            <i class="fas fa-percent text-4xl mb-3" style="color: var(--color-text-tertiary);"></i>
+                            <p class="text-sm" style="color: var(--color-text-secondary);">{{ _('No promotions found.') }}</p>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+

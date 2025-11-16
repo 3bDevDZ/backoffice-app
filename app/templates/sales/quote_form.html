@@ -1,0 +1,996 @@
+{% extends "base.html" %}
+
+{% block title %}{% if quote %}{{ _('Edit Quote') }}{% else %}{{ _('New Quote') }}{% endif %} - CommerceFlow{% endblock %}
+
+{% block extra_css %}
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<style>
+    .select2-container {
+        width: 100% !important;
+    }
+    .select2-container--default .select2-selection--single {
+        height: 38px;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 36px;
+        padding-left: 12px;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 36px;
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}{% if quote %}{{ _('Edit Quote') }} {{ quote.number }}{% else %}{{ _('New Quote') }}{% endif %}{% endblock %}
+{% block page_subtitle %}{% if quote %}{{ _('Modify quote information') }}{% else %}{{ _('Create a new quote for a customer') }}{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <form id="quote-form" method="POST" action="{{ url_for('sales.save_quote') }}" onsubmit="return submitQuoteForm(event)">
+        {% if quote %}
+        <input type="hidden" name="id" value="{{ quote.id }}">
+        {% endif %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Column - Main Info -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Customer Selection -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Customer Information') }}</h3>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                            {{ _('Customer') }} <span style="color: var(--color-error);">*</span>
+                        </label>
+                        <select id="customer_id" name="customer_id" required
+                                class="modern-input"
+                                {% if quote %}data-selected-customer-id="{{ quote.customer_id }}"{% endif %}>
+                            <option value="">{{ _('Select a customer...') }}</option>
+                            <!-- Customer options will be loaded via API -->
+                        </select>
+                        {% if quote %}
+                        <p class="mt-2 text-sm text-gray-500">{{ _('Current:') }} {{ quote.customer_name }} ({{ quote.customer_code }})</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Customer Commercial Conditions Display -->
+                    <div id="customer-discount-info" class="mt-4 hidden" style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-default); border-radius: var(--radius-md); padding: var(--spacing-md);">
+                        <h4 class="text-sm font-semibold mb-2" style="color: var(--color-text-primary);">
+                            <i class="fas fa-percent {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                            {{ _('Customer Commercial Conditions') }}
+                        </h4>
+                        <div id="discount-details" class="space-y-1 text-sm">
+                            <!-- Discount info will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quote Lines -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %} items-center mb-4">
+                        <h3 class="text-lg font-bold text-gray-900">{{ _('Quote Lines') }}</h3>
+                        <button type="button" onclick="addQuoteLine()" 
+                                class="px-3 py-1 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition">
+                            <i class="fas fa-plus {% if direction == 'rtl' %}ml-1{% else %}mr-1{% endif %}"></i>
+                            {{ _('Add Line') }}
+                        </button>
+                    </div>
+
+                    <div id="quote-lines-container" class="space-y-4">
+                        {% if quote and quote.lines %}
+                            {% for line in quote.lines %}
+                            <div class="quote-line border border-gray-200 rounded-lg p-5" data-line-id="{{ line.id }}">
+                                <div class="grid grid-cols-12 gap-4">
+                                    <div class="col-span-5">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Product / Variant') }}</label>
+                                        <div class="flex items-center gap-2">
+                                            <input type="hidden" name="lines[{{ loop.index0 }}][product_id]" 
+                                                   class="product-id-input" 
+                                                   value="{{ line.product_id if line.product_id else '' }}" required>
+                                            <input type="hidden" name="lines[{{ loop.index0 }}][variant_id]" 
+                                                   class="variant-id-input" 
+                                                   value="{{ line.variant_id if line.variant_id else '' }}">
+                                            <input type="text" 
+                                                   class="product-display-input flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 cursor-pointer" 
+                                                   readonly
+                                                   placeholder="{{ _('Click to select product...') }}"
+                                                   onclick="openProductPicker({{ loop.index0 }})"
+                                                   data-line-index="{{ loop.index0 }}">
+                                            <button type="button" 
+                                                    class="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                                                    onclick="openProductPicker({{ loop.index0 }})"
+                                                    title="{{ _('Select Product') }}">
+                                                <i class="fas fa-search"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Quantity') }}</label>
+                                        <input type="number" name="lines[{{ loop.index0 }}][quantity]" 
+                                               value="{{ line.quantity }}" step="0.001" min="0.001" required
+                                               class="quantity-input block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                               onchange="calculateTotals()">
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Unit Price') }}</label>
+                                        <input type="number" name="lines[{{ loop.index0 }}][unit_price]" 
+                                               value="{{ line.unit_price }}" step="0.01" min="0" required
+                                               class="price-input block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                               onchange="calculateTotals()">
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Discount %') }}</label>
+                                        <input type="number" name="lines[{{ loop.index0 }}][discount_percent]" 
+                                               value="{{ line.discount_percent }}" step="0.01" min="0" max="100"
+                                               class="discount-input block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                               onchange="calculateTotals()">
+                                    </div>
+                                    <div class="col-span-1">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Total HT') }}</label>
+                                        <div class="line-total-ht px-3 py-2 text-sm font-medium text-gray-900 bg-gray-50 rounded-lg">
+                                            {{ "%.2f"|format(line.line_total_ht) }} €
+                                        </div>
+                                    </div>
+                                    <div class="col-span-1 flex items-end">
+                                        <button type="button" onclick="removeQuoteLine(this)" 
+                                                class="w-full px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <!-- Empty state - will be populated by JavaScript -->
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Notes') }}</h3>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                            {{ _('Customer Notes') }}
+                        </label>
+                        <textarea name="notes" rows="4"
+                                class="modern-input">{% if quote %}{{ quote.notes }}{% endif %}</textarea>
+                    </div>
+
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                            {{ _('Internal Notes') }}
+                        </label>
+                        <textarea name="internal_notes" rows="3"
+                                class="modern-input">{% if quote %}{{ quote.internal_notes }}{% endif %}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Settings & Totals -->
+            <div class="space-y-6">
+                <!-- Quote Settings -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Settings') }}</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Valid Until') }} <span style="color: var(--color-error);">*</span>
+                            </label>
+                            <input type="date" name="valid_until" required
+                                   value="{% if quote %}{{ quote.valid_until.isoformat() if quote.valid_until }}{% else %}{{ default_valid_until }}{% endif %}"
+                                   class="modern-input">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Document Discount (%)') }}
+                            </label>
+                            <input type="number" name="discount_percent" 
+                                   value="{% if quote %}{{ quote.discount_percent }}{% else %}0{% endif %}"
+                                   step="0.01" min="0" max="100"
+                                   class="modern-input">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Totals Summary -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Totals') }}</h3>
+                    
+                    <dl class="space-y-2">
+                        <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %}">
+                            <dt class="text-sm text-gray-600">{{ _('Subtotal HT') }}:</dt>
+                            <dd class="text-sm font-medium text-gray-900" id="subtotal">0.00 €</dd>
+                        </div>
+                        <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %}">
+                            <dt class="text-sm text-gray-600">{{ _('Discount') }}:</dt>
+                            <dd class="text-sm font-medium text-red-600" id="discount">0.00 €</dd>
+                        </div>
+                        <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %}">
+                            <dt class="text-sm text-gray-600">{{ _('Tax') }}:</dt>
+                            <dd class="text-sm font-medium text-gray-900" id="tax">0.00 €</dd>
+                        </div>
+                        <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %} border-t pt-2">
+                            <dt class="text-base font-bold text-gray-900">{{ _('Total TTC') }}:</dt>
+                            <dd class="text-base font-bold text-indigo-600" id="total">0.00 €</dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="mt-6 flex {% if direction == 'rtl' %}justify-start space-x-reverse space-x-3{% else %}justify-end space-x-3{% endif %}">
+            <a href="{{ url_for('sales.quotes_list') }}" 
+               class="px-6 py-2 bg-white text-gray-700 rounded-lg shadow-sm border border-gray-200 hover:bg-gray-50 transition">
+                {{ _('Cancel') }}
+            </a>
+            <button type="submit" 
+                    class="px-6 py-2 bg-indigo-600 text-white rounded-lg shadow-sm hover:bg-indigo-700 transition">
+                {% if quote %}{{ _('Update Quote') }}{% else %}{{ _('Create Quote') }}{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- jQuery and Select2 JS -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+let lineIndex = 0;
+let customers = [];
+let products = [];
+
+// Ensure jQuery is available
+if (typeof jQuery === 'undefined') {
+    console.error('jQuery is not loaded!');
+}
+if (typeof jQuery.fn.select2 === 'undefined') {
+    console.error('Select2 is not loaded!');
+}
+
+// Load customers on page load
+async function loadCustomers() {
+    try {
+        const response = await fetch('/quotes/data/customers');
+        const data = await response.json();
+        
+        if (data.success && data.data && data.data.items) {
+            customers = data.data.items;
+            const select = document.getElementById('customer_id');
+            
+            if (!select) {
+                console.error('Customer select element not found');
+                return;
+            }
+            
+            // Clear existing options except the first one
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
+            
+            // Add customers
+            customers.forEach(customer => {
+                const option = document.createElement('option');
+                option.value = customer.id;
+                // Use company_name for B2B, or first_name + last_name for B2C
+                const displayName = customer.company_name || 
+                                   (customer.first_name && customer.last_name ? 
+                                    `${customer.first_name} ${customer.last_name}` : 
+                                    customer.name);
+                option.textContent = `${displayName} (${customer.code})`;
+                select.appendChild(option);
+            });
+            
+            // Initialize Select2 on customer select
+            if (typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined') {
+                if ($(select).hasClass('select2-hidden-accessible')) {
+                    $(select).select2('destroy');
+                }
+                
+                // Get selected customer ID from data attribute
+                const selectedCustomerId = select.dataset.selectedCustomerId 
+                    ? parseInt(select.dataset.selectedCustomerId) 
+                    : null;
+                
+                $(select).select2({
+                    theme: 'bootstrap-5',
+                    placeholder: '{{ _("Select a customer...") }}',
+                    allowClear: true,
+                    width: '100%'
+                });
+                
+                // Set selected value if in edit mode
+                if (selectedCustomerId) {
+                    $(select).val(selectedCustomerId).trigger('change');
+                    // Load commercial conditions for pre-selected customer
+                    loadCustomerCommercialConditions(selectedCustomerId);
+                }
+                
+                // Listen for customer selection change
+                $(select).on('change', function() {
+                    const customerId = $(this).val();
+                    if (customerId) {
+                        loadCustomerCommercialConditions(customerId);
+                    } else {
+                        hideCustomerDiscountInfo();
+                    }
+                });
+            }
+        } else {
+            console.error('Error loading customers:', data);
+        }
+    } catch (error) {
+        console.error('Error loading customers:', error);
+    }
+}
+
+// Load products on page load
+async function loadProducts() {
+    try {
+        const response = await fetch('/quotes/data/products');
+        const data = await response.json();
+        
+        if (data.success && data.data && data.data.items) {
+            products = data.data.items;
+        } else {
+            console.error('Error loading products:', data);
+        }
+    } catch (error) {
+        console.error('Error loading products:', error);
+    }
+}
+
+// Add a new quote line
+function addQuoteLine() {
+    const container = document.getElementById('quote-lines-container');
+    const lineDiv = document.createElement('div');
+    lineDiv.className = 'quote-line border border-gray-200 rounded-lg p-5';
+    lineDiv.setAttribute('data-line-index', lineIndex);
+    
+    lineDiv.innerHTML = `
+        <div class="grid grid-cols-12 gap-4">
+            <div class="col-span-5">
+                <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Product / Variant') }}</label>
+                <div class="flex items-center gap-2">
+                    <input type="hidden" name="lines[${lineIndex}][product_id]" 
+                           class="product-id-input" 
+                           value="" required>
+                    <input type="hidden" name="lines[${lineIndex}][variant_id]" 
+                           class="variant-id-input" 
+                           value="">
+                    <input type="text" 
+                           class="product-display-input flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 cursor-pointer" 
+                           readonly
+                           placeholder="{{ _('Click to select product...') }}"
+                           onclick="openProductPicker(${lineIndex})"
+                           data-line-index="${lineIndex}">
+                    <button type="button" 
+                            class="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                            onclick="openProductPicker(${lineIndex})"
+                            title="{{ _('Select Product') }}">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-span-2">
+                <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Quantity') }}</label>
+                <input type="number" name="lines[${lineIndex}][quantity]" 
+                       value="1" step="0.001" min="0.001" required
+                       class="quantity-input block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                       onchange="calculateTotals()">
+            </div>
+            <div class="col-span-2">
+                <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Unit Price') }}</label>
+                <input type="number" name="lines[${lineIndex}][unit_price]" 
+                       value="0" step="0.01" min="0" required
+                       class="price-input block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                       onchange="calculateTotals()">
+            </div>
+            <div class="col-span-2">
+                <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Discount %') }}</label>
+                <input type="number" name="lines[${lineIndex}][discount_percent]" 
+                       value="0" step="0.01" min="0" max="100"
+                       class="discount-input block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                       onchange="calculateTotals()">
+            </div>
+            <div class="col-span-1">
+                <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Total HT') }}</label>
+                <div class="line-total-ht px-3 py-2 text-sm font-medium text-gray-900 bg-gray-50 rounded-lg">
+                    0.00 €
+                </div>
+            </div>
+            <div class="col-span-1 flex items-end">
+                <button type="button" onclick="removeQuoteLine(this)" 
+                        class="w-full px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(lineDiv);
+    lineIndex++;
+}
+
+// Remove a quote line
+function removeQuoteLine(button) {
+    const lineDiv = button.closest('.quote-line');
+    const productSelect = lineDiv.querySelector('.product-select');
+    
+    // Destroy Select2 before removing
+    if (typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined' && productSelect) {
+        if ($(productSelect).hasClass('select2-hidden-accessible')) {
+            $(productSelect).select2('destroy');
+        }
+    }
+    
+    lineDiv.remove();
+    calculateTotals();
+}
+
+// Load variants when product is selected
+async function loadVariants(select, lineIndex) {
+    const productId = select.value;
+    const lineDiv = select.closest('.quote-line');
+    const variantSelect = lineDiv.querySelector('.variant-select');
+    
+    // Clear existing variants
+    variantSelect.innerHTML = '<option value="">{{ _("No variant") }}</option>';
+    
+    if (!productId) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/products/${productId}/data/variants`);
+        const data = await response.json();
+        
+        if (data.results && data.results.length > 0) {
+            data.results.forEach(variant => {
+                const option = document.createElement('option');
+                option.value = variant.id;
+                option.textContent = variant.text;
+                option.dataset.price = variant.price || '';
+                variantSelect.appendChild(option);
+            });
+        }
+        
+        // Set selected variant if exists (for edit mode)
+        const selectedVariantId = variantSelect.dataset.selectedVariantId;
+        if (selectedVariantId) {
+            variantSelect.value = selectedVariantId;
+        }
+    } catch (error) {
+        console.error('Error loading variants:', error);
+    }
+    
+    // Update price after loading variants
+    await updatePrice(select, lineIndex);
+}
+
+// Update price from variant selection
+async function updatePriceFromVariant(select, lineIndex) {
+    const variantId = select.value;
+    const lineDiv = select.closest('.quote-line');
+    const productSelect = lineDiv.querySelector('.product-select');
+    const productId = productSelect.value;
+    
+    if (variantId && variantId !== '') {
+        // Get variant price
+        const selectedOption = select.options[select.selectedIndex];
+        const variantPrice = selectedOption.dataset.price;
+        
+        if (variantPrice && variantPrice !== '') {
+            const priceInput = lineDiv.querySelector('.price-input');
+            priceInput.value = variantPrice;
+            calculateTotals();
+            return;
+        }
+    }
+    
+    // If no variant or no variant price, use product price
+    await updatePrice(productSelect, lineIndex);
+}
+
+// Update price when product is selected
+async function updatePrice(select, lineIndex) {
+    const productId = select.value;
+    if (!productId) return;
+    
+    const product = products.find(p => p.id == productId);
+    if (!product) return;
+    
+    const customerId = document.getElementById('customer_id').value;
+    if (customerId) {
+        // Try to get customer price
+        try {
+            const response = await fetch(`/quotes/data/price-for-customer?product_id=${productId}&customer_id=${customerId}&quantity=1`);
+            const data = await response.json();
+            if (data.success && data.data) {
+                const priceInput = select.closest('.quote-line').querySelector('.price-input');
+                priceInput.value = data.data.final_price;
+                
+                // Apply discount if available
+                if (data.data.applied_discount_percent > 0) {
+                    const discountInput = select.closest('.quote-line').querySelector('.discount-input');
+                    discountInput.value = data.data.applied_discount_percent;
+                }
+                
+                calculateTotals();
+                return;
+            }
+        } catch (error) {
+            console.error('Error fetching customer price:', error);
+        }
+    }
+    
+    // Fallback to base price
+    const priceInput = select.closest('.quote-line').querySelector('.price-input');
+    priceInput.value = product.price;
+    calculateTotals();
+}
+
+// Calculate totals
+function calculateTotals() {
+    const lines = document.querySelectorAll('.quote-line');
+    let subtotal = 0;
+    let totalDiscount = 0;
+    const taxRate = 20; // Default tax rate
+    
+    lines.forEach(line => {
+        const quantity = parseFloat(line.querySelector('.quantity-input')?.value || 0);
+        const unitPrice = parseFloat(line.querySelector('.price-input')?.value || 0);
+        const discountPercent = parseFloat(line.querySelector('.discount-input')?.value || 0);
+        
+        const lineSubtotal = quantity * unitPrice;
+        const lineDiscount = lineSubtotal * (discountPercent / 100);
+        const lineTotal = lineSubtotal - lineDiscount;
+        
+        // Update line total display
+        const lineTotalElement = line.querySelector('.line-total-ht');
+        if (lineTotalElement) {
+            lineTotalElement.textContent = lineTotal.toFixed(2) + ' €';
+        }
+        
+        subtotal += lineTotal;
+        totalDiscount += lineDiscount;
+    });
+    
+    // Document discount
+    const docDiscountPercent = parseFloat(document.querySelector('input[name="discount_percent"]')?.value || 0);
+    const docDiscount = subtotal * (docDiscountPercent / 100);
+    subtotal -= docDiscount;
+    totalDiscount += docDiscount;
+    
+    // Tax
+    const tax = subtotal * (taxRate / 100);
+    const total = subtotal + tax;
+    
+    // Update display
+    document.getElementById('subtotal').textContent = subtotal.toFixed(2) + ' €';
+    document.getElementById('discount').textContent = '-' + totalDiscount.toFixed(2) + ' €';
+    document.getElementById('tax').textContent = tax.toFixed(2) + ' €';
+    document.getElementById('total').textContent = total.toFixed(2) + ' €';
+}
+
+// Submit quote form
+async function submitQuoteForm(event) {
+    event.preventDefault();
+    
+    const form = document.getElementById('quote-form');
+    const formData = new FormData(form);
+    
+    // Convert FormData to object
+    const data = {};
+    for (let [key, value] of formData.entries()) {
+        if (key.startsWith('lines[')) {
+            // Parse lines array
+            const match = key.match(/lines\[(\d+)\]\[(\w+)\]/);
+            if (match) {
+                const index = parseInt(match[1]);
+                const field = match[2];
+                if (!data.lines) data.lines = [];
+                if (!data.lines[index]) data.lines[index] = {};
+                data.lines[index][field] = value;
+            }
+        } else {
+            data[key] = value;
+        }
+    }
+    
+    // Convert customer_id to int
+    if (data.customer_id) {
+        data.customer_id = parseInt(data.customer_id);
+    }
+    
+    // Convert lines data
+    if (data.lines) {
+        data.lines = data.lines.filter(line => line.product_id); // Remove empty lines
+        data.lines = data.lines.map(line => ({
+            product_id: parseInt(line.product_id),
+            quantity: parseFloat(line.quantity),
+            unit_price: parseFloat(line.unit_price),
+            discount_percent: parseFloat(line.discount_percent || 0),
+            tax_rate: 20.0 // Default tax rate
+        }));
+    }
+    
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === 'success' || (result.success && result.quote_id)) {
+            const quoteId = result.quote_id || result.data?.id;
+            if (quoteId) {
+                window.location.href = `/quotes/${quoteId}`;
+            } else {
+                alert('Quote saved but ID not returned');
+            }
+        } else {
+            const errorMsg = result.message || result.error?.message || 'Error saving quote';
+            alert(errorMsg);
+        }
+    } catch (error) {
+        console.error('Error submitting form:', error);
+        alert('Error submitting form. Please try again.');
+    }
+    
+    return false;
+}
+
+// Load customer commercial conditions
+async function loadCustomerCommercialConditions(customerId) {
+    try {
+        const response = await fetch(`/quotes/data/customer/${customerId}/commercial-conditions`);
+        const data = await response.json();
+        
+        if (data.success && data.data && data.data.commercial_conditions) {
+            const cc = data.data.commercial_conditions;
+            const discountInfo = document.getElementById('customer-discount-info');
+            const discountDetails = document.getElementById('discount-details');
+            
+            if (discountInfo && discountDetails) {
+                let html = '';
+                
+                if (cc.default_discount_percent > 0) {
+                    html += `<div class="flex items-center justify-between">
+                        <span style="color: var(--color-text-secondary);">{{ _('Default Discount') }}:</span>
+                        <span class="font-semibold" style="color: var(--color-success);">${cc.default_discount_percent.toFixed(2)}%</span>
+                    </div>`;
+                }
+                
+                if (cc.price_list_name) {
+                    html += `<div class="flex items-center justify-between">
+                        <span style="color: var(--color-text-secondary);">{{ _('Price List') }}:</span>
+                        <span class="font-medium" style="color: var(--color-text-primary);">${cc.price_list_name}</span>
+                    </div>`;
+                }
+                
+                if (cc.payment_terms_days) {
+                    html += `<div class="flex items-center justify-between">
+                        <span style="color: var(--color-text-secondary);">{{ _('Payment Terms') }}:</span>
+                        <span class="font-medium" style="color: var(--color-text-primary);">${cc.payment_terms_days} {{ _('days') }}</span>
+                    </div>`;
+                }
+                
+                if (cc.credit_limit) {
+                    html += `<div class="flex items-center justify-between">
+                        <span style="color: var(--color-text-secondary);">{{ _('Credit Limit') }}:</span>
+                        <span class="font-medium" style="color: var(--color-text-primary);">${cc.credit_limit.toFixed(2)} €</span>
+                    </div>`;
+                }
+                
+                if (html) {
+                    discountDetails.innerHTML = html;
+                    discountInfo.classList.remove('hidden');
+                } else {
+                    hideCustomerDiscountInfo();
+                }
+            }
+        } else {
+            hideCustomerDiscountInfo();
+        }
+    } catch (error) {
+        console.error('Error loading customer commercial conditions:', error);
+        hideCustomerDiscountInfo();
+    }
+}
+
+// Hide customer discount info
+function hideCustomerDiscountInfo() {
+    const discountInfo = document.getElementById('customer-discount-info');
+    if (discountInfo) {
+        discountInfo.classList.add('hidden');
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', async function() {
+    await loadCustomers();
+    await loadProducts();
+    
+    // Set initial lineIndex based on existing lines
+    const existingLines = document.querySelectorAll('.quote-line');
+    lineIndex = existingLines.length;
+    
+    // Pre-select customer if editing
+    const customerSelect = document.getElementById('customer_id');
+    if (customerSelect && customerSelect.dataset.selectedCustomerId) {
+        const selectedCustomerId = parseInt(customerSelect.dataset.selectedCustomerId);
+        customerSelect.value = selectedCustomerId;
+    }
+    
+    // Add document discount change listener
+    const docDiscountInput = document.querySelector('input[name="discount_percent"]');
+    if (docDiscountInput) {
+        docDiscountInput.addEventListener('change', calculateTotals);
+    }
+    
+    // If editing, populate existing lines with products
+    existingLines.forEach(line => {
+        const productSelect = line.querySelector('select.product-select[name*="[product_id]"]');
+        if (productSelect) {
+            const selectedProductId = productSelect.dataset.selectedProductId 
+                ? parseInt(productSelect.dataset.selectedProductId) 
+                : null;
+            
+            // Add all products to select
+            products.forEach(product => {
+                const option = document.createElement('option');
+                option.value = product.id;
+                option.textContent = `${product.code} - ${product.name}`;
+                if (selectedProductId && product.id == selectedProductId) {
+                    option.selected = true;
+                }
+                productSelect.appendChild(option);
+            });
+            
+            // Initialize Select2 on existing product selects
+            if (typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined') {
+                if ($(productSelect).hasClass('select2-hidden-accessible')) {
+                    $(productSelect).select2('destroy');
+                }
+                $(productSelect).select2({
+                    theme: 'bootstrap-5',
+                    placeholder: '{{ _("Select product...") }}',
+                    allowClear: true,
+                    width: '100%'
+                });
+                
+                // Load variants if product is selected
+                if (selectedProductId) {
+                    const lineIndex = parseInt(line.dataset.lineId || '0');
+                    loadVariants(productSelect, lineIndex);
+                }
+            }
+        }
+    });
+    
+    // Calculate initial totals
+    calculateTotals();
+});
+
+// Product Picker Modal
+let currentLineIndex = null;
+let productsPickerData = [];
+let filteredProducts = [];
+
+// Open product picker modal
+function openProductPicker(lineIndex) {
+    currentLineIndex = lineIndex;
+    document.getElementById('product-picker-modal').classList.remove('hidden');
+    loadProductsForPicker();
+}
+
+// Close product picker modal
+function closeProductPicker() {
+    document.getElementById('product-picker-modal').classList.add('hidden');
+    currentLineIndex = null;
+}
+
+// Load products for picker
+async function loadProductsForPicker(search = '') {
+    try {
+        const response = await fetch(`/products/data/picker?search=${encodeURIComponent(search)}&page=1&per_page=100`);
+        const data = await response.json();
+        
+        if (data.error) {
+            console.error('Error loading products:', data.error);
+            return;
+        }
+        
+        productsPickerData = data.items || [];
+        filteredProducts = productsPickerData;
+        renderProductsList();
+    } catch (error) {
+        console.error('Error loading products:', error);
+    }
+}
+
+// Render products list in modal
+function renderProductsList() {
+    const container = document.getElementById('product-picker-list');
+    container.innerHTML = '';
+    
+    if (filteredProducts.length === 0) {
+        container.innerHTML = '<div class="text-center py-8 text-gray-500">{{ _("No products found") }}</div>';
+        return;
+    }
+    
+    filteredProducts.forEach(item => {
+        // Product row
+        const productRow = document.createElement('div');
+        productRow.className = 'border-b border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer';
+        productRow.onclick = () => selectProduct(item.id, null, item);
+        
+        const stockIcon = item.stock > 0 ? '📦' : '📦';
+        const stockText = `${item.stock} ${item.stock === 1 ? '{{ _("unit") }}' : '{{ _("units") }}'}`;
+        const priceText = item.price ? `${item.price.toFixed(2)} €` : '{{ _("N/A") }}';
+        const variantText = item.has_variants 
+            ? `{{ _("Variants") }}: ${item.variant_attrs.join(', ')}` 
+            : '{{ _("No variants") }}';
+        
+        productRow.innerHTML = `
+            <div class="flex items-center justify-between p-4">
+                <div class="flex-1">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">📷</span>
+                        <div>
+                            <div class="font-semibold text-gray-900">${item.name} (${item.code})</div>
+                            <div class="text-sm text-gray-600 mt-1">
+                                💰 ${priceText} | ${variantText}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm font-medium text-gray-700">${stockIcon} ${stockText}</div>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(productRow);
+        
+        // Variants rows (if any)
+        if (item.has_variants && item.variants.length > 0) {
+            item.variants.forEach(variant => {
+                const variantRow = document.createElement('div');
+                variantRow.className = 'border-b border-gray-100 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer pl-12';
+                variantRow.onclick = (e) => {
+                    e.stopPropagation();
+                    selectProduct(item.id, variant.id, item, variant);
+                };
+                
+                const variantStockIcon = variant.stock > 0 ? '📦' : '📦';
+                const variantStockText = `${variant.stock} ${variant.stock === 1 ? '{{ _("unit") }}' : '{{ _("units") }}'}`;
+                const variantPriceText = variant.price ? `${variant.price.toFixed(2)} €` : priceText;
+                
+                variantRow.innerHTML = `
+                    <div class="flex items-center justify-between p-3">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm">└─</span>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-800">${variant.name} (${variant.code})</div>
+                                    <div class="text-xs text-gray-600 mt-0.5">💰 ${variantPriceText}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs font-medium text-gray-600">${variantStockIcon} ${variantStockText}</div>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(variantRow);
+            });
+        }
+    });
+}
+
+// Select product/variant
+function selectProduct(productId, variantId, product, variant = null) {
+    if (!currentLineIndex && currentLineIndex !== 0) return;
+    
+    const lineDiv = document.querySelector(`.quote-line[data-line-id], .quote-line:nth-child(${currentLineIndex + 1})`);
+    if (!lineDiv) return;
+    
+    const productIdInput = lineDiv.querySelector('.product-id-input');
+    const variantIdInput = lineDiv.querySelector('.variant-id-input');
+    const displayInput = lineDiv.querySelector('.product-display-input');
+    
+    if (productIdInput) productIdInput.value = productId;
+    if (variantIdInput) variantIdInput.value = variantId || '';
+    
+    // Update display
+    if (displayInput) {
+        if (variant) {
+            displayInput.value = `${product.code} - ${product.name} / ${variant.code} - ${variant.name}`;
+        } else {
+            displayInput.value = `${product.code} - ${product.name}`;
+        }
+    }
+    
+    // Update price
+    const priceInput = lineDiv.querySelector('.price-input');
+    if (priceInput) {
+        const price = variant && variant.price ? variant.price : (product.price || 0);
+        priceInput.value = price.toFixed(2);
+        calculateTotals();
+    }
+    
+    closeProductPicker();
+}
+
+// Search in product picker
+function searchProductsPicker() {
+    const searchInput = document.getElementById('product-picker-search');
+    const searchTerm = searchInput.value.toLowerCase();
+    
+    filteredProducts = productsPickerData.filter(item => {
+        const matchesProduct = item.name.toLowerCase().includes(searchTerm) || 
+                              item.code.toLowerCase().includes(searchTerm);
+        if (matchesProduct) return true;
+        
+        // Check variants
+        return item.variants.some(v => 
+            v.name.toLowerCase().includes(searchTerm) || 
+            v.code.toLowerCase().includes(searchTerm)
+        );
+    });
+    
+    renderProductsList();
+}
+</script>
+
+<!-- Product Picker Modal -->
+<div id="product-picker-modal" class="hidden fixed inset-0 z-50 overflow-y-auto" style="background: rgba(0, 0, 0, 0.5);">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between p-6 border-b border-gray-200">
+                <h3 class="text-xl font-bold text-gray-900">{{ _('Select Product / Variant') }}</h3>
+                <button onclick="closeProductPicker()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Search Bar -->
+            <div class="p-4 border-b border-gray-200">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-search text-gray-400"></i>
+                    <input type="text" 
+                           id="product-picker-search"
+                           placeholder="{{ _('Search products...') }}"
+                           oninput="searchProductsPicker()"
+                           class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+            </div>
+            
+            <!-- Products List -->
+            <div id="product-picker-list" class="flex-1 overflow-y-auto p-4">
+                <!-- Products will be rendered here -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

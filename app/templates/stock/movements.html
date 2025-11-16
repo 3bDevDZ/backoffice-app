@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Stock Movements') }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Stock Movements') }}{% endblock %}
+{% block page_subtitle %}{{ _('History of all stock movements') }}{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+    <form method="GET" action="{{ url_for('stock.movements') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+            <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ _('Location') }}</label>
+            <select name="location_id" class="modern-select w-full">
+                <option value="">{{ _('All Locations') }}</option>
+                {% for loc in locations %}
+                <option value="{{ loc.id }}" {% if location_id == loc.id %}selected{% endif %}>{{ loc.name }} ({{ loc.code }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ _('Movement Type') }}</label>
+            <select name="movement_type" class="modern-select w-full">
+                <option value="">{{ _('All Types') }}</option>
+                <option value="entry" {% if movement_type == 'entry' %}selected{% endif %}>{{ _('Entry') }}</option>
+                <option value="exit" {% if movement_type == 'exit' %}selected{% endif %}>{{ _('Exit') }}</option>
+                <option value="transfer" {% if movement_type == 'transfer' %}selected{% endif %}>{{ _('Transfer') }}</option>
+                <option value="adjustment" {% if movement_type == 'adjustment' %}selected{% endif %}>{{ _('Adjustment') }}</option>
+            </select>
+        </div>
+        <div>
+            <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ _('Date From') }}</label>
+            <input type="date" name="date_from" value="{{ date_from or '' }}"
+                   class="modern-input w-full">
+        </div>
+        <div>
+            <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ _('Date To') }}</label>
+            <input type="date" name="date_to" value="{{ date_to or '' }}"
+                   class="modern-input w-full">
+        </div>
+        <div class="md:col-span-4 flex {% if direction == 'rtl' %}justify-start{% else %}justify-end{% endif %} {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+            <a href="{{ url_for('stock.movements') }}" class="btn-secondary">
+                {{ _('Reset') }}
+            </a>
+            <button type="submit" class="btn-primary">
+                {{ _('Filter') }}
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Movements Table -->
+<div class="modern-table-container">
+    <div class="overflow-x-auto">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th class="px-6 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {{ _('Date') }}
+                    </th>
+                    <th class="px-6 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {{ _('Product') }}
+                    </th>
+                    <th class="px-6 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {{ _('Type') }}
+                    </th>
+                    <th class="px-6 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {{ _('Quantity') }}
+                    </th>
+                    <th class="px-6 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {{ _('From') }}
+                    </th>
+                    <th class="px-6 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {{ _('To') }}
+                    </th>
+                    <th class="px-6 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {{ _('User') }}
+                    </th>
+                    <th class="px-6 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {{ _('Reason') }}
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% if movements %}
+                    {% for movement in movements %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ movement.created_at.strftime('%Y-%m-%d %H:%M') if movement.created_at else 'N/A' }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ movement.product_name or 'N/A' }}</div>
+                            <div class="text-sm text-gray-500">{{ movement.product_code }}</div>
+                            {% if movement.variant_id %}
+                            <div class="text-xs text-indigo-600 mt-1">
+                                <i class="fas fa-tag {% if direction == 'rtl' %}ml-1{% else %}mr-1{% endif %}"></i>
+                                {{ movement.variant_code }} - {{ movement.variant_name }}
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if movement.type == 'entry' %}
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                    <i class="fas fa-arrow-down"></i> {{ _('Entry') }}
+                                </span>
+                            {% elif movement.type == 'exit' %}
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                    <i class="fas fa-arrow-up"></i> {{ _('Exit') }}
+                                </span>
+                            {% elif movement.type == 'transfer' %}
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                    <i class="fas fa-exchange-alt"></i> {{ _('Transfer') }}
+                                </span>
+                            {% elif movement.type == 'adjustment' %}
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    <i class="fas fa-adjust"></i> {{ _('Adjustment') }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm {% if movement.quantity > 0 %}text-green-600{% else %}text-red-600{% endif %} font-medium">
+                            {% if movement.quantity > 0 %}+{% endif %}{{ "%.2f"|format(movement.quantity) }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ movement.location_from_name or '-' }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {% if movement.related_document_type == 'order' and movement.related_document_number %}
+                                <span class="font-medium text-indigo-600">{{ movement.related_document_number }}</span>
+                            {% elif movement.location_to_name %}
+                                {{ movement.location_to_name }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ movement.user_name or 'N/A' }}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-500">
+                            {{ movement.reason or '-' }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">
+                            {{ _('No movements found') }}
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+

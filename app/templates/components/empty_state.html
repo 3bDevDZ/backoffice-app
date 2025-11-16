@@ -1,0 +1,25 @@
+{#
+  Empty State Component
+  
+  Usage:
+  {% include 'components/empty_state.html' with {
+    'icon': 'fas fa-inbox',
+    'title': 'No data available',
+    'description': 'There is no data to display at this time.',
+    'action': '<a href="/add" class="btn-primary">Add Item</a>'
+  } %}
+#}
+
+<div class="modern-empty-state">
+  <div class="modern-empty-state-icon">
+    <i class="{{ icon|default('fas fa-inbox') }}"></i>
+  </div>
+  <div class="modern-empty-state-title">{{ title|default('No data available') }}</div>
+  <div class="modern-empty-state-description">{{ description|default('There is no data to display at this time.') }}</div>
+  {% if action %}
+  <div class="modern-empty-state-action">
+    {{ action|safe }}
+  </div>
+  {% endif %}
+</div>
+

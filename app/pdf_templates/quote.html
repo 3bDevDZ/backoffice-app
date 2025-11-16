@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Devis {{ quote.number }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #333;
+        }
+        .header {
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #4CAF50;
+            margin: 0;
+            font-size: 24px;
+        }
+        .header-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .company-info {
+            flex: 1;
+        }
+        .quote-info {
+            flex: 1;
+            text-align: right;
+        }
+        .quote-info strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .customer-section {
+            margin-bottom: 30px;
+        }
+        .customer-section h2 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #4CAF50;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        table thead {
+            background-color: #4CAF50;
+            color: white;
+        }
+        table th, table td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        table th {
+            font-weight: bold;
+        }
+        table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .totals {
+            margin-top: 20px;
+            margin-left: auto;
+            width: 300px;
+        }
+        .totals table {
+            margin: 0;
+        }
+        .totals td {
+            border: none;
+            padding: 5px 10px;
+        }
+        .totals .label {
+            font-weight: bold;
+            text-align: right;
+        }
+        .totals .amount {
+            text-align: right;
+        }
+        .total-row {
+            font-weight: bold;
+            font-size: 14px;
+            background-color: #f0f0f0;
+        }
+        .notes {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-left: 4px solid #4CAF50;
+        }
+        .notes h3 {
+            margin-top: 0;
+            color: #4CAF50;
+        }
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+        }
+        .validity {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>DEVIS</h1>
+        <div class="header-info">
+            <div class="company-info">
+                <strong>GMFlow</strong><br>
+                Système de Gestion Commerciale<br>
+                <br>
+                <!-- Add company address here if needed -->
+            </div>
+            <div class="quote-info">
+                <strong>N° Devis:</strong> {{ quote.number }}<br>
+                <strong>Version:</strong> {{ quote.version }}<br>
+                <strong>Date:</strong> {{ quote.created_at if quote.created_at else 'N/A' }}<br>
+                <strong>Statut:</strong> {{ quote.status|upper }}
+            </div>
+        </div>
+    </div>
+
+    <div class="customer-section">
+        <h2>Client</h2>
+        <p>
+            <strong>{{ quote.customer.name }}</strong><br>
+            {% if quote.customer.code %}Code: {{ quote.customer.code }}<br>{% endif %}
+        </p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Produit</th>
+                <th class="text-right">Qté</th>
+                <th class="text-right">Prix unitaire</th>
+                <th class="text-right">Remise %</th>
+                <th class="text-right">Total HT</th>
+                <th class="text-right">TVA</th>
+                <th class="text-right">Total TTC</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in quote.lines %}
+            <tr>
+                <td>
+                    {{ line.product_name }}<br>
+                    <small>{{ line.product_code }}</small>
+                </td>
+                <td class="text-right">{{ "%.3f"|format(line.quantity) }}</td>
+                <td class="text-right">{{ "%.2f"|format(line.unit_price) }} €</td>
+                <td class="text-right">
+                    {% if line.discount_percent > 0 %}
+                        {{ "%.2f"|format(line.discount_percent) }}%
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td class="text-right">{{ "%.2f"|format(line.line_total_ht) }} €</td>
+                <td class="text-right">{{ "%.2f"|format(line.tax_rate) }}%</td>
+                <td class="text-right">{{ "%.2f"|format(line.line_total_ttc) }} €</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="totals">
+        <table>
+            <tr>
+                <td class="label">Sous-total HT:</td>
+                <td class="amount">{{ "%.2f"|format(quote.subtotal) }} €</td>
+            </tr>
+            {% if quote.discount_percent > 0 %}
+            <tr>
+                <td class="label">Remise document ({{ "%.2f"|format(quote.discount_percent) }}%):</td>
+                <td class="amount">-{{ "%.2f"|format(quote.discount_amount) }} €</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td class="label">Total HT:</td>
+                <td class="amount">{{ "%.2f"|format(quote.subtotal - quote.discount_amount) }} €</td>
+            </tr>
+            <tr>
+                <td class="label">TVA:</td>
+                <td class="amount">{{ "%.2f"|format(quote.tax_amount) }} €</td>
+            </tr>
+            <tr class="total-row">
+                <td class="label">TOTAL TTC:</td>
+                <td class="amount">{{ "%.2f"|format(quote.total) }} €</td>
+            </tr>
+        </table>
+    </div>
+
+    {% if quote.valid_until %}
+    <div class="validity">
+        <strong>Validité du devis:</strong> jusqu'au {{ quote.valid_until }}
+    </div>
+    {% endif %}
+
+    {% if quote.notes %}
+    <div class="notes">
+        <h3>Notes</h3>
+        <p>{{ quote.notes|nl2br }}</p>
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        <p>Ce devis est généré automatiquement par le système GMFlow.</p>
+        <p>Pour toute question, veuillez contacter notre service commercial.</p>
+    </div>
+</body>
+</html>
+

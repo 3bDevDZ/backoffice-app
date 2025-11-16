@@ -1,0 +1,2 @@
+"""Purchase queries package."""
+

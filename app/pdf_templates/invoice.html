@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facture {{ invoice.number }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #1a1a1a;
+            padding: 20mm;
+            background: white;
+        }
+        
+        .header {
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            font-weight: bold;
+            color: #1a1a1a;
+            margin-bottom: 20px;
+        }
+        
+        .invoice-info {
+            display: table;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        
+        .invoice-info-row {
+            display: table-row;
+        }
+        
+        .invoice-info-label {
+            display: table-cell;
+            font-weight: bold;
+            padding-right: 15px;
+            padding-bottom: 8px;
+            width: 150px;
+        }
+        
+        .invoice-info-value {
+            display: table-cell;
+            padding-bottom: 8px;
+        }
+        
+        .customer-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            background: #f9fafb;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .customer-section h2 {
+            font-size: 14px;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+        
+        .customer-section p {
+            margin: 5px 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        table thead {
+            background: #f3f4f6;
+        }
+        
+        table th {
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 11px;
+            color: #1a1a1a;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        table th.text-right {
+            text-align: right;
+        }
+        
+        table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 10px;
+        }
+        
+        table td.text-right {
+            text-align: right;
+        }
+        
+        table tbody tr:nth-child(even) {
+            background: #f9fafb;
+        }
+        
+        table tbody tr:hover {
+            background: #f3f4f6;
+        }
+        
+        .totals {
+            margin-top: 20px;
+            margin-left: auto;
+            width: 300px;
+        }
+        
+        .totals table {
+            margin-bottom: 0;
+        }
+        
+        .totals td {
+            padding: 8px 12px;
+            border: none;
+        }
+        
+        .totals td.label {
+            text-align: right;
+            font-weight: normal;
+        }
+        
+        .totals td.amount {
+            text-align: right;
+            font-weight: bold;
+        }
+        
+        .totals .total-row {
+            border-top: 2px solid #1a1a1a;
+            background: #f3f4f6;
+        }
+        
+        .totals .total-row td {
+            font-size: 14px;
+            padding-top: 12px;
+            padding-bottom: 12px;
+        }
+        
+        .legal-mention {
+            margin-top: 30px;
+            padding: 15px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            font-size: 9px;
+            color: #4b5563;
+        }
+        
+        .legal-mention h3 {
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #92400e;
+        }
+        
+        .notes {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9fafb;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .notes h3 {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #2d3748;
+        }
+        
+        .notes p {
+            font-size: 10px;
+            color: #1a1a1a;
+            white-space: pre-line;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+            font-size: 9px;
+            color: #9ca3af;
+        }
+        
+        .small {
+            font-size: 9px;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>FACTURE</h1>
+        
+        <div class="invoice-info">
+            <div class="invoice-info-row">
+                <div class="invoice-info-label">N° Facture:</div>
+                <div class="invoice-info-value">{{ invoice.number }}</div>
+            </div>
+            <div class="invoice-info-row">
+                <div class="invoice-info-label">Date de facturation:</div>
+                <div class="invoice-info-value">{{ invoice.invoice_date.strftime('%d/%m/%Y') }}</div>
+            </div>
+            <div class="invoice-info-row">
+                <div class="invoice-info-label">Date d'échéance:</div>
+                <div class="invoice-info-value">{{ invoice.due_date.strftime('%d/%m/%Y') }}</div>
+            </div>
+            {% if invoice.order_number %}
+            <div class="invoice-info-row">
+                <div class="invoice-info-label">N° Commande:</div>
+                <div class="invoice-info-value">{{ invoice.order_number }}</div>
+            </div>
+            {% endif %}
+            <div class="invoice-info-row">
+                <div class="invoice-info-label">Statut:</div>
+                <div class="invoice-info-value">{{ invoice.status.upper() }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="customer-section">
+        <h2>Client</h2>
+        <p>
+            <strong>{{ invoice.customer_name }}</strong><br>
+            {% if invoice.customer_code %}Code: {{ invoice.customer_code }}<br>{% endif %}
+            {% if invoice.siret %}SIRET: {{ invoice.siret }}<br>{% endif %}
+            {% if invoice.vat_number %}N° TVA: {{ invoice.vat_number }}<br>{% endif %}
+        </p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Produit</th>
+                <th class="text-right">Qté</th>
+                <th class="text-right">Prix unitaire</th>
+                <th class="text-right">Remise %</th>
+                <th class="text-right">Total HT</th>
+                <th class="text-right">TVA %</th>
+                <th class="text-right">Total TTC</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in invoice.lines %}
+            <tr>
+                <td>
+                    {{ line.product_name }}<br>
+                    {% if line.product_code %}<span class="small">({{ line.product_code }})</span>{% endif %}
+                    {% if line.variant_name %}<br><span class="small">Variante: {{ line.variant_name }}</span>{% endif %}
+                </td>
+                <td class="text-right">{{ "%.3f"|format(line.quantity) }}</td>
+                <td class="text-right">{{ "%.2f"|format(line.unit_price) }} €</td>
+                <td class="text-right">
+                    {% if line.discount_percent > 0 %}
+                        {{ "%.2f"|format(line.discount_percent) }}%
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td class="text-right">{{ "%.2f"|format(line.line_total_ht) }} €</td>
+                <td class="text-right">{{ "%.2f"|format(line.tax_rate) }}%</td>
+                <td class="text-right">{{ "%.2f"|format(line.line_total_ttc) }} €</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="totals">
+        <table>
+            <tr>
+                <td class="label">Sous-total HT:</td>
+                <td class="amount">{{ "%.2f"|format(invoice.subtotal) }} €</td>
+            </tr>
+            {% if invoice.discount_percent > 0 %}
+            <tr>
+                <td class="label">Remise document ({{ "%.2f"|format(invoice.discount_percent) }}%):</td>
+                <td class="amount">-{{ "%.2f"|format(invoice.discount_amount) }} €</td>
+            </tr>
+            <tr>
+                <td class="label">Total HT après remise:</td>
+                <td class="amount">{{ "%.2f"|format(invoice.subtotal - invoice.discount_amount) }} €</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td class="label">TVA:</td>
+                <td class="amount">{{ "%.2f"|format(invoice.tax_amount) }} €</td>
+            </tr>
+            <tr class="total-row">
+                <td class="label">TOTAL TTC:</td>
+                <td class="amount">{{ "%.2f"|format(invoice.total) }} €</td>
+            </tr>
+            {% if invoice.paid_amount > 0 %}
+            <tr>
+                <td class="label">Montant payé:</td>
+                <td class="amount">{{ "%.2f"|format(invoice.paid_amount) }} €</td>
+            </tr>
+            <tr>
+                <td class="label">Montant restant:</td>
+                <td class="amount">{{ "%.2f"|format(invoice.remaining_amount) }} €</td>
+            </tr>
+            {% endif %}
+        </table>
+    </div>
+
+    {% if invoice.legal_mention %}
+    <div class="legal-mention">
+        <h3>Mentions légales</h3>
+        <p>{{ invoice.legal_mention|nl2br }}</p>
+    </div>
+    {% endif %}
+
+    {% if invoice.notes %}
+    <div class="notes">
+        <h3>Notes</h3>
+        <p>{{ invoice.notes|nl2br }}</p>
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        <p>Facture générée automatiquement par le système GMFlow.</p>
+        {% if invoice.created_at %}
+        <p>Générée le {{ invoice.created_at.strftime('%d/%m/%Y à %H:%M') }}</p>
+        {% endif %}
+        <p>Pour toute question, veuillez contacter notre service commercial.</p>
+    </div>
+</body>
+</html>
+

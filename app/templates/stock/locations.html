@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Locations') }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Warehouse Locations') }}{% endblock %}
+{% block page_subtitle %}{{ _('Manage your warehouse structure') }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Actions Bar -->
+    <div class="mb-6 flex {% if direction == 'rtl' %}justify-start{% else %}justify-end{% endif %}">
+        <button onclick="openCreateLocationModal()" class="btn-primary">
+            <i class="fas fa-plus {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+            {{ _('Add Location') }}
+        </button>
+    </div>
+
+    <!-- Locations List -->
+    <div class="modern-table-container">
+        {% if locations %}
+            <div class="overflow-x-auto">
+                <table class="modern-table">
+                    <thead>
+                        <tr>
+                            <th class="px-6 py-3 text-{% if direction == 'rtl' %}right{% else %}left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                {{ _('Location') }}
+                            </th>
+                            <th class="px-6 py-3 text-{% if direction == 'rtl' %}right{% else %}left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                {{ _('Code') }}
+                            </th>
+                            <th class="px-6 py-3 text-{% if direction == 'rtl' %}right{% else %}left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                {{ _('Type') }}
+                            </th>
+                            <th class="px-6 py-3 text-{% if direction == 'rtl' %}right{% else %}left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                {{ _('Parent') }}
+                            </th>
+                            <th class="px-6 py-3 text-{% if direction == 'rtl' %}right{% else %}left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                {{ _('Capacity') }}
+                            </th>
+                            <th class="px-6 py-3 text-{% if direction == 'rtl' %}right{% else %}left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                {{ _('Status') }}
+                            </th>
+                            <th class="px-6 py-3 text-{% if direction == 'rtl' %}right{% else %}left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                {{ _('Actions') }}
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for location in locations %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center {% if direction == 'rtl' %}space-x-reverse space-x-3{% else %}space-x-3{% endif %}">
+                                    <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                                        {% if location.type == 'warehouse' %}
+                                            <i class="fas fa-warehouse text-indigo-600"></i>
+                                        {% elif location.type == 'zone' %}
+                                            <i class="fas fa-map-marked-alt text-indigo-600"></i>
+                                        {% elif location.type == 'aisle' %}
+                                            <i class="fas fa-route text-indigo-600"></i>
+                                        {% elif location.type == 'shelf' %}
+                                            <i class="fas fa-layer-group text-indigo-600"></i>
+                                        {% else %}
+                                            <i class="fas fa-box text-indigo-600"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-sm font-medium text-gray-900">{{ location.name }}</div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ location.code }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="badge badge-confirmed">{{ location.type }}</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-500">
+                                    {% if location.parent_name %}
+                                        {{ location.parent_name }}
+                                    {% else %}
+                                        <span class="text-gray-400">-</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">
+                                    {% if location.capacity %}
+                                        {{ "%.2f"|format(location.capacity) }}
+                                    {% else %}
+                                        <span class="text-gray-400">-</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if location.is_active %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        {{ _('Active') }}
+                                    </span>
+                                {% else %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-600">
+                                        {{ _('Inactive') }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex {% if direction == 'rtl' %}justify-start space-x-reverse space-x-2{% else %}justify-end space-x-2{% endif %}">
+                                    <button onclick="openEditLocationModal({{ location.id }}, '{{ location.code }}', '{{ location.name }}', '{{ location.type }}', {{ location.parent_id if location.parent_id else 'null' }}, {{ location.capacity if location.capacity else 'null' }}, {{ 'true' if location.is_active else 'false' }})" 
+                                            class="text-indigo-600 hover:text-indigo-900">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button onclick="deleteLocation({{ location.id }}, '{{ location.name }}')" 
+                                            class="text-red-600 hover:text-red-900">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-12">
+                <i class="fas fa-map-marker-alt text-gray-400 text-4xl mb-4"></i>
+                <p class="text-gray-500 text-lg">{{ _('No locations found') }}</p>
+                <button onclick="openCreateLocationModal()" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                    <i class="fas fa-plus {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                    {{ _('Create First Location') }}
+                </button>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Create/Edit Location Modal -->
+<div id="location-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+    <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-gray-900" id="modal-title">{{ _('Add Location') }}</h3>
+            <button onclick="closeLocationModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <form id="location-form" onsubmit="saveLocation(event)">
+            <input type="hidden" id="location-id" name="id">
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ _('Location Code') }} <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" 
+                           id="location-code"
+                           name="code"
+                           required
+                           maxlength="50"
+                           class="modern-input
+                           placeholder="WH-001">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ _('Location Name') }} <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" 
+                           id="location-name"
+                           name="name"
+                           required
+                           class="modern-input
+                           placeholder="{{ _('Warehouse Name') }}">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ _('Type') }} <span class="text-red-500">*</span>
+                    </label>
+                    <select id="location-type" 
+                            name="type"
+                            required
+                            class="modern-input>
+                        <option value="">{{ _('Select type') }}</option>
+                        <option value="warehouse">{{ _('Warehouse') }}</option>
+                        <option value="zone">{{ _('Zone') }}</option>
+                        <option value="aisle">{{ _('Aisle') }}</option>
+                        <option value="shelf">{{ _('Shelf') }}</option>
+                        <option value="level">{{ _('Level') }}</option>
+                        <option value="virtual">{{ _('Virtual') }}</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ _('Parent Location') }}
+                    </label>
+                    <select id="location-parent" 
+                            name="parent_id"
+                            class="modern-input>
+                        <option value="">{{ _('None (Top Level)') }}</option>
+                        {% for loc in locations %}
+                            {% if loc.type != 'warehouse' or not loc.parent_id %}
+                            <option value="{{ loc.id }}">{{ loc.name }} ({{ loc.code }})</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ _('Capacity') }}
+                    </label>
+                    <input type="number" 
+                           id="location-capacity"
+                           name="capacity"
+                           step="0.01"
+                           min="0"
+                           class="modern-input
+                           placeholder="0.00">
+                </div>
+                
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" 
+                               id="location-active"
+                               name="is_active"
+                               checked
+                               class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                        <span class="{% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} text-sm text-gray-700">
+                            {{ _('Active') }}
+                        </span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex {% if direction == 'rtl' %}justify-start space-x-reverse space-x-3{% else %}justify-end space-x-3{% endif %}">
+                <button type="button" onclick="closeLocationModal()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                    {{ _('Cancel') }}
+                </button>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                    {{ _('Save') }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openCreateLocationModal() {
+    document.getElementById('modal-title').textContent = '{{ _("Add Location") }}';
+    document.getElementById('location-form').reset();
+    document.getElementById('location-id').value = '';
+    document.getElementById('location-active').checked = true;
+    document.getElementById('location-modal').classList.remove('hidden');
+}
+
+function openEditLocationModal(id, code, name, type, parentId, capacity, isActive) {
+    document.getElementById('modal-title').textContent = '{{ _("Edit Location") }}';
+    document.getElementById('location-id').value = id;
+    document.getElementById('location-code').value = code;
+    document.getElementById('location-name').value = name;
+    document.getElementById('location-type').value = type;
+    document.getElementById('location-parent').value = parentId || '';
+    document.getElementById('location-capacity').value = capacity || '';
+    document.getElementById('location-active').checked = isActive === true || isActive === 'true';
+    document.getElementById('location-modal').classList.remove('hidden');
+}
+
+function closeLocationModal() {
+    document.getElementById('location-modal').classList.add('hidden');
+}
+
+async function saveLocation(event) {
+    event.preventDefault();
+    
+    const formData = {
+        code: document.getElementById('location-code').value.trim(),
+        name: document.getElementById('location-name').value.trim(),
+        type: document.getElementById('location-type').value,
+        parent_id: document.getElementById('location-parent').value || null,
+        capacity: document.getElementById('location-capacity').value ? parseFloat(document.getElementById('location-capacity').value) : null,
+        is_active: document.getElementById('location-active').checked
+    };
+    
+    const locationId = document.getElementById('location-id').value;
+    const url = locationId ? `/stock/locations/${locationId}` : '/stock/locations';
+    const method = locationId ? 'PUT' : 'POST';
+    
+    try {
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success || result.status === 'success') {
+            alert(result.message || '{{ _("Location saved successfully") }}');
+            window.location.reload();
+        } else {
+            alert(result.message || result.error || '{{ _("Error saving location") }}');
+        }
+    } catch (error) {
+        console.error('Error saving location:', error);
+        alert('{{ _("Error saving location") }}');
+    }
+}
+
+function deleteLocation(id, name) {
+    if (!confirm(`{{ _("Are you sure you want to delete") }} "${name}"?`)) {
+        return;
+    }
+    
+    // Create a form and submit it to use session-based authentication
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/stock/locations/${id}/delete`;
+    
+    document.body.appendChild(form);
+    form.submit();
+}
+</script>
+{% endblock %}

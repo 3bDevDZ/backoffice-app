@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion du Stock - CommerceFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- Sidebar -->
+    <div class="fixed inset-y-0 left-0 w-64 bg-indigo-900 text-white z-50">
+        <div class="flex flex-col h-full">
+            <div class="flex items-center justify-center h-16 bg-indigo-950 border-b border-indigo-800">
+                <i class="fas fa-chart-line text-2xl mr-2"></i>
+                <span class="text-xl font-bold">CommerceFlow</span>
+            </div>
+            <nav class="flex-1 overflow-y-auto py-4">
+                <a href="02-dashboard.html" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-home w-5"></i>
+                    <span class="ml-3">Tableau de bord</span>
+                </a>
+                <a href="03-products-list.html" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-box w-5"></i>
+                    <span class="ml-3">Produits</span>
+                </a>
+                <a href="05-customers-list.html" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-users w-5"></i>
+                    <span class="ml-3">Clients</span>
+                </a>
+                <a href="07-stock.html" class="flex items-center px-6 py-3 bg-indigo-800 border-r-4 border-indigo-400">
+                    <i class="fas fa-warehouse w-5"></i>
+                    <span class="ml-3">Stock</span>
+                </a>
+                <a href="08-orders-list.html" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-shopping-cart w-5"></i>
+                    <span class="ml-3">Commandes</span>
+                </a>
+                <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-file-invoice w-5"></i>
+                    <span class="ml-3">Factures</span>
+                </a>
+                <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-shopping-bag w-5"></i>
+                    <span class="ml-3">Achats</span>
+                </a>
+                <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-chart-bar w-5"></i>
+                    <span class="ml-3">Rapports</span>
+                </a>
+                <div class="px-6 py-3 text-xs text-indigo-300 font-semibold mt-4">PARAMÈTRES</div>
+                <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-800">
+                    <i class="fas fa-cog w-5"></i>
+                    <span class="ml-3">Configuration</span>
+                </a>
+            </nav>
+            <div class="p-4 border-t border-indigo-800">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <div class="text-sm font-medium">Jean Dupont</div>
+                        <div class="text-xs text-indigo-300">Administrateur</div>
+                    </div>
+                    <button class="text-indigo-300 hover:text-white">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="ml-64">
+        <!-- Top Bar -->
+        <div class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+            <div class="px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Gestion du Stock</h1>
+                        <p class="text-sm text-gray-600">Suivi en temps réel de vos inventaires</p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <button class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                            <i class="fas fa-clipboard-list mr-2"></i>
+                            Inventaire
+                        </button>
+                        <button class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                            <i class="fas fa-exchange-alt mr-2"></i>
+                            Transfert
+                        </button>
+                        <button class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                            <i class="fas fa-plus mr-2"></i>
+                            Mouvement
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="p-6">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="text-sm text-gray-600">Valeur Totale</div>
+                        <i class="fas fa-euro-sign text-indigo-600"></i>
+                    </div>
+                    <div class="text-2xl font-bold text-gray-900">456,230 €</div>
+                    <div class="text-xs text-gray-600 mt-1">1,234 produits</div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="text-sm text-gray-600">Rupture Stock</div>
+                        <i class="fas fa-times-circle text-red-600"></i>
+                    </div>
+                    <div class="text-2xl font-bold text-red-600">12</div>
+                    <div class="text-xs text-red-600 mt-1">
+                        <i class="fas fa-arrow-up mr-1"></i>
+                        Action requise
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="text-sm text-gray-600">Stock Faible</div>
+                        <i class="fas fa-exclamation-triangle text-orange-600"></i>
+                    </div>
+                    <div class="text-2xl font-bold text-orange-600">35</div>
+                    <div class="text-xs text-orange-600 mt-1">
+                        <i class="fas fa-arrow-up mr-1"></i>
+                        À surveiller
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="text-sm text-gray-600">Mouvements Aujourd'hui</div>
+                        <i class="fas fa-exchange-alt text-green-600"></i>
+                    </div>
+                    <div class="text-2xl font-bold text-gray-900">47</div>
+                    <div class="text-xs text-green-600 mt-1">
+                        <i class="fas fa-arrow-up mr-1"></i>
+                        +15% vs hier
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions & Filters -->
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+                <!-- Quick Actions -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4">Actions Rapides</h3>
+                    <div class="space-y-2">
+                        <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition flex items-center">
+                            <i class="fas fa-arrow-down text-green-600 mr-3"></i>
+                            Entrée Stock
+                        </button>
+                        <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition flex items-center">
+                            <i class="fas fa-arrow-up text-red-600 mr-3"></i>
+                            Sortie Stock
+                        </button>
+                        <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition flex items-center">
+                            <i class="fas fa-exchange-alt text-blue-600 mr-3"></i>
+                            Transfert Inter-Sites
+                        </button>
+                        <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition flex items-center">
+                            <i class="fas fa-sync text-purple-600 mr-3"></i>
+                            Ajustement Inventaire
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filters & Search -->
+                <div class="lg:col-span-3 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <!-- Search -->
+                        <div class="md:col-span-2">
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-search text-gray-400"></i>
+                                </div>
+                                <input type="text" 
+                                    class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    placeholder="Rechercher produit...">
+                            </div>
+                        </div>
+
+                        <!-- Location Filter -->
+                        <select class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            <option>Tous les emplacements</option>
+                            <option>Entrepôt Principal</option>
+                            <option>Magasin Paris</option>
+                            <option>Magasin Lyon</option>
+                        </select>
+
+                        <!-- Status Filter -->
+                        <select class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            <option>Tous les statuts</option>
+                            <option>En Stock</option>
+                            <option>Stock Faible</option>
+                            <option>Rupture</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stock Table -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <!-- Table Header -->
+                <div class="p-4 border-b border-gray-100">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <span class="text-sm text-gray-600">1,234 produits en stock</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button class="px-3 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                                <i class="fas fa-download mr-2"></i>
+                                Exporter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Produit
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Code
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Emplacement
+                                </th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Stock
+                                </th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Réservé
+                                </th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Disponible
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Valeur
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Statut
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-100">
+                            <!-- Stock Row 1 - Normal -->
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center">
+                                        <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mr-3">
+                                            <i class="fas fa-image text-gray-400"></i>
+                                        </div>
+                                        <div>
+                                            <div class="text-sm font-medium text-gray-900">Ordinateur Portable XPS 15</div>
+                                            <div class="text-xs text-gray-600">Dell - Intel i7</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-900">PRD-2025-0001</td>
+                                <td class="px-6 py-4 text-sm text-gray-600">Entrepôt Principal</td>
+                                <td class="px-6 py-4 text-center">
+                                    <div class="text-sm font-medium text-gray-900">42</div>
+                                    <div class="text-xs text-gray-500">Min: 10</div>
+                                </td>
+                                <td class="px-6 py-4 text-center text-sm text-gray-600">8</td>
+                                <td class="px-6 py-4 text-center text-sm font-medium text-green-600">34</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">54,558 €</td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                                        <i class="fas fa-check-circle mr-1"></i>
+                                        En stock
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <button class="text-indigo-600 hover:text-indigo-900 mr-2">
+                                        <i class="fas fa-exchange-alt"></i>
+                                    </button>
+                                    <button class="text-gray-600 hover:text-gray-900">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- Stock Row 2 - Low Stock -->
+                            <tr class="hover:bg-gray-50 bg-orange-50">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center">
+                                        <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mr-3">
+                                            <i class="fas fa-image text-gray-400"></i>
+                                        </div>
+                                        <div>
+                                            <div class="text-sm font-medium text-gray-900">Chaise de Bureau Ergonomique</div>
+                                            <div class="text-xs text-gray-600">Herman Miller - Aeron</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-900">PRD-2025-0002</td>
+                                <td class="px-6 py-4 text-sm text-gray-600">Entrepôt Principal</td>
+                                <td class="px-6 py-4 text-center">
+                                    <div class="text-sm font-medium text-orange-600">8</div>
+                                    <div class="text-xs text-gray-500">Min: 20</div>
+                                </td>
+                                <td class="px-6 py-4 text-center text-sm text-gray-600">3</td>
+                                <td class="px-6 py-4 text-center text-sm font-medium text-orange-600">5</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">6,792 €</td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                                        Stock faible
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <button class="text-indigo-600 hover:text-indigo-900 mr-2">
+                                        <i class="fas fa-shopping-cart"></i>
+                                    </button>
+                                    <button class="text-gray-600 hover:text-gray-900">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- Stock Row 3 - Out of Stock -->
+                            <tr class="hover:bg-gray-50 bg-red-50">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center">
+                                        <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mr-3">
+                                            <i class="fas fa-image text-gray-400"></i>
+                                        </div>
+                                        <div>
+                                            <div class="text-sm font-medium text-gray-900">Imprimante Laser Couleur</div>
+                                            <div class="text-xs text-gray-600">HP - LaserJet Pro</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-900">PRD-2025-0003</td>
+                                <td class="px-6 py-4 text-sm text-gray-600">Entrepôt Principal</td>
+                                <td class="px-6 py-4 text-center">
+                                    <div class="text-sm font-medium text-red-600">0</div>
+                                    <div class="text-xs text-gray-500">Min: 5</div>
+                                </td>
+                                <td class="px-6 py-4 text-center text-sm text-gray-600">0</td>
+                                <td class="px-6 py-4 text-center text-sm font-medium text-red-600">0</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">0 €</td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">
+                                        <i class="fas fa-times-circle mr-1"></i>
+                                        Rupture
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <button class="text-indigo-600 hover:text-indigo-900 mr-2">
+                                        <i class="fas fa-shopping-cart"></i>
+                                    </button>
+                                    <button class="text-gray-600 hover:text-gray-900">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- Stock Row 4 - Normal -->
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center">
+                                        <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mr-3">
+                                            <i class="fas fa-image text-gray-400"></i>
+                                        </div>
+                                        <div>
+                                            <div class="text-sm font-medium text-gray-900">Lot Stylos Bille - Pack 50</div>
+                                            <div class="text-xs text-gray-600">BIC - Cristal</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-900">PRD-2025-0004</td>
+                                <td class="px-6 py-4 text-sm text-gray-600">Entrepôt Principal</td>
+                                <td class="px-6 py-4 text-center">
+                                    <div class="text-sm font-medium text-gray-900">350</div>
+                                    <div class="text-xs text-gray-500">Min: 50</div>
+                                </td>
+                                <td class="px-6 py-4 text-center text-sm text-gray-600">25</td>
+                                <td class="px-6 py-4 text-center text-sm font-medium text-green-600">325</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">4,172 €</td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                                        <i class="fas fa-check-circle mr-1"></i>
+                                        En stock
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <button class="text-indigo-600 hover:text-indigo-900 mr-2">
+                                        <i class="fas fa-exchange-alt"></i>
+                                    </button>
+                                    <button class="text-gray-600 hover:text-gray-900">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- Stock Row 5 - Multiple Locations -->
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center">
+                                        <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mr-3">
+                                            <i class="fas fa-image text-gray-400"></i>
+                                        </div>
+                                        <div>
+                                            <div class="text-sm font-medium text-gray-900">Table de Réunion 8 Places</div>
+                                            <div class="text-xs text-gray-600">IKEA - BEKANT</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-900">PRD-2025-0005</td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm text-gray-600">Entrepôt Principal</div>
+                                    <div class="text-xs text-gray-500">+2 autres emplacements</div>
+                                </td>
+                                <td class="px-6 py-4 text-center">
+                                    <div class="text-sm font-medium text-gray-900">12</div>
+                                    <div class="text-xs text-gray-500">Min: 3</div>
+                                </td>
+                                <td class="px-6 py-4 text-center text-sm text-gray-600">2</td>
+                                <td class="px-6 py-4 text-center text-sm font-medium text-green-600">10</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">13,188 €</td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                                        <i class="fas fa-check-circle mr-1"></i>
+                                        En stock
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <button class="text-indigo-600 hover:text-indigo-900 mr-2">
+                                        <i class="fas fa-exchange-alt"></i>
+                                    </button>
+                                    <button class="text-gray-600 hover:text-gray-900">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+                    <div class="text-sm text-gray-600">
+                        Affichage 1 à 20 sur 1,234 produits
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm">1</button>
+                        <button class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">2</button>
+                        <button class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">3</button>
+                        <span class="px-2 text-gray-600">...</span>
+                        <button class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">62</button>
+                        <button class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

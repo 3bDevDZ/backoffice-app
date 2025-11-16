@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+
+{% block title %}{% if promotion %}{{ _('Edit Promotion') }}{% else %}{{ _('New Promotion') }}{% endif %} - CommerceFlow{% endblock %}
+
+{% block page_title %}{% if promotion %}{{ _('Edit Promotion') }}{% else %}{{ _('New Promotion') }}{% endif %}{% endblock %}
+{% block page_subtitle %}{% if promotion %}{{ _('Modify promotional price') }}{% else %}{{ _('Create a new promotional price') }}{% endif %}{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<style>
+    /* Select2 Container */
+    .select2-container {
+        width: 100% !important;
+    }
+    
+    /* Select2 Selection (the visible input) */
+    .select2-container--default .select2-selection--single {
+        height: 42px !important;
+        border: 1px solid var(--color-border-default) !important;
+        border-radius: var(--radius-md) !important;
+        background-color: var(--color-bg-primary) !important;
+        outline: none;
+    }
+    
+    .select2-container--default.select2-container--focus .select2-selection--single {
+        border-color: var(--color-sidebar-accent) !important;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+    
+    /* Rendered text inside Select2 */
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 42px !important;
+        padding-left: 12px !important;
+        padding-right: 30px !important;
+        color: var(--color-text-primary) !important;
+    }
+    
+    /* Placeholder text */
+    .select2-container--default .select2-selection--single .select2-selection__placeholder {
+        color: var(--color-text-tertiary) !important;
+        line-height: 42px !important;
+    }
+    
+    /* Arrow icon */
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 40px !important;
+        right: 10px !important;
+        top: 1px;
+    }
+    
+    .select2-container--default .select2-selection--single .select2-selection__arrow b {
+        border-color: var(--color-text-secondary) transparent transparent transparent;
+    }
+    
+    /* Clear button (X) */
+    .select2-container--default .select2-selection--single .select2-selection__clear {
+        margin-right: 25px;
+        cursor: pointer;
+        color: var(--color-text-secondary);
+        font-weight: bold;
+        font-size: 18px;
+    }
+    
+    .select2-container--default .select2-selection--single .select2-selection__clear:hover {
+        color: var(--color-error);
+    }
+    
+    /* Dropdown */
+    .select2-dropdown {
+        border: 1px solid var(--color-border-default) !important;
+        border-radius: var(--radius-md) !important;
+        box-shadow: var(--shadow-md) !important;
+        background-color: var(--color-bg-primary) !important;
+        margin-top: 4px;
+    }
+    
+    /* Search field in dropdown */
+    .select2-search--dropdown .select2-search__field {
+        border: 1px solid var(--color-border-default) !important;
+        border-radius: var(--radius-md) !important;
+        padding: 8px 12px !important;
+        outline: none;
+    }
+    
+    .select2-search--dropdown .select2-search__field:focus {
+        border-color: var(--color-sidebar-accent) !important;
+    }
+    
+    /* Results options */
+    .select2-results__option {
+        padding: 10px 12px !important;
+        color: var(--color-text-primary) !important;
+    }
+    
+    .select2-results__option[aria-selected] {
+        cursor: pointer;
+    }
+    
+    .select2-results__option--highlighted[aria-selected] {
+        background-color: var(--color-sidebar-hover) !important;
+        color: var(--color-text-primary) !important;
+    }
+    
+    .select2-results__option[aria-selected=true] {
+        background-color: var(--color-sidebar-active) !important;
+        color: var(--color-text-primary) !important;
+    }
+    
+    /* Loading indicator */
+    .select2-results__option--loading {
+        color: var(--color-text-secondary) !important;
+    }
+    
+    /* No results message */
+    .select2-results__message {
+        color: var(--color-text-secondary) !important;
+        padding: 10px 12px !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <form method="POST" action="{% if promotion %}{{ url_for('promotions.update', promo_id=promotion.id) }}{% else %}{{ url_for('promotions.create') }}{% endif %}">
+        <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+            <div class="space-y-6">
+                <!-- Product Selection -->
+                <div>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                        {{ _('Product') }} <span style="color: var(--color-error);">*</span>
+                    </label>
+                    <select id="product_id" name="product_id" required class="modern-input w-full" {% if promotion %}disabled{% endif %}>
+                        {% if promotion %}
+                            <option value="{{ promotion.product_id }}" selected>Product #{{ promotion.product_id }}</option>
+                        {% endif %}
+                    </select>
+                    {% if promotion %}
+                        <input type="hidden" name="product_id" value="{{ promotion.product_id }}">
+                    {% endif %}
+                    <p class="text-xs mt-1" style="color: var(--color-text-tertiary);">
+                        {{ _('Search and select a product for this promotion') }}
+                    </p>
+                </div>
+
+                <!-- Price -->
+                <div>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                        {{ _('Promotional Price') }} <span style="color: var(--color-error);">*</span>
+                    </label>
+                    <input type="number" 
+                           name="price"
+                           id="price"
+                           step="0.01"
+                           min="0"
+                           required
+                           value="{% if promotion %}{{ promotion.price }}{% endif %}"
+                           class="modern-input w-full"
+                           placeholder="0.00">
+                </div>
+
+                <!-- Start Date -->
+                <div>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                        {{ _('Start Date') }} <span style="color: var(--color-error);">*</span>
+                    </label>
+                    <input type="datetime-local" 
+                           name="start_date"
+                           id="start_date"
+                           required
+                           value="{% if promotion and promotion.start_date %}{{ promotion.start_date[:16] }}{% endif %}"
+                           class="modern-input w-full">
+                </div>
+
+                <!-- End Date -->
+                <div>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                        {{ _('End Date') }} <span style="color: var(--color-error);">*</span>
+                    </label>
+                    <input type="datetime-local" 
+                           name="end_date"
+                           id="end_date"
+                           required
+                           value="{% if promotion and promotion.end_date %}{{ promotion.end_date[:16] }}{% endif %}"
+                           class="modern-input w-full">
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                        {{ _('Description') }} <span style="color: var(--color-text-tertiary);">({{ _('Optional') }})</span>
+                    </label>
+                    <textarea name="description"
+                              id="description"
+                              rows="3"
+                              class="modern-input w-full"
+                              placeholder="{{ _('Promotion description...') }}">{% if promotion %}{{ promotion.description or '' }}{% endif %}</textarea>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex {% if direction == 'rtl' %}justify-start{% else %}justify-end{% endif %} {% if direction == 'rtl' %}space-x-reverse space-x-3{% else %}space-x-3{% endif %} mt-6">
+                <a href="{{ url_for('promotions.list') }}" class="btn-secondary">
+                    {{ _('Cancel') }}
+                </a>
+                <button type="submit" class="btn-primary">
+                    {{ _('Save') }}
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Initialize Select2 for product selection
+    $('#product_id').select2({
+        theme: 'bootstrap-5',
+        placeholder: '{{ _("Search for a product...") }}',
+        allowClear: true,
+        width: '100%',
+        ajax: {
+            url: '{{ url_for("promotions.get_products_json") }}',
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return {
+                    q: params.term, // search term
+                    page: params.page || 1
+                };
+            },
+            processResults: function (data) {
+                return {
+                    results: data.results.map(function(item) {
+                        return {
+                            id: item.id,
+                            text: item.text
+                        };
+                    }),
+                    pagination: {
+                        more: data.pagination && data.pagination.more
+                    }
+                };
+            },
+            cache: true
+        },
+        minimumInputLength: 0,
+        language: {
+            noResults: function() {
+                return '{{ _("No products found") }}';
+            },
+            searching: function() {
+                return '{{ _("Searching...") }}';
+            }
+        }
+    });
+
+    {% if promotion %}
+    // For edit mode, pre-select the product
+    // We need to fetch the product name first
+    $.ajax({
+        url: '{{ url_for("promotions.get_products_json") }}',
+        data: { q: '' },
+        dataType: 'json'
+    }).done(function(data) {
+        var productId = {{ promotion.product_id }};
+        var product = data.results.find(function(item) {
+            return item.id == productId;
+        });
+        
+        if (product) {
+            var newOption = new Option(product.text, productId, true, true);
+            $('#product_id').append(newOption).trigger('change');
+        } else {
+            // Fallback if product not found in search results
+            var newOption = new Option('Product #' + productId, productId, true, true);
+            $('#product_id').append(newOption).trigger('change');
+        }
+    });
+    {% endif %}
+});
+</script>
+{% endblock %}
+

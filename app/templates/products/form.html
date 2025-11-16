@@ -1,0 +1,670 @@
+{% extends "base.html" %}
+
+{% block title %}{% if product %}{{ _('Edit Product') }}{% else %}{{ _('New Product') }}{% endif %} - CommerceFlow{% endblock %}
+
+{% block page_title %}{% if product %}{{ _('Edit Product') }}{% else %}{{ _('New Product') }}{% endif %}{% endblock %}
+{% block page_subtitle %}{% if product %}{{ _('Modify product information') }}{% else %}{{ _('Add a new product to the catalog') }}{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <form id="product-form" method="POST" action="{% if product %}{{ url_for('products_frontend.update_product', product_id=product.id) }}{% else %}{{ url_for('products_frontend.create') }}{% endif %}">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Column - Main Info -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Basic Information -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Basic Information') }}</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Product Name') }} <span style="color: var(--color-error);">*</span>
+                            </label>
+                            <input type="text" 
+                                id="name"
+                                name="name"
+                                value="{% if product %}{{ product.name }}{% endif %}"
+                                required
+                                class="modern-input"
+                                placeholder="{{ _('Ex: Laptop XPS 15') }}">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                    {{ _('Product Code') }} <span style="color: var(--color-error);">*</span>
+                                </label>
+                                <input type="text" 
+                                    id="code"
+                                    name="code"
+                                    value="{% if product %}{{ product.code }}{% endif %}"
+                                    required
+                                    maxlength="50"
+                                    class="modern-input"
+                                    placeholder="PRD-2025-">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                    {{ _('Barcode (EAN/UPC)') }}
+                                </label>
+                                <input type="text" 
+                                    id="barcode"
+                                    name="barcode"
+                                    value="{% if product %}{{ product.barcode or '' }}{% endif %}"
+                                    maxlength="50"
+                                    class="modern-input"
+                                    placeholder="1234567890123">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Short Description') }}
+                            </label>
+                            <input type="text" 
+                                id="description"
+                                name="description"
+                                value="{% if product %}{{ product.description or '' }}{% endif %}"
+                                class="modern-input"
+                                placeholder="{{ _('Short description for listings') }}">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Detailed Description') }}
+                            </label>
+                            <textarea rows="4" 
+                                id="detailed-description"
+                                name="detailed_description"
+                                class="modern-input"
+                                placeholder="{{ _('Complete product description, technical features...') }}">{% if product %}{{ product.description or '' }}{% endif %}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pricing -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Pricing') }}</h3>
+                    
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                    {{ _('Purchase Price HT') }} <span style="color: var(--color-error);">*</span>
+                                </label>
+                                <div class="relative">
+                                    <input type="number" 
+                                        id="cost"
+                                        name="cost"
+                                        step="0.01"
+                                        value="{% if product and product.cost %}{{ product.cost }}{% endif %}"
+                                        class="modern-input {% if direction == 'rtl' %}pr-3 pl-10{% else %}pl-3 pr-10{% endif %}"
+                                        placeholder="0.00">
+                                    <div class="absolute inset-y-0 {% if direction == 'rtl' %}left-0 pl-3{% else %}right-0 pr-3{% endif %} flex items-center pointer-events-none">
+                                        <span class="text-gray-500">€</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                    {{ _('Selling Price HT') }} <span style="color: var(--color-error);">*</span>
+                                </label>
+                                <div class="relative">
+                                    <input type="number" 
+                                        id="price"
+                                        name="price"
+                                        step="0.01"
+                                        value="{% if product %}{{ product.price }}{% endif %}"
+                                        required
+                                        class="modern-input {% if direction == 'rtl' %}pr-3 pl-10{% else %}pl-3 pr-10{% endif %}"
+                                        placeholder="0.00">
+                                    <div class="absolute inset-y-0 {% if direction == 'rtl' %}left-0 pl-3{% else %}right-0 pr-3{% endif %} flex items-center pointer-events-none">
+                                        <span class="text-gray-500">€</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="background: var(--color-info-light); border: 1px solid var(--color-info); border-radius: var(--radius-lg); padding: var(--spacing-md);">
+                            <div class="flex justify-between items-center text-sm mb-2">
+                                <span style="color: var(--color-text-secondary);">{{ _('Price TTC:') }}</span>
+                                <span class="font-bold" style="color: var(--color-text-primary);" id="price-ttc">0,00 €</span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm">
+                                <span style="color: var(--color-text-secondary);">{{ _('Margin:') }}</span>
+                                <span class="font-bold text-green-600" id="margin">0,00 € (0%)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stock Management -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Stock Management') }}</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Unit of Measure') }}
+                            </label>
+                            <select id="unit_of_measure" name="unit_of_measure" class="modern-select">
+                                <option value="">{{ _('Select...') }}</option>
+                                <option value="piece" {% if product and product.unit_of_measure == 'piece' %}selected{% endif %}>{{ _('Piece') }}</option>
+                                <option value="lot" {% if product and product.unit_of_measure == 'lot' %}selected{% endif %}>{{ _('Lot') }}</option>
+                                <option value="box" {% if product and product.unit_of_measure == 'box' %}selected{% endif %}>{{ _('Box') }}</option>
+                                <option value="kg" {% if product and product.unit_of_measure == 'kg' %}selected{% endif %}>Kg</option>
+                                <option value="liter" {% if product and product.unit_of_measure == 'liter' %}selected{% endif %}>{{ _('Liter') }}</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Volume Pricing (only for existing products) -->
+                {% if product %}
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %} items-center mb-4">
+                        <h3 class="text-lg font-bold" style="color: var(--color-text-primary);">{{ _('Volume Pricing') }}</h3>
+                        <button type="button" onclick="showAddVolumePricingModal()" class="btn-secondary">
+                            <i class="fas fa-plus {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                            {{ _('Add Tier') }}
+                        </button>
+                    </div>
+                    <p class="text-sm mb-4" style="color: var(--color-text-secondary);">
+                        {{ _('Define quantity-based pricing tiers. The highest applicable tier will be used automatically.') }}
+                    </p>
+                    
+                    <div id="volume-pricing-table-container">
+                        <div class="modern-table-container">
+                            <table class="modern-table" id="volume-pricing-table">
+                                <thead>
+                                    <tr>
+                                        <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Min Quantity') }}</th>
+                                        <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Max Quantity') }}</th>
+                                        <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Price') }}</th>
+                                        <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Actions') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="volume-pricing-tbody">
+                                    <!-- Volume pricing tiers will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="volume-pricing-empty" class="hidden text-center py-8">
+                            <i class="fas fa-chart-line text-4xl mb-3" style="color: var(--color-text-tertiary);"></i>
+                            <p class="text-sm" style="color: var(--color-text-secondary);">{{ _('No volume pricing tiers defined.') }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Right Column - Categories & Status -->
+            <div class="space-y-6">
+                <!-- Categories & Status -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Organization') }}</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Category') }} <span style="color: var(--color-error);">*</span>
+                            </label>
+                            <select id="category_ids" name="category_ids" multiple required class="modern-select">
+                                {% for category in categories %}
+                                <option value="{{ category.id }}" {% if product and product.category_ids and category.id in product.category_ids %}selected{% endif %}>
+                                    {{ category.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">{{ _('Hold Ctrl/Cmd to select multiple') }}</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Status') }}
+                            </label>
+                            <div class="space-y-2">
+                                <label class="flex items-center">
+                                    <input type="radio" name="status" value="active" class="w-4 h-4 text-indigo-600" {% if not product or product.status == 'active' %}checked{% endif %}>
+                                    <span class="{% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} text-sm" style="color: var(--color-text-secondary);">{{ _('Active') }}</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="status" value="inactive" class="w-4 h-4 text-indigo-600" {% if product and product.status == 'inactive' %}checked{% endif %}>
+                                    <span class="{% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} text-sm" style="color: var(--color-text-secondary);">{{ _('Inactive') }}</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="status" value="archived" class="w-4 h-4 text-indigo-600" {% if product and product.status == 'archived' %}checked{% endif %}>
+                                    <span class="{% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} text-sm" style="color: var(--color-text-secondary);">{{ _('Archived') }}</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div style="background: var(--color-info-light); border: 1px solid var(--color-info); border-radius: var(--radius-xl); padding: var(--spacing-lg);">
+                    <h4 class="text-sm font-bold mb-3" style="color: var(--color-primary-dark);">{{ _('Quick Actions') }}</h4>
+                    <div class="space-y-2">
+                        <a href="{{ url_for('products_frontend.list') }}" class="block w-full text-{% if direction == 'rtl' %}right{% else %}left{% endif %} px-3 py-2 text-sm rounded-lg transition" style="color: var(--color-primary);">
+                            <i class="fas fa-arrow-{% if direction == 'rtl' %}right{% else %}left{% endif %} {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                            {{ _('Back to List') }}
+                        </a>
+                        {% if product %}
+                        <button type="button" onclick="archiveProduct({{ product.id }})" class="w-full text-{% if direction == 'rtl' %}right{% else %}left{% endif %} px-3 py-2 text-sm text-orange-600 hover:bg-orange-50 rounded-lg transition">
+                            <i class="fas fa-archive {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                            {{ _('Archive') }}
+                        </button>
+                        <button type="button" onclick="deleteProduct({{ product.id }})" class="w-full text-{% if direction == 'rtl' %}right{% else %}left{% endif %} px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition">
+                            <i class="fas fa-trash {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                            {{ _('Delete') }}
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="mt-6 flex items-center justify-{% if direction == 'rtl' %}start{% else %}end{% endif %} {% if direction == 'rtl' %}space-x-reverse space-x-3{% else %}space-x-3{% endif %}">
+            {% if product %}
+            <a href="{{ url_for('products_frontend.view', product_id=product.id) }}" class="btn-secondary">
+                <i class="fas fa-eye {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                {{ _('View') }}
+            </a>
+            <a href="{{ url_for('products_frontend.list_variants', product_id=product.id) }}" class="btn-secondary">
+                <i class="fas fa-layer-group {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                {{ _('Variants') }}
+            </a>
+            {% endif %}
+            <a href="{{ url_for('products_frontend.list') }}" class="btn-secondary">
+                <i class="fas fa-times {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                {{ _('Cancel') }}
+            </a>
+            <button type="submit" class="btn-primary">
+                <i class="fas fa-check {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                {{ _('Save') }}
+            </button>
+        </div>
+    </form>
+</div>
+
+{% if product %}
+<!-- Add/Edit Volume Pricing Modal -->
+<div id="volumePricingModal" class="hidden fixed inset-0 z-50 overflow-y-auto" style="background: rgba(0, 0, 0, 0.5);">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-md" style="border-radius: var(--radius-xl);">
+            <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %} items-center mb-4">
+                <h3 class="text-lg font-bold" id="volumePricingModalTitle" style="color: var(--color-text-primary);">{{ _('Add Volume Pricing Tier') }}</h3>
+                <button onclick="closeVolumePricingModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="volumePricingForm">
+                <input type="hidden" id="volumePricingTierId" value="">
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                            {{ _('Minimum Quantity') }} <span style="color: var(--color-error);">*</span>
+                        </label>
+                        <input type="number" 
+                               id="volumePricingMinQuantity"
+                               step="0.001"
+                               min="0"
+                               required
+                               class="modern-input w-full"
+                               placeholder="0.000">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                            {{ _('Maximum Quantity') }} <span style="color: var(--color-text-tertiary);">({{ _('Leave empty for unlimited') }})</span>
+                        </label>
+                        <input type="number" 
+                               id="volumePricingMaxQuantity"
+                               step="0.001"
+                               min="0"
+                               class="modern-input w-full"
+                               placeholder="{{ _('Unlimited') }}">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                            {{ _('Price') }} <span style="color: var(--color-error);">*</span>
+                        </label>
+                        <input type="number" 
+                               id="volumePricingPrice"
+                               step="0.01"
+                               min="0"
+                               required
+                               class="modern-input w-full"
+                               placeholder="0.00">
+                    </div>
+                </div>
+                
+                <div class="flex {% if direction == 'rtl' %}justify-start{% else %}justify-end{% endif %} {% if direction == 'rtl' %}space-x-reverse space-x-3{% else %}space-x-3{% endif %} mt-6">
+                    <button type="button" onclick="closeVolumePricingModal()" class="btn-secondary">
+                        {{ _('Cancel') }}
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        {{ _('Save') }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let volumePricingTiers = [];
+
+// Load volume pricing tiers for the product
+async function loadVolumePricingTiers() {
+    try {
+        const response = await fetch(`/products/{{ product.id }}/data/volume-pricing`);
+        const data = await response.json();
+        
+        if (data.success && data.data && data.data.items) {
+            volumePricingTiers = data.data.items;
+            renderVolumePricingTable();
+        } else {
+            volumePricingTiers = [];
+            renderVolumePricingTable();
+        }
+    } catch (error) {
+        console.error('Error loading volume pricing tiers:', error);
+        volumePricingTiers = [];
+        renderVolumePricingTable();
+    }
+}
+
+// Render volume pricing table
+function renderVolumePricingTable() {
+    const tbody = document.getElementById('volume-pricing-tbody');
+    const emptyState = document.getElementById('volume-pricing-empty');
+    
+    if (volumePricingTiers.length === 0) {
+        tbody.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+    }
+    
+    emptyState.classList.add('hidden');
+    
+    tbody.innerHTML = volumePricingTiers.map(tier => `
+        <tr>
+            <td>${parseFloat(tier.min_quantity).toFixed(3)}</td>
+            <td>${tier.max_quantity ? parseFloat(tier.max_quantity).toFixed(3) : '∞'}</td>
+            <td class="font-semibold">${parseFloat(tier.price).toFixed(2)} €</td>
+            <td>
+                <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+                    <button onclick="editVolumePricingTier(${tier.id})" 
+                            class="text-indigo-600 hover:text-indigo-900" 
+                            title="{{ _('Edit') }}">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="deleteVolumePricingTier(${tier.id})" 
+                            class="text-red-600 hover:text-red-900" 
+                            title="{{ _('Delete') }}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Show add modal
+function showAddVolumePricingModal() {
+    document.getElementById('volumePricingModalTitle').textContent = '{{ _("Add Volume Pricing Tier") }}';
+    document.getElementById('volumePricingTierId').value = '';
+    document.getElementById('volumePricingForm').reset();
+    document.getElementById('volumePricingModal').classList.remove('hidden');
+}
+
+// Show edit modal
+function editVolumePricingTier(tierId) {
+    const tier = volumePricingTiers.find(t => t.id === tierId);
+    if (!tier) return;
+    
+    document.getElementById('volumePricingModalTitle').textContent = '{{ _("Edit Volume Pricing Tier") }}';
+    document.getElementById('volumePricingTierId').value = tier.id;
+    document.getElementById('volumePricingMinQuantity').value = tier.min_quantity;
+    document.getElementById('volumePricingMaxQuantity').value = tier.max_quantity || '';
+    document.getElementById('volumePricingPrice').value = tier.price;
+    document.getElementById('volumePricingModal').classList.remove('hidden');
+}
+
+// Close modal
+function closeVolumePricingModal() {
+    document.getElementById('volumePricingModal').classList.add('hidden');
+    document.getElementById('volumePricingForm').reset();
+}
+
+// Delete tier
+function deleteVolumePricingTier(tierId) {
+    if (!confirm('{{ _("Are you sure you want to delete this volume pricing tier?") }}')) {
+        return;
+    }
+    
+    // Create a form and submit it (session-based auth)
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/products/{{ product.id }}/volume-pricing/${tierId}/delete`;
+    
+    // Add CSRF token if available
+    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+    if (csrfToken) {
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = csrfToken.content;
+        form.appendChild(csrfInput);
+    }
+    
+    document.body.appendChild(form);
+    form.submit();
+}
+
+// Handle form submission
+document.getElementById('volumePricingForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const tierId = document.getElementById('volumePricingTierId').value;
+    const minQuantity = document.getElementById('volumePricingMinQuantity').value;
+    const maxQuantity = document.getElementById('volumePricingMaxQuantity').value;
+    const price = document.getElementById('volumePricingPrice').value;
+    
+    // Create a form and submit it (session-based auth)
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = tierId 
+        ? `/products/{{ product.id }}/volume-pricing/${tierId}`
+        : `/products/{{ product.id }}/volume-pricing`;
+    
+    // Add form fields
+    const minQtyInput = document.createElement('input');
+    minQtyInput.type = 'hidden';
+    minQtyInput.name = 'min_quantity';
+    minQtyInput.value = minQuantity;
+    form.appendChild(minQtyInput);
+    
+    if (maxQuantity) {
+        const maxQtyInput = document.createElement('input');
+        maxQtyInput.type = 'hidden';
+        maxQtyInput.name = 'max_quantity';
+        maxQtyInput.value = maxQuantity;
+        form.appendChild(maxQtyInput);
+    }
+    
+    const priceInput = document.createElement('input');
+    priceInput.type = 'hidden';
+    priceInput.name = 'price';
+    priceInput.value = price;
+    form.appendChild(priceInput);
+    
+    if (tierId) {
+        const idInput = document.createElement('input');
+        idInput.type = 'hidden';
+        idInput.name = 'id';
+        idInput.value = tierId;
+        form.appendChild(idInput);
+    }
+    
+    // Add CSRF token if available
+    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+    if (csrfToken) {
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = csrfToken.content;
+        form.appendChild(csrfInput);
+    }
+    
+    document.body.appendChild(form);
+    form.submit();
+});
+
+// Close modal when clicking outside
+window.addEventListener('click', function(event) {
+    const modal = document.getElementById('volumePricingModal');
+    if (event.target == modal) {
+        closeVolumePricingModal();
+    }
+});
+
+// Load tiers on page load
+document.addEventListener('DOMContentLoaded', function() {
+    {% if product %}
+    loadVolumePricingTiers();
+    {% endif %}
+});
+</script>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/api.js') }}"></script>
+<script>
+// Calculate TTC and margin
+function updateCalculations() {
+    const price = parseFloat(document.getElementById('price').value) || 0;
+    const cost = parseFloat(document.getElementById('cost').value) || 0;
+    const tva = 0.20; // 20% TVA
+    
+    const priceTTC = price * (1 + tva);
+    const margin = price - cost;
+    const marginPercent = cost > 0 ? ((margin / cost) * 100) : 0;
+    
+    document.getElementById('price-ttc').textContent = priceTTC.toFixed(2) + ' €';
+    document.getElementById('margin').textContent = margin.toFixed(2) + ' € (' + marginPercent.toFixed(1) + '%)';
+}
+
+document.getElementById('price').addEventListener('input', updateCalculations);
+document.getElementById('cost').addEventListener('input', updateCalculations);
+
+// Form submission via AJAX
+document.getElementById('product-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const categoryIds = Array.from(document.getElementById('category_ids').selectedOptions).map(opt => parseInt(opt.value));
+    formData.delete('category_ids');
+    
+    const data = {
+        code: formData.get('code'),
+        name: formData.get('name'),
+        description: formData.get('description'),
+        price: parseFloat(formData.get('price')),
+        cost: formData.get('cost') ? parseFloat(formData.get('cost')) : null,
+        unit_of_measure: formData.get('unit_of_measure') || null,
+        barcode: formData.get('barcode') || null,
+        category_ids: categoryIds
+    };
+    
+    try {
+        const url = this.action;
+        const method = 'POST';
+        
+        const response = await fetch(url, {
+            method: method,
+            body: JSON.stringify(data),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            console.error('Non-JSON response:', text);
+            alert('{{ _("Error saving product") }}: ' + (text || response.statusText));
+            return;
+        }
+        
+        const result = await response.json();
+        
+        if (result.status === 'success' || response.ok) {
+            window.location.href = '{{ url_for("products_frontend.list") }}';
+        } else {
+            alert('{{ _("Error saving product") }}: ' + (result.message || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('{{ _("Error saving product") }}');
+    }
+});
+
+{% if product %}
+function archiveProduct(id) {
+    if (confirm('{{ _("Are you sure you want to archive this product?") }}')) {
+        fetch(`{{ url_for("products_frontend.archive_product", product_id=0) }}`.replace('0', id), { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(async res => {
+                const contentType = res.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await res.text();
+                    throw new Error(text || res.statusText);
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.href = '{{ url_for("products_frontend.list") }}';
+                } else {
+                    alert('{{ _("Error archiving product") }}: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(err => alert('{{ _("Error archiving product") }}: ' + err.message));
+    }
+}
+
+function deleteProduct(id) {
+    if (confirm('{{ _("Are you sure you want to delete this product? This action cannot be undone.") }}')) {
+        fetch(`{{ url_for("products_frontend.delete_product", product_id=0) }}`.replace('0', id), { 
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = '{{ url_for("products_frontend.list") }}';
+                } else {
+                    alert('{{ _("Error deleting product") }}: ' + (data.error?.message || 'Unknown error'));
+                }
+            })
+            .catch(err => alert('{{ _("Error deleting product") }}'));
+    }
+}
+{% endif %}
+</script>
+{% endblock %}
+
