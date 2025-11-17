@@ -42,6 +42,52 @@
 </div>
 
 <!-- Filters & Search -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+    <form method="GET" action="{{ url_for('sales.quotes_list') }}" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <!-- Search -->
+        <div class="md:col-span-2">
+            <div class="relative">
+                <div class="absolute inset-y-0 {% if direction == 'rtl' %}right-0 pr-3{% else %}left-0 pl-3{% endif %} flex items-center pointer-events-none">
+                    <i class="fas fa-search" style="color: var(--color-text-tertiary);"></i>
+                </div>
+                <input type="text" 
+                    name="search"
+                    value="{{ search or '' }}"
+                    class="modern-input {% if direction == 'rtl' %}pr-10 pl-3{% else %}pl-10 pr-3{% endif %}"
+                    placeholder="{{ _('Search by quote number, customer...') }}">
+            </div>
+        </div>
+
+        <!-- Customer Filter -->
+        <select name="customer_id" id="customer_filter" class="modern-select">
+            <option value="">{{ _('All Customers') }}</option>
+        </select>
+
+        <!-- Status Filter -->
+        <select name="status" class="modern-select">
+            <option value="">{{ _('All Statuses') }}</option>
+            <option value="draft" {% if status == 'draft' %}selected{% endif %}>{{ _('Draft') }}</option>
+            <option value="sent" {% if status == 'sent' %}selected{% endif %}>{{ _('Sent') }}</option>
+            <option value="accepted" {% if status == 'accepted' %}selected{% endif %}>{{ _('Accepted') }}</option>
+            <option value="rejected" {% if status == 'rejected' %}selected{% endif %}>{{ _('Rejected') }}</option>
+            <option value="expired" {% if status == 'expired' %}selected{% endif %}>{{ _('Expired') }}</option>
+            <option value="canceled" {% if status == 'canceled' %}selected{% endif %}>{{ _('Canceled') }}</option>
+        </select>
+
+        <!-- Actions -->
+        <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+            <button type="submit" class="btn-secondary flex-1">
+                <i class="fas fa-filter {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                {{ _('Filter') }}
+            </button>
+            <a href="{{ url_for('sales.quotes_list') }}" class="btn-secondary" style="padding: 0.75rem;">
+                <i class="fas fa-redo"></i>
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Quotes Table -->
 <div class="modern-table-container">
     <div class="overflow-x-auto">
         <table class="modern-table">
@@ -145,13 +191,13 @@
     <div class="bg-gray-50 px-4 py-3 flex items-center {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %} border-t border-gray-200 sm:px-6">
         <div class="flex-1 flex {% if direction == 'rtl' %}justify-end{% else %}justify-start{% endif %} sm:hidden">
             {% if pagination.page > 1 %}
-            <a href="{{ url_for('sales.quotes_list', page=pagination.page-1, search=search, status=status) }}" 
+            <a href="{{ url_for('sales.quotes_list', page=pagination.page-1, search=search, status=status, customer_id=customer_id) }}" 
                class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                 {{ _('Previous') }}
             </a>
             {% endif %}
             {% if pagination.page < pagination.pages %}
-            <a href="{{ url_for('sales.quotes_list', page=pagination.page+1, search=search, status=status) }}" 
+            <a href="{{ url_for('sales.quotes_list', page=pagination.page+1, search=search, status=status, customer_id=customer_id) }}" 
                class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                 {{ _('Next') }}
             </a>
@@ -172,7 +218,7 @@
             <div>
                 <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
                     {% if pagination.page > 1 %}
-                    <a href="{{ url_for('sales.quotes_list', page=pagination.page-1, search=search, status=status) }}" 
+                    <a href="{{ url_for('sales.quotes_list', page=pagination.page-1, search=search, status=status, customer_id=customer_id) }}" 
                        class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                         <i class="fas fa-chevron-{% if direction == 'rtl' %}right{% else %}left{% endif %}"></i>
                     </a>
@@ -183,7 +229,7 @@
                             {{ page_num }}
                         </span>
                         {% elif page_num <= 3 or page_num > pagination.pages - 3 or (page_num >= pagination.page - 1 and page_num <= pagination.page + 1) %}
-                        <a href="{{ url_for('sales.quotes_list', page=page_num, search=search, status=status) }}" 
+                        <a href="{{ url_for('sales.quotes_list', page=page_num, search=search, status=status, customer_id=customer_id) }}" 
                            class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
                             {{ page_num }}
                         </a>
@@ -194,7 +240,7 @@
                         {% endif %}
                     {% endfor %}
                     {% if pagination.page < pagination.pages %}
-                    <a href="{{ url_for('sales.quotes_list', page=pagination.page+1, search=search, status=status) }}" 
+                    <a href="{{ url_for('sales.quotes_list', page=pagination.page+1, search=search, status=status, customer_id=customer_id) }}" 
                        class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                         <i class="fas fa-chevron-{% if direction == 'rtl' %}left{% else %}right{% endif %}"></i>
                     </a>
@@ -205,5 +251,112 @@
     </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    /* Fix Select2 width and height in filters */
+    #customer_filter {
+        width: 100% !important;
+    }
+    .select2-container {
+        width: 100% !important;
+    }
+    .select2-selection {
+        height: 42px !important;
+        line-height: 42px !important;
+        border: 1px solid #d1d5db !important;
+        border-radius: 0.5rem !important;
+    }
+    .select2-selection__rendered {
+        line-height: 42px !important;
+        {% if direction == 'rtl' %}
+        padding-right: 0.75rem !important;
+        padding-left: 2.5rem !important;
+        {% else %}
+        padding-left: 0.75rem !important;
+        padding-right: 2.5rem !important;
+        {% endif %}
+    }
+    .select2-selection__arrow {
+        height: 40px !important;
+        {% if direction == 'rtl' %}
+        left: 10px !important;
+        right: auto !important;
+        {% else %}
+        right: 10px !important;
+        left: auto !important;
+        {% endif %}
+    }
+    .select2-dropdown {
+        border: 1px solid #d1d5db !important;
+        border-radius: 0.5rem !important;
+    }
+    .select2-container--default .select2-selection--single {
+        background-color: white !important;
+    }
+    .select2-container--default .select2-selection--single:focus {
+        outline: none !important;
+        border-color: #6366f1 !important;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize customer filter with Select2
+    $('#customer_filter').select2({
+        placeholder: '{{ _("Select a customer...") }}',
+        allowClear: true,
+        ajax: {
+            url: '{{ url_for("sales.get_customers_json") }}',
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return {
+                    q: params.term,
+                    page: params.page || 1,
+                    per_page: 20,
+                    status: 'active'
+                };
+            },
+            processResults: function (data) {
+                return {
+                    results: data.data.items.map(function(customer) {
+                        return {
+                            id: customer.id,
+                            text: (customer.code || '') + ' - ' + (customer.name || '')
+                        };
+                    }),
+                    pagination: {
+                        more: data.pagination ? data.pagination.more : false
+                    }
+                };
+            },
+            cache: true
+        },
+        minimumInputLength: 0
+    });
+
+    // Set selected customer if provided
+    {% if customer_id %}
+    $.ajax({
+        url: '{{ url_for("sales.get_customers_json") }}',
+        data: { status: 'active' }
+    }).then(function (data) {
+        var customer = data.data.items.find(function(c) { return c.id == {{ customer_id }}; });
+        if (customer) {
+            var option = new Option((customer.code || '') + ' - ' + (customer.name || ''), customer.id, true, true);
+            $('#customer_filter').append(option).trigger('change');
+        }
+    });
+    {% endif %}
+});
+</script>
 {% endblock %}
 

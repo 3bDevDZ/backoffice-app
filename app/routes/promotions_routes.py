@@ -19,40 +19,48 @@ promotions_routes = Blueprint('promotions', __name__)
 @promotions_routes.route('/promotions')
 @require_roles_or_redirect('admin', 'commercial', 'direction')
 def list():
-    """List all promotional prices."""
+    """List all promotional prices with filtering."""
     locale = get_locale()
     direction = 'rtl' if locale == 'ar' else 'ltr'
     
     # Get query parameters
     page = int(request.args.get('page', 1))
     per_page = min(int(request.args.get('per_page', 20)), 100)
-    status = request.args.get('status')  # 'active', 'expired', 'upcoming', 'all'
+    status = request.args.get('status', 'all')  # 'active', 'expired', 'upcoming', 'all'
+    search = request.args.get('search')
+    product_id = request.args.get('product_id', type=int)
+    date_from = request.args.get('date_from')
+    date_to = request.args.get('date_to')
     
-    # Get all active promotional prices
-    query = GetActivePromotionalPricesQuery(product_id=None)
-    active_promotions = mediator.dispatch(query)
+    # Build query with filters
+    query = GetActivePromotionalPricesQuery(
+        product_id=product_id,
+        search=search,
+        status=status,
+        date_from=date_from,
+        date_to=date_to,
+        page=page,
+        per_page=per_page
+    )
     
-    # Get all promotions by iterating through products (simplified - in production, create a better query)
-    # For now, we'll show active promotions and allow filtering
-    now = datetime.now()
+    result = mediator.dispatch(query)
     
-    promotions_list = []
-    for promo in active_promotions:
-        start_date = promo.start_date
-        end_date = promo.end_date
-        
+    # Convert to dict format for template
+    promotions_data = []
+    for promo in result['items']:
+        # Determine status
+        now = datetime.now()
         promo_status = 'active'
-        if end_date < now:
+        if promo.end_date < now:
             promo_status = 'expired'
-        elif start_date > now:
+        elif promo.start_date > now:
             promo_status = 'upcoming'
         
-        if status and status != 'all' and promo_status != status:
-            continue
-        
-        promotions_list.append({
+        promotions_data.append({
             'id': promo.id,
             'product_id': promo.product_id,
+            'product_code': promo.product_code,
+            'product_name': promo.product_name,
             'price': float(promo.price),
             'start_date': promo.start_date,
             'end_date': promo.end_date,
@@ -62,10 +70,20 @@ def list():
         })
     
     return render_template('promotions/list.html', 
-                         promotions=promotions_list,
+                         promotions=promotions_data,
+                         pagination={
+                             'page': result['page'],
+                             'per_page': result['per_page'],
+                             'total': result['total'],
+                             'pages': result['pages']
+                         },
                          direction=direction,
                          locale=locale,
-                         status=status or 'all')
+                         status=status,
+                         search=search,
+                         product_id=product_id,
+                         date_from=date_from,
+                         date_to=date_to)
 
 
 @promotions_routes.route('/promotions/new')
@@ -234,7 +252,6 @@ def get_products_json():
         })
     except Exception as e:
         import traceback
-        print(f"Error in get_products_json: {e}")
         traceback.print_exc()
         return jsonify({
             'results': [],

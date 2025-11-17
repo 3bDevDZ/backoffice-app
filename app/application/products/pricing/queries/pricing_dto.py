@@ -56,5 +56,7 @@ class ProductPromotionalPriceDTO:
     is_active: bool
     created_at: datetime
     updated_at: datetime
-    created_by: Optional[int]
+    product_code: Optional[str] = None
+    product_name: Optional[str] = None
+    created_by: Optional[int] = None
 

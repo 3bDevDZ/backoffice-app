@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Create Payment') }} - CommerceFlow{% endblock %}
+
+{% block extra_css %}
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<style>
+    .select2-container {
+        width: 100% !important;
+    }
+    .select2-container--bootstrap-5 .select2-selection {
+        min-height: 38px;
+        padding: 2px;
+    }
+    .select2-container--bootstrap-5 .select2-selection__rendered {
+        padding: 4px 8px;
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}{{ _('Create Payment') }}{% endblock %}
+{% block page_subtitle %}{{ _('Record a new customer payment') }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <form method="POST" action="{{ url_for('billing.create_payment') }}" class="bg-white rounded-lg shadow-sm p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">{{ _('Payment Information') }}</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label for="customer_id" class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ _('Customer') }} <span class="text-red-500">*</span>
+                </label>
+                <select id="customer_id" name="customer_id" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="">{{ _('Select Customer') }}</option>
+                    {% for customer in customers %}
+                    <option value="{{ customer.id }}">
+                        {{ customer.name or customer.company_name }} ({{ customer.code }})
+                    </option>
+                    {% endfor %}
+                </select>
+                <!-- Outstanding Amount Display -->
+                <div id="outstanding-info" class="mt-2 hidden">
+                    <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p class="text-sm text-blue-800">
+                            <i class="fas fa-info-circle {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                            <strong>{{ _('Total Outstanding:') }}</strong> 
+                            <span id="total-outstanding-amount" class="font-semibold">0.00</span> €
+                            <span id="outstanding-invoice-count" class="text-xs">(0 {{ _('invoices') }})</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <label for="payment_method" class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ _('Payment Method') }} <span class="text-red-500">*</span>
+                </label>
+                <select id="payment_method" name="payment_method" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="">{{ _('Select Method') }}</option>
+                    <option value="cash">{{ _('Cash') }}</option>
+                    <option value="check">{{ _('Check') }}</option>
+                    <option value="bank_transfer">{{ _('Bank Transfer') }}</option>
+                    <option value="credit_card">{{ _('Credit Card') }}</option>
+                    <option value="debit_card">{{ _('Debit Card') }}</option>
+                    <option value="paypal">{{ _('PayPal') }}</option>
+                    <option value="other">{{ _('Other') }}</option>
+                </select>
+            </div>
+            
+            <div>
+                <label for="amount" class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ _('Amount') }} <span class="text-red-500">*</span>
+                </label>
+                <input type="number" id="amount" name="amount" step="0.01" min="0.01" required
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+            
+            <div>
+                <label for="payment_date" class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ _('Payment Date') }} <span class="text-red-500">*</span>
+                </label>
+                <input type="date" id="payment_date" name="payment_date" 
+                       value="{{ default_date.isoformat() }}" required
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+            
+            <div>
+                <label for="value_date" class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ _('Value Date') }}
+                </label>
+                <input type="date" id="value_date" name="value_date"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+            
+            <div>
+                <label for="reference" class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ _('Reference') }}
+                </label>
+                <input type="text" id="reference" name="reference"
+                       placeholder="{{ _('Check number, transfer reference, etc.') }}"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+        </div>
+        
+        <div class="mt-6">
+            <label for="notes" class="block text-sm font-medium text-gray-700 mb-2">
+                {{ _('Notes') }}
+            </label>
+            <textarea id="notes" name="notes" rows="3"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+        </div>
+        
+        <div class="mt-6">
+            <label for="internal_notes" class="block text-sm font-medium text-gray-700 mb-2">
+                {{ _('Internal Notes') }}
+            </label>
+            <textarea id="internal_notes" name="internal_notes" rows="3"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+        </div>
+        
+        <!-- Auto-Allocation Section -->
+        <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div class="flex items-center mb-3">
+                <input type="checkbox" id="auto_allocation_enabled" name="auto_allocation_enabled" 
+                       class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                       onchange="toggleAllocationMode()">
+                <label for="auto_allocation_enabled" class="ml-2 text-sm font-medium text-gray-900">
+                    {{ _('Enable Automatic Allocation') }}
+                </label>
+            </div>
+            <div id="auto-allocation-strategy" class="hidden">
+                <label for="auto_allocation_strategy" class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ _('Allocation Strategy') }}
+                </label>
+                <select id="auto_allocation_strategy" name="auto_allocation_strategy"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="fifo">{{ _('FIFO (First In First Out) - Pay oldest invoices first') }}</option>
+                    <option value="proportional">{{ _('Proportional - Distribute proportionally to all unpaid invoices') }}</option>
+                </select>
+                <p class="mt-2 text-xs text-gray-600">
+                    <i class="fas fa-info-circle {% if direction == 'rtl' %}ml-1{% else %}mr-1{% endif %}"></i>
+                    {{ _('The payment will be automatically allocated to unpaid invoices according to the selected strategy.') }}
+                </p>
+            </div>
+        </div>
+        
+        <!-- Allocations Section -->
+        <div class="mt-6" id="manual-allocations-section">
+            <h4 class="text-md font-semibold text-gray-900 mb-3">{{ _('Allocate to Invoices (Optional)') }}</h4>
+            {% if overdue_invoices|length == 0 %}
+            <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg mb-3">
+                <p class="text-sm text-yellow-800">
+                    <i class="fas fa-info-circle {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                    {{ _('No overdue invoices available for allocation') }}
+                </p>
+            </div>
+            {% endif %}
+            <div id="allocations-container" class="space-y-3">
+                <!-- Allocations will be added dynamically -->
+            </div>
+            <button type="button" id="add-allocation-btn" class="mt-3 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm {% if overdue_invoices|length == 0 %}opacity-50 cursor-not-allowed{% endif %}" {% if overdue_invoices|length == 0 %}disabled{% endif %}>
+                <i class="fas fa-plus {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                {{ _('Add Invoice Allocation') }}
+            </button>
+        </div>
+        
+        <div class="mt-6 flex items-center gap-4">
+            <button type="submit" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                <i class="fas fa-save {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                {{ _('Create Payment') }}
+            </button>
+            <a href="{{ url_for('billing.payments_list') }}" class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                {{ _('Cancel') }}
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- jQuery and Select2 JS -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+// Ensure jQuery is available
+if (typeof jQuery === 'undefined') {
+    console.error('jQuery is not loaded!');
+}
+if (typeof jQuery.fn.select2 === 'undefined') {
+    console.error('Select2 is not loaded!');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('allocations-container');
+    const addBtn = document.getElementById('add-allocation-btn');
+    const customerSelect = document.getElementById('customer_id');
+    const outstandingInfo = document.getElementById('outstanding-info');
+    const totalOutstandingAmount = document.getElementById('total-outstanding-amount');
+    const outstandingInvoiceCount = document.getElementById('outstanding-invoice-count');
+    let allocationCount = 0;
+    let overdueInvoices = {{ overdue_invoices|tojson|safe }};
+    
+    // Initialize Select2 for customer selection
+    if (typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined') {
+        $(customerSelect).select2({
+            theme: 'bootstrap-5',
+            placeholder: '{{ _("Select a customer...") }}',
+            allowClear: true,
+            width: '100%',
+            ajax: {
+                url: '{{ url_for("billing.get_payment_customers_json") }}',
+                dataType: 'json',
+                delay: 250,
+                data: function (params) {
+                    return {
+                        q: params.term,
+                        page: params.page || 1,
+                        per_page: 20,
+                        status: 'active'
+                    };
+                },
+                processResults: function (data) {
+                    if (data.success && data.data && data.data.items) {
+                        return {
+                            results: data.data.items.map(function(customer) {
+                                return {
+                                    id: customer.id,
+                                    text: (customer.code || '') + ' - ' + (customer.name || '')
+                                };
+                            }),
+                            pagination: {
+                                more: data.data.pagination ? data.data.pagination.more : false
+                            }
+                        };
+                    }
+                    return { results: [] };
+                },
+                cache: true
+            },
+            minimumInputLength: 0
+        });
+        
+        // Load customer outstanding invoices when customer is selected
+        $(customerSelect).on('change', function() {
+            const customerId = $(this).val();
+            if (customerId) {
+                loadCustomerOutstanding(customerId);
+            } else {
+                hideOutstandingInfo();
+                overdueInvoices = [];
+            }
+        });
+    }
+    
+    // Load customer outstanding invoices
+    async function loadCustomerOutstanding(customerId) {
+        try {
+            const response = await fetch(`{{ url_for("billing.get_customer_outstanding_json") }}?customer_id=${customerId}`);
+            const data = await response.json();
+            
+            if (data.success && data.data) {
+                overdueInvoices = data.data.invoices || [];
+                const total = data.data.total_outstanding || 0;
+                const count = data.data.invoice_count || 0;
+                
+                // Update outstanding info display
+                totalOutstandingAmount.textContent = total.toFixed(2);
+                outstandingInvoiceCount.textContent = `(${count} {{ _('invoices') }})`;
+                outstandingInfo.classList.remove('hidden');
+                
+                // Enable/disable add allocation button
+                if (overdueInvoices.length === 0) {
+                    addBtn.disabled = true;
+                    addBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    addBtn.disabled = false;
+                    addBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            } else {
+                console.error('Error loading customer outstanding:', data.error);
+                hideOutstandingInfo();
+            }
+        } catch (error) {
+            console.error('Error loading customer outstanding:', error);
+            hideOutstandingInfo();
+        }
+    }
+    
+    function hideOutstandingInfo() {
+        outstandingInfo.classList.add('hidden');
+        totalOutstandingAmount.textContent = '0.00';
+        outstandingInvoiceCount.textContent = '(0 {{ _('invoices') }})';
+        overdueInvoices = [];
+        addBtn.disabled = true;
+        addBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+    
+    // Toggle between auto and manual allocation
+    function toggleAllocationMode() {
+        const autoEnabled = document.getElementById('auto_allocation_enabled').checked;
+        const strategyDiv = document.getElementById('auto-allocation-strategy');
+        const manualSection = document.getElementById('manual-allocations-section');
+        
+        if (autoEnabled) {
+            strategyDiv.classList.remove('hidden');
+            manualSection.style.display = 'none';
+        } else {
+            strategyDiv.classList.add('hidden');
+            manualSection.style.display = 'block';
+        }
+    }
+    
+    addBtn.addEventListener('click', function() {
+        if (overdueInvoices.length === 0) {
+            alert('{{ _("No overdue invoices available for allocation") }}');
+            return;
+        }
+        
+        const div = document.createElement('div');
+        div.className = 'flex items-center gap-3 p-3 bg-gray-50 rounded-lg';
+        div.innerHTML = `
+            <select name="allocation_invoice_id[]" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg">
+                <option value="">{{ _('Select Invoice') }}</option>
+                ${overdueInvoices.map(inv => `
+                    <option value="${inv.invoice_id}" data-remaining="${inv.remaining_amount}">
+                        ${inv.invoice_number} - ${inv.customer_name || inv.customer_code || ''} - ${inv.remaining_amount.toFixed(2)} € (${inv.days_overdue} {{ _('days overdue') }})
+                    </option>
+                `).join('')}
+            </select>
+            <input type="number" name="allocation_amount[]" step="0.01" min="0.01" 
+                   placeholder="{{ _('Amount') }}" 
+                   class="w-32 px-3 py-2 border border-gray-300 rounded-lg">
+            <button type="button" class="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 remove-allocation">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        container.appendChild(div);
+        
+        // Auto-fill amount when invoice is selected
+        const select = div.querySelector('select');
+        const amountInput = div.querySelector('input[type="number"]');
+        select.addEventListener('change', function() {
+            if (this.value) {
+                const option = this.options[this.selectedIndex];
+                const remaining = parseFloat(option.dataset.remaining);
+                amountInput.value = remaining.toFixed(2);
+                amountInput.max = remaining.toFixed(2);
+            }
+        });
+        
+        // Remove button
+        div.querySelector('.remove-allocation').addEventListener('click', function() {
+            div.remove();
+        });
+    });
+});
+</script>
+{% endblock %}
+

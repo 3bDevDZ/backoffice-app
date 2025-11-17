@@ -236,32 +236,83 @@ class GetVolumePricingHandler(QueryHandler):
 
 # ProductPromotionalPrice Handlers
 class GetActivePromotionalPricesHandler(QueryHandler):
-    """Handler for getting active promotional prices."""
+    """Handler for getting active promotional prices with filtering."""
     
-    def handle(self, query: GetActivePromotionalPricesQuery) -> List[ProductPromotionalPriceDTO]:
+    def handle(self, query: GetActivePromotionalPricesQuery) -> dict:
         from app.application.products.pricing.queries.queries import GetActivePromotionalPricesQuery
         from app.application.products.pricing.queries.pricing_dto import ProductPromotionalPriceDTO
+        from datetime import date as date_type
         
         with get_session() as session:
             now = datetime.now()
             
-            # Build query
-            db_query = session.query(ProductPromotionalPrice).filter(
-                ProductPromotionalPrice.is_active == True,
-                ProductPromotionalPrice.start_date <= now,
-                ProductPromotionalPrice.end_date >= now
-            )
+            # Build query - join with Product for search
+            db_query = session.query(ProductPromotionalPrice).join(Product)
             
+            # Filter by product_id if provided
             if query.product_id is not None:
                 db_query = db_query.filter(ProductPromotionalPrice.product_id == query.product_id)
             
+            # Search filter (product name or code)
+            if query.search:
+                search_term = f"%{query.search}%"
+                db_query = db_query.filter(
+                    or_(
+                        Product.name.ilike(search_term),
+                        Product.code.ilike(search_term)
+                    )
+                )
+            
+            # Date filters
+            if query.date_from:
+                try:
+                    if isinstance(query.date_from, str):
+                        date_from = datetime.fromisoformat(query.date_from).date()
+                    else:
+                        date_from = query.date_from
+                    db_query = db_query.filter(ProductPromotionalPrice.start_date >= datetime.combine(date_from, datetime.min.time()))
+                except (ValueError, AttributeError):
+                    pass
+            
+            if query.date_to:
+                try:
+                    if isinstance(query.date_to, str):
+                        date_to = datetime.fromisoformat(query.date_to).date()
+                    else:
+                        date_to = query.date_to
+                    db_query = db_query.filter(ProductPromotionalPrice.end_date <= datetime.combine(date_to, datetime.max.time()))
+                except (ValueError, AttributeError):
+                    pass
+            
+            # Get all promotions (we'll filter by status after)
             promotional_prices = db_query.order_by(ProductPromotionalPrice.start_date.desc()).all()
             
             items = []
             for promo in promotional_prices:
+                # Determine status
+                promo_status = 'active'
+                if promo.end_date < now:
+                    promo_status = 'expired'
+                elif promo.start_date > now:
+                    promo_status = 'upcoming'
+                
+                # Filter by status if provided
+                if query.status and query.status != 'all':
+                    if promo_status != query.status:
+                        continue
+                
+                # Only include active promotions (is_active flag)
+                if not promo.is_active:
+                    continue
+                
+                # Get product info for DTO
+                product = session.get(Product, promo.product_id)
+                
                 items.append(ProductPromotionalPriceDTO(
                     id=promo.id,
                     product_id=promo.product_id,
+                    product_code=product.code if product else None,
+                    product_name=product.name if product else None,
                     price=promo.price,
                     start_date=promo.start_date,
                     end_date=promo.end_date,
@@ -272,14 +323,27 @@ class GetActivePromotionalPricesHandler(QueryHandler):
                     created_by=promo.created_by
                 ))
             
-            return items
+            # Get total count before pagination
+            total = len(items)
+            
+            # Apply pagination
+            start = (query.page - 1) * query.per_page
+            end = start + query.per_page
+            items = items[start:end]
+            
+            return {
+                'items': items,
+                'total': total,
+                'page': query.page,
+                'per_page': query.per_page,
+                'pages': (total + query.per_page - 1) // query.per_page if query.per_page > 0 else 1
+            }
 
 
 class GetPromotionalPricesByProductHandler(QueryHandler):
     """Handler for getting all promotional prices for a product."""
     
     def handle(self, query: GetPromotionalPricesByProductQuery) -> List[ProductPromotionalPriceDTO]:
-        from app.application.products.pricing.queries.queries import GetPromotionalPricesByProductQuery
         from app.application.products.pricing.queries.pricing_dto import ProductPromotionalPriceDTO
         
         with get_session() as session:

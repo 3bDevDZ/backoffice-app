@@ -84,6 +84,10 @@ def create_app() -> Flask:
     from .infrastructure.db import init_db
 
     init_db(app.config["SQLALCHEMY_DATABASE_URI"])
+    
+    # Import all domain models to ensure SQLAlchemy can resolve relationships
+    # This must be done after DB initialization but before any queries
+    from .domain.models.payment import Payment, PaymentAllocation, PaymentReminder  # noqa: F401
 
     # Register CQRS handlers
     from .application.common.mediator import mediator
@@ -524,6 +528,35 @@ def create_app() -> Flask:
     mediator.register_query(ListInvoicesQuery, ListInvoicesHandler())
     mediator.register_query(GetInvoiceByIdQuery, GetInvoiceByIdHandler())
     mediator.register_query(GetInvoiceHistoryQuery, GetInvoiceHistoryHandler())
+    
+    # Payment Commands/Queries
+    from .application.billing.payments.commands.commands import (
+        CreatePaymentCommand, AllocatePaymentCommand, ReconcilePaymentCommand, ImportBankStatementCommand,
+        ConfirmPaymentCommand
+    )
+    from .application.billing.payments.commands.handlers import (
+        CreatePaymentHandler, AllocatePaymentHandler, ReconcilePaymentHandler, ImportBankStatementHandler,
+        ConfirmPaymentHandler
+    )
+    from .application.billing.payments.queries.queries import (
+        ListPaymentsQuery, GetPaymentByIdQuery, GetOverdueInvoicesQuery, GetAgingReportQuery
+    )
+    from .application.billing.payments.queries.handlers import (
+        ListPaymentsHandler, GetPaymentByIdHandler, GetOverdueInvoicesHandler, GetAgingReportHandler
+    )
+    
+    # Register Payment Commands
+    mediator.register_command(CreatePaymentCommand, CreatePaymentHandler())
+    mediator.register_command(AllocatePaymentCommand, AllocatePaymentHandler())
+    mediator.register_command(ReconcilePaymentCommand, ReconcilePaymentHandler())
+    mediator.register_command(ImportBankStatementCommand, ImportBankStatementHandler())
+    mediator.register_command(ConfirmPaymentCommand, ConfirmPaymentHandler())
+    
+    # Register Payment Queries
+    mediator.register_query(ListPaymentsQuery, ListPaymentsHandler())
+    mediator.register_query(GetPaymentByIdQuery, GetPaymentByIdHandler())
+    mediator.register_query(GetOverdueInvoicesQuery, GetOverdueInvoicesHandler())
+    mediator.register_query(GetAgingReportQuery, GetAgingReportHandler())
     
     # Register Dashboard Queries
     from .application.dashboard.queries import (

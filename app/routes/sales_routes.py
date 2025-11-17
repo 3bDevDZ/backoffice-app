@@ -71,9 +71,14 @@ def quotes_list():
 def get_customers_json():
     """Get customers list as JSON for quote form (uses session auth, not JWT)."""
     try:
+        search = request.args.get('q', '').strip()
+        page = int(request.args.get('page', 1))
+        per_page = 20
+        
         query = ListCustomersQuery(
-            page=1,
-            per_page=1000,
+            page=page,
+            per_page=per_page,
+            search=search,
             status='active'
         )
         customers = mediator.dispatch(query)
@@ -90,10 +95,16 @@ def get_customers_json():
                 'last_name': c.last_name
             })
         
+        # Check if there are more pages
+        has_more = len(customers_data) == per_page
+        
         return jsonify({
             'success': True,
             'data': {
                 'items': customers_data
+            },
+            'pagination': {
+                'more': has_more
             }
         })
     except Exception as e:
@@ -643,9 +654,14 @@ def orders_list():
 def get_order_customers_json():
     """Get customers list as JSON for order form (uses session auth, not JWT)."""
     try:
+        search = request.args.get('q', '').strip()
+        page = int(request.args.get('page', 1))
+        per_page = 20
+        
         query = ListCustomersQuery(
-            page=1,
-            per_page=1000,
+            page=page,
+            per_page=per_page,
+            search=search,
             status='active'
         )
         customers = mediator.dispatch(query)
@@ -662,10 +678,16 @@ def get_order_customers_json():
                 'last_name': c.last_name
             })
         
+        # Check if there are more pages
+        has_more = len(customers_data) == per_page
+        
         return jsonify({
             'success': True,
             'data': {
                 'items': customers_data
+            },
+            'pagination': {
+                'more': has_more
             }
         })
     except Exception as e:

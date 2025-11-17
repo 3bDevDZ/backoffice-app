@@ -289,6 +289,8 @@ class Invoice(Base, AggregateRoot):
     customer = relationship("Customer")
     lines = relationship("InvoiceLine", back_populates="invoice", cascade="all, delete-orphan", order_by="InvoiceLine.sequence")
     credit_notes = relationship("CreditNote", foreign_keys="CreditNote.invoice_id", backref="original_invoice")
+    payment_allocations = relationship("PaymentAllocation", back_populates="invoice")
+    reminders = relationship("PaymentReminder", back_populates="invoice")
     sent_by_user = relationship("User", foreign_keys=[sent_by])
     validated_by_user = relationship("User", foreign_keys=[validated_by])
     creator = relationship("User", foreign_keys=[created_by])

@@ -48,6 +48,67 @@
 </div>
 
 <!-- Filters & Search -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+    <form method="GET" action="{{ url_for('sales.orders_list') }}" class="grid grid-cols-1 md:grid-cols-6 gap-4">
+        <!-- Search -->
+        <div class="md:col-span-2">
+            <div class="relative">
+                <div class="absolute inset-y-0 {% if direction == 'rtl' %}right-0 pr-3{% else %}left-0 pl-3{% endif %} flex items-center pointer-events-none">
+                    <i class="fas fa-search" style="color: var(--color-text-tertiary);"></i>
+                </div>
+                <input type="text" 
+                    name="search"
+                    value="{{ search or '' }}"
+                    class="modern-input {% if direction == 'rtl' %}pr-10 pl-3{% else %}pl-10 pr-3{% endif %}"
+                    placeholder="{{ _('Search by order number, customer...') }}">
+            </div>
+        </div>
+
+        <!-- Customer Filter -->
+        <select name="customer_id" id="customer_filter" class="modern-select">
+            <option value="">{{ _('All Customers') }}</option>
+        </select>
+
+        <!-- Status Filter -->
+        <select name="status" class="modern-select">
+            <option value="">{{ _('All Statuses') }}</option>
+            <option value="draft" {% if status == 'draft' %}selected{% endif %}>{{ _('Draft') }}</option>
+            <option value="confirmed" {% if status == 'confirmed' %}selected{% endif %}>{{ _('Confirmed') }}</option>
+            <option value="in_preparation" {% if status == 'in_preparation' %}selected{% endif %}>{{ _('In Preparation') }}</option>
+            <option value="ready" {% if status == 'ready' %}selected{% endif %}>{{ _('Ready') }}</option>
+            <option value="shipped" {% if status == 'shipped' %}selected{% endif %}>{{ _('Shipped') }}</option>
+            <option value="delivered" {% if status == 'delivered' %}selected{% endif %}>{{ _('Delivered') }}</option>
+            <option value="canceled" {% if status == 'canceled' %}selected{% endif %}>{{ _('Canceled') }}</option>
+        </select>
+
+        <!-- Date From -->
+        <input type="date" 
+            name="date_from"
+            value="{{ date_from or '' }}"
+            class="modern-input"
+            placeholder="{{ _('From Date') }}">
+
+        <!-- Date To -->
+        <input type="date" 
+            name="date_to"
+            value="{{ date_to or '' }}"
+            class="modern-input"
+            placeholder="{{ _('To Date') }}">
+
+        <!-- Actions Row -->
+        <div class="md:col-span-6 flex {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+            <button type="submit" class="btn-secondary">
+                <i class="fas fa-filter {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                {{ _('Filter') }}
+            </button>
+            <a href="{{ url_for('sales.orders_list') }}" class="btn-secondary" style="padding: 0.75rem;">
+                <i class="fas fa-redo"></i>
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Orders Table -->
 <div class="modern-table-container">
     <div class="overflow-x-auto">
         <table class="modern-table">
@@ -201,5 +262,112 @@
     </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    /* Fix Select2 width and height in filters */
+    #customer_filter {
+        width: 100% !important;
+    }
+    .select2-container {
+        width: 100% !important;
+    }
+    .select2-selection {
+        height: 42px !important;
+        line-height: 42px !important;
+        border: 1px solid #d1d5db !important;
+        border-radius: 0.5rem !important;
+    }
+    .select2-selection__rendered {
+        line-height: 42px !important;
+        {% if direction == 'rtl' %}
+        padding-right: 0.75rem !important;
+        padding-left: 2.5rem !important;
+        {% else %}
+        padding-left: 0.75rem !important;
+        padding-right: 2.5rem !important;
+        {% endif %}
+    }
+    .select2-selection__arrow {
+        height: 40px !important;
+        {% if direction == 'rtl' %}
+        left: 10px !important;
+        right: auto !important;
+        {% else %}
+        right: 10px !important;
+        left: auto !important;
+        {% endif %}
+    }
+    .select2-dropdown {
+        border: 1px solid #d1d5db !important;
+        border-radius: 0.5rem !important;
+    }
+    .select2-container--default .select2-selection--single {
+        background-color: white !important;
+    }
+    .select2-container--default .select2-selection--single:focus {
+        outline: none !important;
+        border-color: #6366f1 !important;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize customer filter with Select2
+    $('#customer_filter').select2({
+        placeholder: '{{ _("Select a customer...") }}',
+        allowClear: true,
+        ajax: {
+            url: '{{ url_for("sales.get_order_customers_json") }}',
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return {
+                    q: params.term,
+                    page: params.page || 1,
+                    per_page: 20,
+                    status: 'active'
+                };
+            },
+            processResults: function (data) {
+                return {
+                    results: data.data.items.map(function(customer) {
+                        return {
+                            id: customer.id,
+                            text: (customer.code || '') + ' - ' + (customer.name || '')
+                        };
+                    }),
+                    pagination: {
+                        more: data.pagination ? data.pagination.more : false
+                    }
+                };
+            },
+            cache: true
+        },
+        minimumInputLength: 0
+    });
+
+    // Set selected customer if provided
+    {% if customer_id %}
+    $.ajax({
+        url: '{{ url_for("sales.get_order_customers_json") }}',
+        data: { status: 'active' }
+    }).then(function (data) {
+        var customer = data.data.items.find(function(c) { return c.id == {{ customer_id }}; });
+        if (customer) {
+            var option = new Option((customer.code || '') + ' - ' + (customer.name || ''), customer.id, true, true);
+            $('#customer_filter').append(option).trigger('change');
+        }
+    });
+    {% endif %}
+});
+</script>
 {% endblock %}
 

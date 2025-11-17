@@ -117,7 +117,7 @@
                     <div id="lines-container" class="space-y-4">
                         {% if order and order.lines %}
                             {% for line in order.lines %}
-                            <div class="line-item border border-gray-200 rounded-lg p-4" data-line-id="{{ line.id }}">
+                            <div class="line-item border border-gray-200 rounded-lg p-4" data-line-id="{{ line.id }}" data-line-index="{{ loop.index0 }}">
                                 <div class="grid grid-cols-12 gap-4">
                                     <div class="col-span-{% if order.status in ['confirmed', 'partially_received'] %}3{% else %}5{% endif %}">
                                         <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Product / Variant') }}</label>
@@ -1072,7 +1072,76 @@ function calculateTotals() {
 }
 
 // Initialize totals on page load
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
+    // Load products for picker if needed
+    if (typeof loadProductsForPicker === 'function') {
+        // Products will be loaded when picker is opened
+    }
+    
+    // Populate existing lines with product display
+    const existingLines = document.querySelectorAll('.line-item');
+    existingLines.forEach((line, idx) => {
+        const productIdInput = line.querySelector('.product-id-input');
+        const variantIdInput = line.querySelector('.variant-id-input');
+        const displayInput = line.querySelector('.product-display-input');
+        
+        if (productIdInput && productIdInput.value) {
+            const productId = parseInt(productIdInput.value);
+            const variantId = variantIdInput && variantIdInput.value ? parseInt(variantIdInput.value) : null;
+            
+            // Find product in allProducts array (if available)
+            if (typeof allProducts !== 'undefined' && allProducts.length > 0) {
+                const product = allProducts.find(p => p.id == productId);
+                if (product && displayInput) {
+                    if (variantId) {
+                        // Load variant info
+                        fetch(`/products/${productId}/data/variants`)
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.results) {
+                                    const variant = data.results.find(v => v.id == variantId);
+                                    if (variant) {
+                                        displayInput.value = `${product.code} - ${product.name} / ${variant.code} - ${variant.name}`;
+                                    } else {
+                                        displayInput.value = `${product.code} - ${product.name}`;
+                                    }
+                                }
+                            })
+                            .catch(() => {
+                                displayInput.value = `${product.code} - ${product.name}`;
+                            });
+                    } else {
+                        displayInput.value = `${product.code} - ${product.name}`;
+                    }
+                }
+            } else {
+                // If products not loaded, fetch product info
+                fetch(`/products/data/picker?search=&page=1&per_page=1&product_id=${productId}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.items && data.items.length > 0) {
+                            const product = data.items[0];
+                            if (displayInput) {
+                                if (variantId) {
+                                    const variant = product.variants ? product.variants.find(v => v.id == variantId) : null;
+                                    if (variant) {
+                                        displayInput.value = `${product.code} - ${product.name} / ${variant.code} - ${variant.name}`;
+                                    } else {
+                                        displayInput.value = `${product.code} - ${product.name}`;
+                                    }
+                                } else {
+                                    displayInput.value = `${product.code} - ${product.name}`;
+                                }
+                            }
+                        }
+                    })
+                    .catch(() => {
+                        console.error('Error loading product info');
+                    });
+            }
+        }
+    });
+    
     calculateTotals();
     // Recalculate for existing lines
     document.querySelectorAll('.line-quantity, .line-unit-price, .line-discount').forEach(input => {
@@ -1094,18 +1163,39 @@ document.getElementById('purchase-order-form').addEventListener('submit', async 
     
     const lines = [];
     document.querySelectorAll('.line-item').forEach((lineItem, index) => {
-        const productId = lineItem.querySelector('.line-product').value;
-        const quantity = parseFloat(lineItem.querySelector('.line-quantity').value || 0);
-        const unitPrice = parseFloat(lineItem.querySelector('.line-unit-price').value || 0);
-        const discount = parseFloat(lineItem.querySelector('.line-discount').value || 0);
+        // Use the new product picker system with hidden inputs
+        const productIdInput = lineItem.querySelector('.product-id-input');
+        const variantIdInput = lineItem.querySelector('.variant-id-input');
+        const quantityInput = lineItem.querySelector('.line-quantity');
+        const unitPriceInput = lineItem.querySelector('.line-unit-price');
+        const discountInput = lineItem.querySelector('.line-discount');
+        
+        // Check if all required fields exist
+        if (!productIdInput || !quantityInput || !unitPriceInput) {
+            console.warn('Missing required fields in line item', index);
+            return;
+        }
+        
+        const productId = productIdInput.value;
+        const variantId = variantIdInput ? variantIdInput.value : null;
+        const quantity = parseFloat(quantityInput.value || 0);
+        const unitPrice = parseFloat(unitPriceInput.value || 0);
+        const discount = discountInput ? parseFloat(discountInput.value || 0) : 0;
         
         if (productId && quantity > 0 && unitPrice > 0) {
-            lines.push({
+            const lineData = {
                 product_id: parseInt(productId),
                 quantity: quantity,
                 unit_price: unitPrice,
                 discount_percent: discount
-            });
+            };
+            
+            // Add variant_id if present
+            if (variantId) {
+                lineData.variant_id = parseInt(variantId);
+            }
+            
+            lines.push(lineData);
         }
     });
     
@@ -1382,7 +1472,8 @@ let filteredProducts = [];
 
 // Open product picker modal
 function openProductPicker(lineIndex) {
-    currentLineIndex = lineIndex;
+    currentLineIndex = typeof lineIndex === 'string' ? parseInt(lineIndex) : lineIndex;
+    console.log('Opening product picker for line index:', currentLineIndex);
     document.getElementById('product-picker-modal').classList.remove('hidden');
     loadProductsForPicker();
 }
@@ -1495,27 +1586,51 @@ function renderProductsList() {
 
 // Select product/variant
 function selectProduct(productId, variantId, product, variant = null) {
-    if (!currentLineIndex && currentLineIndex !== 0) return;
+    console.log('selectProduct called with:', { productId, variantId, currentLineIndex });
+    
+    if (currentLineIndex === null || currentLineIndex === undefined) {
+        console.error('currentLineIndex is null or undefined');
+        return;
+    }
     
     const container = document.getElementById('lines-container');
+    if (!container) {
+        console.error('lines-container not found');
+        return;
+    }
+    
     const lines = container.querySelectorAll('.line-item');
+    console.log('Found', lines.length, 'lines');
+    
     let lineDiv = null;
     
-    // Try to find by data-line-index or data-line-id
+    // Try to find by data-line-index first (this is the array index)
     for (let line of lines) {
-        const lineIdx = parseInt(line.dataset.lineIndex || line.dataset.lineId || '-1');
-        if (lineIdx === currentLineIndex) {
+        const lineIdx = line.dataset.lineIndex ? parseInt(line.dataset.lineIndex) : null;
+        console.log('Checking line with index:', lineIdx, 'against currentLineIndex:', currentLineIndex);
+        if (lineIdx !== null && lineIdx === currentLineIndex) {
             lineDiv = line;
+            console.log('Found line by data-line-index');
             break;
         }
     }
     
-    // Fallback to index
+    // Fallback to array index position
     if (!lineDiv && lines[currentLineIndex]) {
         lineDiv = lines[currentLineIndex];
+        console.log('Found line by array index position');
     }
     
-    if (!lineDiv) return;
+    if (!lineDiv) {
+        console.error('Could not find line for index:', currentLineIndex, 'Available lines:', Array.from(lines).map((l, idx) => ({
+            arrayIndex: idx,
+            lineIndex: l.dataset.lineIndex,
+            lineId: l.dataset.lineId
+        })));
+        return;
+    }
+    
+    console.log('Line found, updating fields');
     
     const productIdInput = lineDiv.querySelector('.product-id-input');
     const variantIdInput = lineDiv.querySelector('.variant-id-input');
@@ -1534,7 +1649,7 @@ function selectProduct(productId, variantId, product, variant = null) {
     }
     
     // Update price (cost for purchase orders)
-    const priceInput = lineDiv.querySelector('.line-price');
+    const priceInput = lineDiv.querySelector('.line-unit-price');
     if (priceInput) {
         const price = variant && variant.price ? variant.price : (product.price || 0);
         priceInput.value = price.toFixed(2);

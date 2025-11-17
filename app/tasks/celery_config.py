@@ -17,6 +17,10 @@ celery_app.conf.beat_schedule = {
         'task': 'app.tasks.pricing_tasks.expire_promotional_prices',
         'schedule': crontab(hour=0, minute=0),  # Run daily at midnight
     },
+    'send-payment-reminders': {
+        'task': 'app.tasks.payment_reminders.send_payment_reminders_task',
+        'schedule': crontab(hour=9, minute=0),  # Run daily at 9 AM
+    },
 }
 
 celery_app.conf.timezone = 'UTC'

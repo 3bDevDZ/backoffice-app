@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Payments') }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Payments') }}{% endblock %}
+{% block page_subtitle %}
+    <div class="flex items-center justify-between">
+        <span>{{ _('Manage customer payments and allocations') }}</span>
+        <a href="{{ url_for('billing.payments_dashboard') }}" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm">
+            <i class="fas fa-chart-line {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+            {{ _('Dashboard') }}
+        </a>
+    </div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Filters and Actions -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <form method="GET" action="{{ url_for('billing.payments_list') }}" class="space-y-4">
+            <!-- First Row: Customer, Status, Method, Reconciled, Search -->
+            <div class="flex flex-wrap items-center gap-4">
+                <!-- Customer Filter -->
+                <select name="customer_id" class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="">{{ _('All Customers') }}</option>
+                    {% for customer in customers %}
+                    <option value="{{ customer.id }}" {% if filters and filters.customer_id == customer.id %}selected{% endif %}>
+                        {{ customer.name or customer.company_name }} ({{ customer.code }})
+                    </option>
+                    {% endfor %}
+                </select>
+                
+                <!-- Status Filter -->
+                <select name="status" class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="">{{ _('All Statuses') }}</option>
+                    <option value="pending" {% if filters and filters.status == 'pending' %}selected{% endif %}>{{ _('Pending') }}</option>
+                    <option value="confirmed" {% if filters and filters.status == 'confirmed' %}selected{% endif %}>{{ _('Confirmed') }}</option>
+                    <option value="reconciled" {% if filters and filters.status == 'reconciled' %}selected{% endif %}>{{ _('Reconciled') }}</option>
+                    <option value="cancelled" {% if filters and filters.status == 'cancelled' %}selected{% endif %}>{{ _('Cancelled') }}</option>
+                </select>
+                
+                <!-- Payment Method Filter -->
+                <select name="payment_method" class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="">{{ _('All Methods') }}</option>
+                    <option value="cash" {% if filters and filters.payment_method == 'cash' %}selected{% endif %}>{{ _('Cash') }}</option>
+                    <option value="check" {% if filters and filters.payment_method == 'check' %}selected{% endif %}>{{ _('Check') }}</option>
+                    <option value="bank_transfer" {% if filters and filters.payment_method == 'bank_transfer' %}selected{% endif %}>{{ _('Bank Transfer') }}</option>
+                    <option value="credit_card" {% if filters and filters.payment_method == 'credit_card' %}selected{% endif %}>{{ _('Credit Card') }}</option>
+                </select>
+                
+                <!-- Reconciled Filter -->
+                <select name="reconciled" class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="">{{ _('All') }}</option>
+                    <option value="true" {% if filters and filters.reconciled == 'true' %}selected{% endif %}>{{ _('Reconciled') }}</option>
+                    <option value="false" {% if filters and filters.reconciled == 'false' %}selected{% endif %}>{{ _('Not Reconciled') }}</option>
+                </select>
+                
+                <!-- Search -->
+                <input type="text" name="search" value="{{ filters.search if filters else '' }}" placeholder="{{ _('Search by reference...') }}" 
+                       class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 flex-1 min-w-[200px]">
+            </div>
+            
+            <!-- Second Row: Dates and Buttons -->
+            <div class="flex flex-wrap items-center gap-4 justify-between">
+                <div class="flex flex-wrap items-center gap-4">
+                    <!-- Date From -->
+                    <input type="date" name="date_from" value="{{ filters.date_from if filters else '' }}" 
+                           class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    
+                    <!-- Date To -->
+                    <input type="date" name="date_to" value="{{ filters.date_to if filters else '' }}" 
+                           class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm">
+                        <i class="fas fa-filter {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                        {{ _('Filter') }}
+                    </button>
+                    <a href="{{ url_for('billing.payments_list') }}" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm">
+                        <i class="fas fa-redo {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                        {{ _('Reset') }}
+                    </a>
+                    <a href="{{ url_for('billing.create_payment') }}" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
+                        <i class="fas fa-plus {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                        {{ _('New Payment') }}
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Payments Table -->
+    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('ID') }}</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Customer') }}</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Method') }}</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Amount') }}</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Payment Date') }}</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Reference') }}</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Allocated') }}</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Unallocated') }}</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Status') }}</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{{ _('Actions') }}</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% if payments %}
+                        {% for payment in payments %}
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">#{{ payment.id }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ payment.customer_name or 'N/A' }}</div>
+                                {% if payment.customer_code %}
+                                <div class="text-xs text-gray-500">{{ payment.customer_code }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ payment.payment_method|replace('_', ' ')|title }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {{ "%.2f"|format(payment.amount) }} €
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ payment.payment_date.strftime('%d/%m/%Y') }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ payment.reference or '-' }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
+                                {{ "%.2f"|format(payment.total_allocated) }} €
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium {% if payment.unallocated_amount > 0 %}text-orange-600{% else %}text-green-600{% endif %} text-right">
+                                {{ "%.2f"|format(payment.unallocated_amount) }} €
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full
+                                    {% if payment.status == 'pending' %}bg-yellow-100 text-yellow-800
+                                    {% elif payment.status == 'confirmed' %}bg-blue-100 text-blue-800
+                                    {% elif payment.status == 'reconciled' %}bg-green-100 text-green-800
+                                    {% elif payment.status == 'cancelled' %}bg-gray-100 text-gray-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ payment.status|upper }}
+                                </span>
+                                {% if payment.reconciled %}
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800 {% if direction == 'rtl' %}mr-1{% else %}ml-1{% endif %}">
+                                    {{ _('Reconciled') }}
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <a href="{{ url_for('billing.payment_view', payment_id=payment.id) }}" 
+                                   class="text-indigo-600 hover:text-indigo-900 {% if direction == 'rtl' %}ml-4{% else %}mr-4{% endif %}" title="{{ _('View') }}">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="10" class="px-6 py-8 text-center text-gray-500">
+                                {{ _('No payments found') }}
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

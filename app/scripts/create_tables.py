@@ -20,6 +20,7 @@ from app.domain.models.stock import StockItem, StockMovement, Location
 from app.domain.models.quote import Quote, QuoteLine, QuoteVersion
 from app.domain.models.order import Order, OrderLine, StockReservation
 from app.domain.models.invoice import Invoice, InvoiceLine, CreditNote
+from app.domain.models.payment import Payment, PaymentAllocation, PaymentReminder
 from app.infrastructure.outbox.outbox_event import OutboxEvent
 
 

@@ -40,6 +40,12 @@ class GetVolumePricingQuery(Query):
 class GetActivePromotionalPricesQuery(Query):
     """Query to get all active promotional prices (currently valid)."""
     product_id: Optional[int] = None  # If None, returns all active promotions
+    search: Optional[str] = None  # Search in product name or code
+    status: Optional[str] = None  # 'active', 'expired', 'upcoming', 'all'
+    date_from: Optional[str] = None  # Filter by start_date from (ISO format string)
+    date_to: Optional[str] = None  # Filter by end_date to (ISO format string)
+    page: int = 1
+    per_page: int = 100
 
 
 @dataclass

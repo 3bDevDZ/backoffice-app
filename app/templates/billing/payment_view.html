@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Payment') }} #{{ payment.id }} - CommerceFlow{% endblock %}
+
+{% block extra_css %}
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<style>
+    .select2-container {
+        width: 100% !important;
+    }
+    .select2-container--bootstrap-5 .select2-selection {
+        min-height: 38px;
+        padding: 2px;
+    }
+    .select2-container--bootstrap-5 .select2-selection__rendered {
+        padding: 4px 8px;
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}{{ _('Payment') }} #{{ payment.id }}{% endblock %}
+{% block page_subtitle %}{{ _('Payment details and allocations') }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Payment Header -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900">#{{ payment.id }}</h2>
+                <p class="text-sm text-gray-500 mt-1">
+                    {{ _('Status') }}: 
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full
+                        {% if payment.status == 'pending' %}bg-yellow-100 text-yellow-800
+                        {% elif payment.status == 'confirmed' %}bg-blue-100 text-blue-800
+                        {% elif payment.status == 'reconciled' %}bg-green-100 text-green-800
+                        {% elif payment.status == 'cancelled' %}bg-gray-100 text-gray-800
+                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ payment.status|upper }}
+                    </span>
+                    {% if payment.reconciled %}
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800 {% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %}">
+                        {{ _('Reconciled') }}
+                    </span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="flex items-center gap-2">
+                {% if payment.status == 'pending' %}
+                <form method="POST" action="{{ url_for('billing.confirm_payment', payment_id=payment.id) }}" class="inline">
+                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                        <i class="fas fa-check {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                        {{ _('Confirm Payment') }}
+                    </button>
+                </form>
+                {% endif %}
+                <a href="{{ url_for('billing.payments_list') }}" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-arrow-left {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                    {{ _('Back to List') }}
+                </a>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+            <div>
+                <div class="text-xs text-gray-500">{{ _('Customer') }}</div>
+                <div class="text-sm font-medium text-gray-900">{{ payment.customer_name or 'N/A' }}</div>
+                {% if payment.customer_code %}
+                <div class="text-xs text-gray-500">{{ payment.customer_code }}</div>
+                {% endif %}
+            </div>
+            <div>
+                <div class="text-xs text-gray-500">{{ _('Payment Method') }}</div>
+                <div class="text-sm font-medium text-gray-900">{{ payment.payment_method|replace('_', ' ')|title }}</div>
+            </div>
+            <div>
+                <div class="text-xs text-gray-500">{{ _('Amount') }}</div>
+                <div class="text-sm font-medium text-gray-900">{{ "%.2f"|format(payment.amount) }} €</div>
+            </div>
+            <div>
+                <div class="text-xs text-gray-500">{{ _('Payment Date') }}</div>
+                <div class="text-sm font-medium text-gray-900">{{ payment.payment_date.strftime('%d/%m/%Y') }}</div>
+            </div>
+            {% if payment.reference %}
+            <div>
+                <div class="text-xs text-gray-500">{{ _('Reference') }}</div>
+                <div class="text-sm font-medium text-gray-900">{{ payment.reference }}</div>
+            </div>
+            {% endif %}
+            {% if payment.bank_reference %}
+            <div>
+                <div class="text-xs text-gray-500">{{ _('Bank Reference') }}</div>
+                <div class="text-sm font-medium text-gray-900">{{ payment.bank_reference }}</div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div class="p-3 bg-gray-50 rounded-lg">
+                <div class="text-xs text-gray-500">{{ _('Total Allocated') }}</div>
+                <div class="text-lg font-bold text-gray-900">{{ "%.2f"|format(payment.total_allocated) }} €</div>
+            </div>
+            <div class="p-3 bg-gray-50 rounded-lg">
+                <div class="text-xs text-gray-500">{{ _('Unallocated Amount') }}</div>
+                <div class="text-lg font-bold {% if payment.unallocated_amount > 0 %}text-orange-600{% else %}text-green-600{% endif %}">
+                    {{ "%.2f"|format(payment.unallocated_amount) }} €
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Allocations -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">{{ _('Invoice Allocations') }}</h3>
+            {% if payment.unallocated_amount > 0 and payment.status != 'cancelled' %}
+            <button onclick="document.getElementById('allocation-form').classList.toggle('hidden')" 
+                    class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm">
+                <i class="fas fa-plus {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                {{ _('Add Allocation') }}
+            </button>
+            {% endif %}
+        </div>
+        
+        {% if payment.allocations %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ _('Invoice Number') }}</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{{ _('Allocated Amount') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ _('Date') }}</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for alloc in payment.allocations %}
+                    <tr>
+                        <td class="px-4 py-3 text-sm">
+                            <a href="{{ url_for('billing.invoice_view', invoice_id=alloc.invoice_id) }}" 
+                               class="text-indigo-600 hover:text-indigo-900">
+                                {{ alloc.invoice_number or alloc.invoice_id }}
+                            </a>
+                        </td>
+                        <td class="px-4 py-3 text-sm font-medium text-gray-900 text-right">
+                            {{ "%.2f"|format(alloc.allocated_amount) }} €
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-500">
+                            {% if alloc.created_at %}
+                            {{ alloc.created_at.strftime('%d/%m/%Y %H:%M') }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-center py-8">{{ _('No allocations yet') }}</p>
+        {% endif %}
+        
+        <!-- Allocation Form (Hidden by default) -->
+        {% if payment.unallocated_amount > 0 and payment.status != 'cancelled' %}
+        <form id="allocation-form" method="POST" action="{{ url_for('billing.allocate_payment', payment_id=payment.id) }}" class="mt-4 hidden">
+            <div class="p-4 bg-gray-50 rounded-lg">
+                <h4 class="text-md font-semibold text-gray-900 mb-3">{{ _('Allocate to Invoice') }}</h4>
+                <div id="allocation-inputs" class="space-y-3">
+                    <!-- Will be populated dynamically -->
+                </div>
+                <button type="button" onclick="addAllocationRow()" class="mt-3 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm">
+                    <i class="fas fa-plus {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                    {{ _('Add Another Invoice') }}
+                </button>
+                <div class="mt-4 flex gap-2">
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                        {{ _('Save Allocations') }}
+                    </button>
+                    <button type="button" onclick="document.getElementById('allocation-form').classList.add('hidden')" 
+                            class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                        {{ _('Cancel') }}
+                    </button>
+                </div>
+            </div>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<!-- jQuery and Select2 JS -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+// Ensure jQuery is available
+if (typeof jQuery === 'undefined') {
+    console.error('jQuery is not loaded!');
+}
+if (typeof jQuery.fn.select2 === 'undefined') {
+    console.error('Select2 is not loaded!');
+}
+
+let customerInvoices = [];
+const customerId = {{ payment.customer_id }};
+
+// Load customer outstanding invoices
+async function loadCustomerInvoices() {
+    try {
+        const response = await fetch(`{{ url_for("billing.get_customer_outstanding_json") }}?customer_id=${customerId}`);
+        const data = await response.json();
+        
+        if (data.success && data.data) {
+            customerInvoices = data.data.invoices || [];
+        }
+    } catch (error) {
+        console.error('Error loading customer invoices:', error);
+    }
+}
+
+function addAllocationRow() {
+    const container = document.getElementById('allocation-inputs');
+    const div = document.createElement('div');
+    div.className = 'flex items-center gap-3';
+    const rowId = 'allocation-row-' + Date.now();
+    div.id = rowId;
+    
+    div.innerHTML = `
+        <select name="allocation_invoice_id[]" class="allocation-invoice-select flex-1 px-3 py-2 border border-gray-300 rounded-lg" required>
+            <option value="">{{ _('Select Invoice') }}</option>
+        </select>
+        <input type="number" name="allocation_amount[]" step="0.01" min="0.01" 
+               placeholder="{{ _('Amount') }}" 
+               class="allocation-amount-input w-32 px-3 py-2 border border-gray-300 rounded-lg" required>
+        <button type="button" onclick="document.getElementById('${rowId}').remove()" 
+                class="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    container.appendChild(div);
+    
+    // Initialize Select2 for the new select
+    const select = div.querySelector('.allocation-invoice-select');
+    if (typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined') {
+        // Add options to select
+        const daysOverdueText = '{{ _("days overdue") }}';
+        customerInvoices.forEach(inv => {
+            const option = document.createElement('option');
+            option.value = inv.invoice_id;
+            let text = inv.invoice_number + ' - ' + inv.remaining_amount.toFixed(2) + ' €';
+            if (inv.days_overdue >= 0) {
+                text += ' (' + inv.days_overdue + ' ' + daysOverdueText + ')';
+            }
+            option.textContent = text;
+            option.setAttribute('data-remaining', inv.remaining_amount);
+            select.appendChild(option);
+        });
+        
+        $(select).select2({
+            theme: 'bootstrap-5',
+            placeholder: '{{ _("Select Invoice") }}',
+            allowClear: true,
+            width: '100%'
+        });
+        
+        // Auto-fill amount when invoice is selected
+        $(select).on('change', function() {
+            const selectedOption = $(this).find('option:selected');
+            const remaining = parseFloat(selectedOption.attr('data-remaining') || 0);
+            const amountInput = div.querySelector('.allocation-amount-input');
+            if (remaining > 0) {
+                amountInput.value = remaining.toFixed(2);
+                amountInput.max = remaining.toFixed(2);
+            } else {
+                amountInput.value = '';
+                amountInput.max = '';
+            }
+        });
+    }
+}
+
+// Add initial row
+document.addEventListener('DOMContentLoaded', async function() {
+    if (document.getElementById('allocation-form')) {
+        // Load invoices first, then add row
+        await loadCustomerInvoices();
+        addAllocationRow();
+    }
+});
+</script>
+{% endblock %}
+
