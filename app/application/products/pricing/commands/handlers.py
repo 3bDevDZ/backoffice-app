@@ -422,8 +422,8 @@ class DeleteVolumePricingHandler(CommandHandler):
             if not volume_pricing:
                 raise ValueError(f"Volume pricing tier with ID {command.id} not found.")
             
-                session.delete(volume_pricing)
-                session.commit()
+            session.delete(volume_pricing)
+            session.commit()
 
 
 # ProductPromotionalPrice Handlers
