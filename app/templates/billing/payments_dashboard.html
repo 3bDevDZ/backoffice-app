@@ -194,7 +194,7 @@
                                 {% endif %}
                             </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-gray-900">
-                                {{ "%.2f"|format(float(customer.total_outstanding)) }} €
+                                {{ "%.2f"|format(customer.total_outstanding|to_float) }} €
                             </td>
                             {% if customer.buckets %}
                                 {% set bucket_0_30_val = 0.0 %}
@@ -203,13 +203,13 @@
                                 {% set bucket_90_plus_val = 0.0 %}
                                 {% for bucket in customer.buckets %}
                                     {% if bucket.bucket_name == '0-30' %}
-                                        {% set bucket_0_30_val = float(bucket.total_amount) %}
+                                        {% set bucket_0_30_val = bucket.total_amount|to_float %}
                                     {% elif bucket.bucket_name == '31-60' %}
-                                        {% set bucket_31_60_val = float(bucket.total_amount) %}
+                                        {% set bucket_31_60_val = bucket.total_amount|to_float %}
                                     {% elif bucket.bucket_name == '61-90' %}
-                                        {% set bucket_61_90_val = float(bucket.total_amount) %}
+                                        {% set bucket_61_90_val = bucket.total_amount|to_float %}
                                     {% elif bucket.bucket_name == '90+' %}
-                                        {% set bucket_90_plus_val = float(bucket.total_amount) %}
+                                        {% set bucket_90_plus_val = bucket.total_amount|to_float %}
                                     {% endif %}
                                 {% endfor %}
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">

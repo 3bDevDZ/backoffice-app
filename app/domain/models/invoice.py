@@ -498,8 +498,11 @@ class Invoice(Base, AggregateRoot):
                 customer_id=self.customer_id,
                 paid_amount=self.paid_amount
             ))
-        elif self.paid_amount > Decimal(0) and self.status == "sent":
-            self.status = "partially_paid"
+        elif self.paid_amount > Decimal(0) and self.remaining_amount > Decimal(0):
+            # Update to partially_paid if payment is partial
+            # Works for both "sent" and "validated" statuses
+            if self.status in ["sent", "validated"]:
+                self.status = "partially_paid"
 
     def mark_overdue(self):
         """Mark invoice as overdue (called by scheduled task)."""

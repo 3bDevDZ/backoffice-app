@@ -79,6 +79,19 @@ def create_app() -> Flask:
             return json.loads(value)
         except (json.JSONDecodeError, TypeError):
             return {}
+    
+    @app.template_filter('to_float')
+    def to_float_filter(value):
+        """Convert Decimal or numeric value to float."""
+        if value is None:
+            return 0.0
+        try:
+            from decimal import Decimal
+            if isinstance(value, Decimal):
+                return float(value)
+            return float(value)
+        except (ValueError, TypeError):
+            return 0.0
 
     # Initialize DB
     from .infrastructure.db import init_db

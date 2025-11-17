@@ -565,7 +565,8 @@ def create_payment():
             'billing/payment_form.html',
             customers=customers,
             overdue_invoices=overdue_invoices,
-            default_customer_id=default_customer_id
+            default_customer_id=default_customer_id,
+            default_date=date.today()
         )
     except Exception as e:
         flash(_('An error occurred: %(error)s', error=str(e)), 'error')

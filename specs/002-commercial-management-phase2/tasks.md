@@ -192,6 +192,11 @@
 - [x] T245.3 [US8] Update CreatePaymentHandler to support automatic allocation when strategy is provided
 - [x] T245.4 [US8] Add auto-allocation option checkbox and strategy selector to payment form (`app/templates/billing/payment_form.html`)
 - [x] T245.5 [US8] Update payment form route to handle auto_allocation_strategy parameter
+- [x] T245.6 [US8] Create payments dashboard route and template (`app/routes/billing_routes.py` GET /payments/dashboard, `app/templates/billing/payments_dashboard.html`) with KPIs and charts
+- [x] T245.7 [US8] Fix GetAgingReportHandler and GetOverdueInvoicesHandler to include invoices with status "validated"
+- [x] T245.8 [US8] Fix Invoice.mark_paid() to update status to "partially_paid" for both "sent" and "validated" invoices
+- [x] T245.9 [US8] Add to_float Jinja2 template filter for Decimal to float conversion in dashboard templates
+- [x] T245.10 [US8] Fix JavaScript error in order form (appendChild on null) by removing obsolete product-select code
 
 **Checkpoint**: At this point, User Stories 7 AND 8 should both work independently. Accountants can manage invoices and payments.
 

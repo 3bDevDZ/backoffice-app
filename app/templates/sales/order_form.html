@@ -510,31 +510,16 @@ function addOrderLine() {
         </div>
     `;
     
+    // Check if container exists before appending
+    if (!container) {
+        console.error('order-lines-container not found');
+        return;
+    }
+    
     container.appendChild(lineDiv);
     
-    // Populate product select
-    const productSelect = lineDiv.querySelector('.product-select');
-    products.forEach(product => {
-        const option = document.createElement('option');
-        option.value = product.id;
-        option.textContent = `${product.code} - ${product.name}`;
-        productSelect.appendChild(option);
-    });
-    
-    // Initialize Select2 on the new product select
-    if (typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined') {
-        setTimeout(function() {
-            if ($(productSelect).hasClass('select2-hidden-accessible')) {
-                $(productSelect).select2('destroy');
-            }
-            $(productSelect).select2({
-                theme: 'bootstrap-5',
-                placeholder: '{{ _("Select product...") }}',
-                allowClear: true,
-                width: '100%'
-            });
-        }, 100);
-    }
+    // No need to populate product select - using product picker modal instead
+    // The product selection is handled by openProductPicker() function
     
     lineIndex++;
 }
@@ -542,13 +527,12 @@ function addOrderLine() {
 // Remove an order line
 function removeOrderLine(button) {
     const lineDiv = button.closest('.order-line');
-    const productSelect = lineDiv.querySelector('.product-select');
-    
-    if (typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined' && productSelect) {
-        if ($(productSelect).hasClass('select2-hidden-accessible')) {
-            $(productSelect).select2('destroy');
-        }
+    if (!lineDiv) {
+        console.error('Order line not found');
+        return;
     }
+    
+    // No need to destroy Select2 - using product picker modal instead
     
     lineDiv.remove();
     calculateTotals();
@@ -568,12 +552,22 @@ async function updatePrice(select, lineIndex) {
             const response = await fetch(`/orders/data/price-for-customer?product_id=${productId}&customer_id=${customerId}&quantity=1`);
             const data = await response.json();
             if (data.success && data.data) {
-                const priceInput = select.closest('.order-line').querySelector('.price-input');
-                priceInput.value = data.data.final_price;
+                const orderLine = select.closest('.order-line');
+                if (!orderLine) {
+                    console.error('Order line not found');
+                    return;
+                }
+                
+                const priceInput = orderLine.querySelector('.price-input');
+                if (priceInput) {
+                    priceInput.value = data.data.final_price;
+                }
                 
                 if (data.data.applied_discount_percent > 0) {
-                    const discountInput = select.closest('.order-line').querySelector('.discount-input');
-                    discountInput.value = data.data.applied_discount_percent;
+                    const discountInput = orderLine.querySelector('.discount-input');
+                    if (discountInput) {
+                        discountInput.value = data.data.applied_discount_percent;
+                    }
                 }
                 
                 calculateTotals();
@@ -584,9 +578,14 @@ async function updatePrice(select, lineIndex) {
         }
     }
     
-    const priceInput = select.closest('.order-line').querySelector('.price-input');
-    priceInput.value = product.price;
-    calculateTotals();
+    const orderLine = select.closest('.order-line');
+    if (orderLine) {
+        const priceInput = orderLine.querySelector('.price-input');
+        if (priceInput) {
+            priceInput.value = product.price;
+            calculateTotals();
+        }
+    }
 }
 
 // Calculate totals
@@ -759,6 +758,11 @@ async function loadProductsForPicker(search = '') {
 // Render products list in modal
 function renderProductsList() {
     const container = document.getElementById('product-picker-list');
+    if (!container) {
+        console.error('product-picker-list container not found');
+        return;
+    }
+    
     container.innerHTML = '';
     
     if (filteredProducts.length === 0) {
@@ -842,6 +846,11 @@ function selectProduct(productId, variantId, product, variant = null) {
     if (!currentLineIndex && currentLineIndex !== 0) return;
     
     const container = document.getElementById('order-lines-container');
+    if (!container) {
+        console.error('order-lines-container not found');
+        return;
+    }
+    
     const lines = container.querySelectorAll('.order-line');
     let lineDiv = null;
     

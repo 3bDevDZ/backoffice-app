@@ -231,7 +231,7 @@ class GetOverdueInvoicesHandler(QueryHandler):
             
             # Build query for overdue invoices
             q = session.query(Invoice).filter(
-                Invoice.status.in_(["sent", "partially_paid", "overdue"]),
+                Invoice.status.in_(["validated", "sent", "partially_paid", "overdue"]),
                 Invoice.due_date < today,
                 Invoice.remaining_amount > 0
             )
@@ -310,7 +310,9 @@ class GetAgingReportHandler(QueryHandler):
             )
             
             if not query.include_paid:
-                q = q.filter(Invoice.status.in_(["sent", "partially_paid", "overdue"]))
+                # Include validated, sent, partially_paid, and overdue invoices
+                # (validated invoices may not be sent yet but still have outstanding amounts)
+                q = q.filter(Invoice.status.in_(["validated", "sent", "partially_paid", "overdue"]))
             
             if query.customer_id:
                 q = q.filter(Invoice.customer_id == query.customer_id)
@@ -349,10 +351,11 @@ class GetAgingReportHandler(QueryHandler):
                         'invoices': []
                     }
                 
-                # Calculate days overdue
+                # Calculate days overdue (can be negative for future due dates)
                 days_overdue = (as_of_date - invoice.due_date).days
                 
                 # Determine bucket
+                # For invoices not yet due (negative days_overdue), place in 0-30 bucket
                 if days_overdue <= 30:
                     bucket = '0-30'
                 elif days_overdue <= 60:
@@ -391,11 +394,18 @@ class GetAgingReportHandler(QueryHandler):
                 buckets = []
                 for bucket_name, amount in data['buckets'].items():
                     if amount > 0:
-                        invoice_count = sum(1 for inv in data['invoices'] 
-                                         if (as_of_date - inv.due_date).days <= 30 and bucket_name == '0-30' or
-                                            (as_of_date - inv.due_date).days <= 60 and bucket_name == '31-60' or
-                                            (as_of_date - inv.due_date).days <= 90 and bucket_name == '61-90' or
-                                            (as_of_date - inv.due_date).days > 90 and bucket_name == '90+')
+                        # Count invoices that belong to this bucket
+                        invoice_count = 0
+                        for inv in data['invoices']:
+                            days_overdue = (as_of_date - inv.due_date).days
+                            if bucket_name == '0-30' and days_overdue <= 30:
+                                invoice_count += 1
+                            elif bucket_name == '31-60' and 31 <= days_overdue <= 60:
+                                invoice_count += 1
+                            elif bucket_name == '61-90' and 61 <= days_overdue <= 90:
+                                invoice_count += 1
+                            elif bucket_name == '90+' and days_overdue > 90:
+                                invoice_count += 1
                         buckets.append(AgingBucketDTO(
                             bucket_name=bucket_name,
                             total_amount=amount,
