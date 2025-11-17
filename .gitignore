@@ -76,3 +76,10 @@ logs/
 *.tmp
 *.temp
 
+# Documentation files to exclude
+architecture-prompt-mvp-commercial.md
+cahier-des-charges-systeme-gestion-commerciale.md
+LOGIN_FIXES.md
+NEXT_STEPS.md
+PLAYWRIGHT_TESTING.md
+
