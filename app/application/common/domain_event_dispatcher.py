@@ -24,7 +24,20 @@ class DomainEventDispatcher:
         """
         if event_type not in self._handlers:
             self._handlers[event_type] = []
-        self._handlers[event_type].append(handler)
+        # Avoid duplicate handler registration
+        # Check by handler function name and module to detect duplicates even if different instances
+        handler_name = getattr(handler, '__name__', str(handler))
+        handler_module = getattr(handler, '__module__', '')
+        handler_key = f"{handler_module}.{handler_name}"
+        
+        existing_keys = []
+        for h in self._handlers[event_type]:
+            h_name = getattr(h, '__name__', str(h))
+            h_module = getattr(h, '__module__', '')
+            existing_keys.append(f"{h_module}.{h_name}")
+        
+        if handler_key not in existing_keys:
+            self._handlers[event_type].append(handler)
     
     def dispatch(self, event: IDomainEvent) -> None:
         """

@@ -40,12 +40,22 @@ class PurchaseOrderReceivedDomainEventHandler(DomainEventHandler):
         """
         Handle purchase order received event by creating stock entry movements.
         
+        NOTE: This handler is now DEPRECATED. Stock updates are handled by
+        PurchaseOrderLineReceivedDomainEventHandler which processes each line receipt
+        immediately (both partial and full receipts). This handler is kept for
+        backward compatibility but should not process any lines that have already
+        been processed by PurchaseOrderLineReceivedDomainEventHandler.
+        
         When a purchase order is marked as received, this handler:
         1. Retrieves all lines with quantity_received > 0
         2. Creates StockItem if it doesn't exist for the default location
         3. Creates StockMovement entries for each line
         4. Updates stock quantities automatically
         """
+        # DISABLED: PurchaseOrderLineReceivedDomainEventHandler already handles all receipts
+        # This handler would cause double processing. Return early to avoid duplicate stock updates.
+        return
+        
         with get_session() as session:
             from app.domain.models.purchase import PurchaseOrder, PurchaseOrderLine
             
@@ -70,8 +80,13 @@ class PurchaseOrderReceivedDomainEventHandler(DomainEventHandler):
             
             # Process each line that has been received
             # Note: Since we now handle partial receipts via PurchaseOrderLineReceivedDomainEvent,
-            # this handler mainly serves as a backup. It checks for any remaining quantities
-            # that might not have been processed yet.
+            # this handler mainly serves as a backup for legacy cases or when PurchaseOrderLineReceivedDomainEvent
+            # was not triggered. In normal flow, PurchaseOrderLineReceivedDomainEventHandler processes
+            # all receipts, so this handler should typically find all quantities already processed.
+            # 
+            # IMPORTANT: PurchaseOrderLineReceivedDomainEvent is triggered BEFORE PurchaseOrderReceivedDomainEvent,
+            # so by the time this handler runs, movements should already exist. This handler only processes
+            # any remaining quantities that might not have been processed (edge cases).
             for line in order.lines:
                 if line.quantity_received <= 0:
                     continue  # Skip lines with no received quantity
@@ -79,6 +94,8 @@ class PurchaseOrderReceivedDomainEventHandler(DomainEventHandler):
                 # Check if stock movements already exist for this purchase order line
                 # Since partial receipts are handled individually, we need to check the total
                 # quantity already processed vs. quantity_received
+                # Use flush() to ensure we see movements created in the same transaction
+                session.flush()
                 existing_movements = session.query(StockMovement).filter(
                     StockMovement.related_document_type == 'purchase_order',
                     StockMovement.related_document_id == order.id,

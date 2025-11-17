@@ -24,10 +24,11 @@ Feature: Alimentation Automatique du Stock
     And the purchase order "PO-002" has a line with product "PROD-001" and quantity "100"
     When I mark the purchase order line as received with quantity "50"
     Then the purchase order status should be "partially_received"
-    And no stock movement should be created yet
+    And a stock movement of type "entry" should exist for product "PROD-001" with quantity "50"
+    And the stock item should have physical_quantity "50"
     When I mark the purchase order line as received with quantity "100"
     Then the purchase order status should be "received"
-    And a stock movement of type "entry" should exist for product "PROD-001" with quantity "100"
+    And a stock movement of type "entry" should exist for product "PROD-001" with quantity "50"
     And the stock item should have physical_quantity "100"
 
   Scenario: Alimentation du stock avec plusieurs lignes

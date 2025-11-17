@@ -460,12 +460,8 @@ class ReceivePurchaseOrderLineHandler(CommandHandler):
             # Flush to ensure changes are in the session before checking status
             session.flush()
             
-            # Check if order should be marked as received/partially_received
-            # This will trigger the domain event if fully received
-            old_status = order.status
-            order.mark_received()
-            
             # If there's an incremental quantity received, trigger event to update stock immediately
+            # This must happen BEFORE mark_received() to avoid double processing
             if incremental_quantity > 0:
                 from app.domain.models.purchase import PurchaseOrderLineReceivedDomainEvent
                 order.raise_domain_event(PurchaseOrderLineReceivedDomainEvent(
@@ -476,6 +472,13 @@ class ReceivePurchaseOrderLineHandler(CommandHandler):
                     quantity_received=incremental_quantity,  # Only the new quantity received
                     location_id=command.location_id
                 ))
+            
+            # Check if order should be marked as received/partially_received
+            # This will trigger the domain event if fully received
+            # Note: PurchaseOrderReceivedDomainEventHandler will check for existing movements
+            # and skip lines that have already been processed by PurchaseOrderLineReceivedDomainEventHandler
+            old_status = order.status
+            order.mark_received()
             
             session.commit()
             session.refresh(order)  # Refresh order to see status changes
