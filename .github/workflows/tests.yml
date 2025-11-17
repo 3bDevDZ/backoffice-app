@@ -18,11 +18,22 @@ jobs:
       with:
         python-version: '3.11'
     
-    - name: Install dependencies
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libcairo2-dev \
+          pkg-config \
+          python3-dev \
+          libpango1.0-dev \
+          libgdk-pixbuf2.0-dev \
+          libffi-dev \
+          shared-mime-info
+    
+    - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pytest pytest-cov behave
     
     - name: Run unit tests with coverage
       run: |
@@ -32,9 +43,9 @@ jobs:
       run: |
         behave tests/bdd/features/
     
-    - name: Upload coverage reports
-      uses: codecov/codecov-action@v3
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v3
       if: always()
       with:
-        file: ./coverage.xml
-        fail_ci_if_error: false
+        name: coverage-report
+        path: htmlcov/
