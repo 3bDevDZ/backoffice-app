@@ -227,6 +227,8 @@
 - [x] T260 [US9] Create PurchaseReceipt queries (ListPurchaseReceiptsQuery, GetPurchaseReceiptByIdQuery) in `app/application/purchases/receipts/queries/queries.py`
 - [x] T261 [US9] Create PurchaseReceipt query handlers in `app/application/purchases/receipts/queries/handlers.py`
 - [x] T262 [US9] Create PurchaseReceipt DTO in `app/application/purchases/receipts/queries/receipt_dto.py` for API responses
+- [x] T262.1 [US9] Create integration tests for purchase receipt handlers using in-memory database in `tests/integration/test_purchase_receipt_handlers.py`
+- [x] T262.2 [US9] Fix unit tests for domain events in customer and product handlers (use mock dispatcher to verify events are dispatched)
 - [ ] T263 [US9] Create PurchaseReceiptPDFService in `app/services/purchase_receipt_pdf_service.py` for generating receipt documents
 - [ ] T264 [US9] Create PurchaseRequest API endpoints (GET /api/purchase-requests, POST /api/purchase-requests, POST /api/purchase-requests/{id}/approve, POST /api/purchase-requests/{id}/convert) in `app/api/purchases.py`
 - [ ] T265 [US9] Create PurchaseReceipt API endpoints (GET /api/purchase-receipts, POST /api/purchase-receipts, POST /api/purchase-receipts/{id}/validate) in `app/api/purchases.py`
@@ -235,13 +237,13 @@
 - [x] T268 [US9] Create frontend route handler for purchase request form in `app/routes/purchases_routes.py` (GET /purchase-requests/new, POST /purchase-requests)
 - [x] T269 [US9] Create frontend route handler for purchase receipts in `app/routes/purchases_routes.py` (GET /purchase-receipts, POST /purchase-receipts)
 - [x] T270 [US9] Create frontend route handler for supplier invoices in `app/routes/purchases_routes.py` (GET /supplier-invoices, POST /supplier-invoices)
-- [ ] T271 [US9] Convert design file to Jinja2 template `app/templates/purchases/requests_list.html` with i18n and RTL support
-- [ ] T272 [US9] Convert design file to Jinja2 template `app/templates/purchases/request_form.html` with i18n and RTL support
-- [ ] T273 [US9] Convert design file to Jinja2 template `app/templates/purchases/receipts_list.html` with i18n and RTL support
-- [ ] T274 [US9] Convert design file to Jinja2 template `app/templates/purchases/receipt_form.html` with i18n and RTL support
-- [ ] T275 [US9] Convert design file to Jinja2 template `app/templates/purchases/supplier_invoices_list.html` with i18n and RTL support
-- [ ] T276 [US9] Convert design file to Jinja2 template `app/templates/purchases/supplier_invoice_form.html` with i18n and RTL support
-- [ ] T277 [US9] Add "Receive" button to purchase order view page (`app/templates/purchases/orders/view.html`) for confirmed orders
+- [x] T271 [US9] Convert design file to Jinja2 template `app/templates/purchases/requests/list.html` with i18n and RTL support
+- [x] T272 [US9] Convert design file to Jinja2 template `app/templates/purchases/requests/form.html` with i18n and RTL support
+- [x] T273 [US9] Convert design file to Jinja2 template `app/templates/purchases/receipts/list.html` with i18n and RTL support
+- [x] T274 [US9] Convert design file to Jinja2 template `app/templates/purchases/receipts/form.html` with i18n and RTL support
+- [x] T275 [US9] Convert design file to Jinja2 template `app/templates/purchases/invoices/list.html` with i18n and RTL support
+- [x] T276 [US9] Convert design file to Jinja2 template `app/templates/purchases/invoices/form.html` with i18n and RTL support
+- [x] T277 [US9] Create purchase order view page (`app/templates/purchases/orders/view.html`) with "Create Receipt" button for confirmed orders
 - [ ] T278 [US9] Add locale parameter support to Purchase API endpoints in `app/api/purchases.py`
 - [ ] T279 [US9] Add translated error messages and validation messages to Purchase API responses in `app/api/purchases.py`
 

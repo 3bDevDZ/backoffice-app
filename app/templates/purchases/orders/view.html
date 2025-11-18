@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Purchase Order') }} #{{ order.number }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Purchase Order') }} #{{ order.number }}{% endblock %}
+{% block page_subtitle %}{{ _('View purchase order details') }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <!-- Order Header -->
+    <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="text-lg font-bold" style="color: var(--color-text-primary);">{{ _('Order Information') }}</h3>
+                <p class="text-sm text-gray-600">{{ _('Status') }}: 
+                    {% if order.status == 'draft' %}
+                    <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-medium rounded-full">{{ _('Draft') }}</span>
+                    {% elif order.status == 'sent' %}
+                    <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">{{ _('Sent') }}</span>
+                    {% elif order.status == 'confirmed' %}
+                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">{{ _('Confirmed') }}</span>
+                    {% elif order.status == 'partially_received' %}
+                    <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">{{ _('Partially Received') }}</span>
+                    {% elif order.status == 'received' %}
+                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">{{ _('Received') }}</span>
+                    {% elif order.status == 'cancelled' %}
+                    <span class="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">{{ _('Cancelled') }}</span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="flex items-center {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+                {% if order.status == 'draft' %}
+                <form method="POST" action="{{ url_for('purchases_frontend.confirm_purchase_order', order_id=order.id) }}" class="inline">
+                    <button type="submit" class="btn-primary inline-flex items-center">
+                        <i class="fas fa-check {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                        {{ _('Confirm Order') }}
+                    </button>
+                </form>
+                {% elif order.status in ['confirmed', 'sent', 'partially_received'] %}
+                <a href="{{ url_for('purchases_frontend.create_purchase_receipt', purchase_order_id=order.id) }}" class="btn-primary inline-flex items-center">
+                    <i class="fas fa-receipt {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                    {{ _('Create Receipt') }}
+                </a>
+                {% endif %}
+                {% if order.status not in ['received', 'cancelled'] %}
+                <form method="POST" action="{{ url_for('purchases_frontend.cancel_purchase_order', order_id=order.id) }}" class="inline" onsubmit="return confirm('{{ _('Are you sure you want to cancel this purchase order?') }}');">
+                    <button type="submit" class="btn-secondary inline-flex items-center">
+                        <i class="fas fa-times {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                        {{ _('Cancel') }}
+                    </button>
+                </form>
+                {% endif %}
+                <a href="{{ url_for('purchases_frontend.edit_purchase_order', order_id=order.id) }}" class="btn-secondary inline-flex items-center">
+                    <i class="fas fa-edit {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                    {{ _('Edit') }}
+                </a>
+                <a href="{{ url_for('purchases_frontend.list_purchase_orders') }}" class="btn-secondary inline-flex items-center">
+                    <i class="fas fa-arrow-{% if direction == 'rtl' %}right{% else %}left{% endif %} {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                    {{ _('Back to List') }}
+                </a>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div>
+                <label class="text-sm font-medium text-gray-600">{{ _('Supplier') }}</label>
+                <p class="text-gray-900">{{ order.supplier_name or '-' }}</p>
+                {% if order.supplier_code %}
+                <p class="text-xs text-gray-500">{{ order.supplier_code }}</p>
+                {% endif %}
+            </div>
+            <div>
+                <label class="text-sm font-medium text-gray-600">{{ _('Order Date') }}</label>
+                <p class="text-gray-900">{{ order.order_date.strftime('%Y-%m-%d') if order.order_date else '-' }}</p>
+            </div>
+            <div>
+                <label class="text-sm font-medium text-gray-600">{{ _('Expected Delivery') }}</label>
+                <p class="text-gray-900">{{ order.expected_delivery_date.strftime('%Y-%m-%d') if order.expected_delivery_date else '-' }}</p>
+            </div>
+            {% if order.received_date %}
+            <div>
+                <label class="text-sm font-medium text-gray-600">{{ _('Received Date') }}</label>
+                <p class="text-gray-900">{{ order.received_date.strftime('%Y-%m-%d') }}</p>
+            </div>
+            {% endif %}
+            {% if order.confirmed_at %}
+            <div>
+                <label class="text-sm font-medium text-gray-600">{{ _('Confirmed At') }}</label>
+                <p class="text-gray-900">{{ order.confirmed_at.strftime('%Y-%m-%d') if order.confirmed_at else '-' }}</p>
+            </div>
+            {% endif %}
+            {% if order.notes %}
+            <div class="col-span-2 md:col-span-3">
+                <label class="text-sm font-medium text-gray-600">{{ _('Notes') }}</label>
+                <p class="text-gray-900">{{ order.notes }}</p>
+            </div>
+            {% endif %}
+            {% if order.internal_notes %}
+            <div class="col-span-2 md:col-span-3">
+                <label class="text-sm font-medium text-gray-600">{{ _('Internal Notes') }}</label>
+                <p class="text-gray-900">{{ order.internal_notes }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Order Lines -->
+    <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+        <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Order Lines') }}</h3>
+        <div class="overflow-x-auto">
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Product') }}</th>
+                        <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Quantity') }}</th>
+                        <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Unit Price') }}</th>
+                        <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Discount') }}</th>
+                        <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Tax Rate') }}</th>
+                        <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Received') }}</th>
+                        <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Total HT') }}</th>
+                        <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Total TTC') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if order.lines %}
+                        {% for line in order.lines %}
+                        <tr>
+                            <td>
+                                <div class="text-sm font-medium text-gray-900">{{ line.product_name or '-' }}</div>
+                                {% if line.product_code %}
+                                <div class="text-xs text-gray-500">{{ line.product_code }}</div>
+                                {% endif %}
+                                {% if line.notes %}
+                                <div class="text-xs text-gray-400 italic">{{ line.notes }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="text-sm text-gray-600">{{ line.quantity }}</td>
+                            <td class="text-sm text-gray-600">{{ "%.2f"|format(line.unit_price|to_float) }} €</td>
+                            <td class="text-sm text-gray-600">
+                                {% if line.discount_percent and line.discount_percent > 0 %}
+                                {{ "%.2f"|format(line.discount_percent|to_float) }}%
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td class="text-sm text-gray-600">{{ "%.2f"|format(line.tax_rate|to_float) }}%</td>
+                            <td class="text-sm text-gray-600">
+                                {% if order.status in ['confirmed', 'sent', 'partially_received', 'received'] %}
+                                <span class="{% if line.quantity_received == line.quantity %}text-green-600 font-medium{% elif line.quantity_received > 0 %}text-yellow-600 font-medium{% else %}text-gray-600{% endif %}">
+                                    {{ line.quantity_received }} / {{ line.quantity }}
+                                </span>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td class="text-sm font-medium text-gray-900">{{ "%.2f"|format(line.line_total_ht|to_float) }} €</td>
+                            <td class="text-sm font-medium text-gray-900">{{ "%.2f"|format(line.line_total_ttc|to_float) }} €</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center text-gray-500 py-4">{{ _('No lines') }}</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Order Summary -->
+    <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+        <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Order Summary') }}</h3>
+        <div class="flex {% if direction == 'rtl' %}justify-start{% else %}justify-end{% endif %}">
+            <div class="w-full md:w-1/3 space-y-2">
+                <div class="flex justify-between items-center py-2 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">{{ _('Subtotal HT') }}</span>
+                    <span class="text-sm font-medium text-gray-900">{{ "%.2f"|format(order.subtotal_ht|to_float) }} €</span>
+                </div>
+                <div class="flex justify-between items-center py-2 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">{{ _('Total Tax') }}</span>
+                    <span class="text-sm font-medium text-gray-900">{{ "%.2f"|format(order.total_tax|to_float) }} €</span>
+                </div>
+                <div class="flex justify-between items-center py-2">
+                    <span class="text-base font-bold text-gray-900">{{ _('Total TTC') }}</span>
+                    <span class="text-base font-bold text-gray-900">{{ "%.2f"|format(order.total_ttc|to_float) }} €</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
