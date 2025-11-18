@@ -1,0 +1,132 @@
+{% extends "base_no_sidebar.html" %}
+
+{% block title %}{{ module_name }} - {{ _('Menu') }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ module_name }}{% endblock %}
+{% block page_subtitle %}{{ _('Module Menu') }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Back to Modules -->
+    <div class="mb-6">
+        <a href="{{ url_for('modules.home') }}" class="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors">
+            <i class="fas fa-arrow-{% if direction == 'rtl' %}right{% else %}left{% endif %} {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+            {{ _('Back to Modules') }}
+        </a>
+    </div>
+
+    <!-- Module Header -->
+    <div class="mb-8" style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+        <div class="flex items-center {% if direction == 'rtl' %}space-x-reverse space-x-4{% else %}space-x-4{% endif %}">
+            <div class="module-header-icon" style="background: {{ module_color }};">
+                <i class="{{ module_icon }} text-4xl text-white"></i>
+            </div>
+            <div>
+                <h2 class="text-2xl font-bold" style="color: var(--color-text-primary);">{{ module_name }}</h2>
+                <p class="text-sm text-gray-600 mt-1">{{ module_description }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menu Items Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for item in menu_items %}
+        <a href="{{ item.url }}" class="menu-item-card group">
+            <div class="menu-item-icon" style="background: {{ item.color }};">
+                <i class="{{ item.icon }} text-2xl text-white"></i>
+            </div>
+            <div class="menu-item-content">
+                <h3 class="menu-item-title">{{ item.title }}</h3>
+                {% if item.description %}
+                <p class="menu-item-description">{{ item.description }}</p>
+                {% endif %}
+            </div>
+            <div class="menu-item-arrow">
+                <i class="fas fa-arrow-{% if direction == 'rtl' %}left{% else %}right{% endif %}"></i>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.module-header-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.menu-item-card {
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.menu-item-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-primary);
+}
+
+.menu-item-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-{% if direction == 'rtl' %}left{% else %}right{% endif %}: var(--spacing-md);
+    transition: transform 0.3s ease;
+}
+
+.menu-item-card:hover .menu-item-icon {
+    transform: scale(1.1);
+}
+
+.menu-item-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.menu-item-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: var(--color-text-primary);
+}
+
+.menu-item-description {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    line-height: 1.4;
+}
+
+.menu-item-arrow {
+    color: var(--color-text-tertiary);
+    transition: all 0.3s ease;
+    opacity: 0;
+    margin-{% if direction == 'rtl' %}right{% else %}left{% endif %}: var(--spacing-sm);
+}
+
+.menu-item-card:hover .menu-item-arrow {
+    opacity: 1;
+    {% if direction == 'rtl' %}margin-right{% else %}margin-left{% endif %}: 0;
+}
+</style>
+{% endblock %}
+

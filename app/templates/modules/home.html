@@ -1,0 +1,200 @@
+{% extends "base_no_sidebar.html" %}
+
+{% block title %}{{ _('Modules') }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Modules') }}{% endblock %}
+{% block page_subtitle %}{{ _('Select a module to get started') }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Modules Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Dashboard Module -->
+        <a href="{{ url_for('dashboard.index') }}" class="module-card group">
+            <div class="module-card-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <i class="fas fa-chart-line text-4xl"></i>
+            </div>
+            <div class="module-card-content">
+                <h3 class="module-card-title">{{ _('Dashboard') }}</h3>
+                <p class="module-card-description">{{ _('Overview of your business KPIs, sales, and key metrics') }}</p>
+            </div>
+            <div class="module-card-arrow">
+                <i class="fas fa-arrow-{% if direction == 'rtl' %}left{% else %}right{% endif %}"></i>
+            </div>
+        </a>
+
+        <!-- Sales Module -->
+        <a href="{{ url_for('modules.sales_menu') }}" class="module-card group">
+            <div class="module-card-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <i class="fas fa-shopping-cart text-4xl"></i>
+            </div>
+            <div class="module-card-content">
+                <h3 class="module-card-title">{{ _('Sales') }}</h3>
+                <p class="module-card-description">{{ _('Manage customers, quotes, orders, invoices, and payments') }}</p>
+            </div>
+            <div class="module-card-arrow">
+                <i class="fas fa-arrow-{% if direction == 'rtl' %}left{% else %}right{% endif %}"></i>
+            </div>
+        </a>
+
+        <!-- Purchases Module -->
+        <a href="{{ url_for('modules.purchases_menu') }}" class="module-card group">
+            <div class="module-card-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <i class="fas fa-shopping-bag text-4xl"></i>
+            </div>
+            <div class="module-card-content">
+                <h3 class="module-card-title">{{ _('Purchases') }}</h3>
+                <p class="module-card-description">{{ _('Manage suppliers, purchase requests, orders, and receipts') }}</p>
+            </div>
+            <div class="module-card-arrow">
+                <i class="fas fa-arrow-{% if direction == 'rtl' %}left{% else %}right{% endif %}"></i>
+            </div>
+        </a>
+
+        <!-- Inventory Module -->
+        <a href="{{ url_for('modules.inventory_menu') }}" class="module-card group">
+            <div class="module-card-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <i class="fas fa-boxes text-4xl"></i>
+            </div>
+            <div class="module-card-content">
+                <h3 class="module-card-title">{{ _('Inventory') }}</h3>
+                <p class="module-card-description">{{ _('Manage stock levels, locations, movements, and alerts') }}</p>
+            </div>
+            <div class="module-card-arrow">
+                <i class="fas fa-arrow-{% if direction == 'rtl' %}left{% else %}right{% endif %}"></i>
+            </div>
+        </a>
+
+        <!-- Catalog Module -->
+        <a href="{{ url_for('modules.catalog_menu') }}" class="module-card group">
+            <div class="module-card-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                <i class="fas fa-box text-4xl"></i>
+            </div>
+            <div class="module-card-content">
+                <h3 class="module-card-title">{{ _('Catalog') }}</h3>
+                <p class="module-card-description">{{ _('Manage products, variants, price lists, and pricing') }}</p>
+            </div>
+            <div class="module-card-arrow">
+                <i class="fas fa-arrow-{% if direction == 'rtl' %}left{% else %}right{% endif %}"></i>
+            </div>
+        </a>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="mt-12">
+        <h2 class="text-2xl font-bold mb-6" style="color: var(--color-text-primary);">{{ _('Quick Actions') }}</h2>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <a href="{{ url_for('sales.create_order') }}" class="quick-action-card">
+                <i class="fas fa-plus-circle text-2xl mb-2" style="color: var(--color-primary);"></i>
+                <span class="text-sm font-medium">{{ _('New Order') }}</span>
+            </a>
+            <a href="{{ url_for('purchases_frontend.new_purchase_order') }}" class="quick-action-card">
+                <i class="fas fa-shopping-bag text-2xl mb-2" style="color: var(--color-primary);"></i>
+                <span class="text-sm font-medium">{{ _('New Purchase Order') }}</span>
+            </a>
+            <a href="{{ url_for('products_frontend.new') }}" class="quick-action-card">
+                <i class="fas fa-box text-2xl mb-2" style="color: var(--color-primary);"></i>
+                <span class="text-sm font-medium">{{ _('New Product') }}</span>
+            </a>
+            <a href="{{ url_for('customers_frontend.new') }}" class="quick-action-card">
+                <i class="fas fa-user-plus text-2xl mb-2" style="color: var(--color-primary);"></i>
+                <span class="text-sm font-medium">{{ _('New Customer') }}</span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.module-card {
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.module-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--color-primary);
+}
+
+.module-card-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    margin-bottom: var(--spacing-md);
+    transition: transform 0.3s ease;
+}
+
+.module-card:hover .module-card-icon {
+    transform: scale(1.1) rotate(5deg);
+}
+
+.module-card-content {
+    flex: 1;
+}
+
+.module-card-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--color-text-primary);
+}
+
+.module-card-description {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+}
+
+.module-card-arrow {
+    position: absolute;
+    {% if direction == 'rtl' %}left{% else %}right{% endif %}: var(--spacing-lg);
+    bottom: var(--spacing-lg);
+    color: var(--color-text-tertiary);
+    transition: all 0.3s ease;
+    opacity: 0;
+}
+
+.module-card:hover .module-card-arrow {
+    opacity: 1;
+    {% if direction == 'rtl' %}left{% else %}right{% endif %}: calc(var(--spacing-lg) - 4px);
+}
+
+.quick-action-card {
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-md);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: 100px;
+}
+
+.quick-action-card:hover {
+    background: var(--color-bg-hover);
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+</style>
+{% endblock %}
+

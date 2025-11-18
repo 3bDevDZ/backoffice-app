@@ -13,7 +13,7 @@ def _get_safe_next_url():
     """Get and validate next URL to prevent open redirects."""
     next_url = request.args.get('next') or request.form.get('next')
     if not next_url:
-        return url_for('dashboard.index')
+        return url_for('modules.home')
     
     # If it's a full URL, extract just the path
     from urllib.parse import urlparse
@@ -21,16 +21,16 @@ def _get_safe_next_url():
     if parsed.netloc:  # It's a full URL
         # Only allow same host
         if parsed.netloc != request.host:
-            return url_for('dashboard.index')
+            return url_for('modules.home')
         next_url = parsed.path or '/'
     
     # Ensure it's a local path (starts with /)
     if not next_url.startswith('/'):
-        return url_for('dashboard.index')
+        return url_for('modules.home')
     
-    # Default to dashboard if root
+    # Default to modules if root
     if next_url == '/':
-        return url_for('dashboard.index')
+        return url_for('modules.home')
     
     return next_url
 
@@ -94,7 +94,7 @@ def login():
                     redirect_url = _get_safe_next_url()
                     # Ensure we redirect to a valid URL
                     if not redirect_url or redirect_url == '/':
-                        redirect_url = url_for('dashboard.index')
+                        redirect_url = url_for('modules.home')
                     return redirect(redirect_url)
                 else:
                     flash(_('User not found'), 'error')

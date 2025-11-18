@@ -81,12 +81,30 @@ def create_app() -> Flask:
     def inject_locale():
         from datetime import date, datetime
         locale = get_locale()
+        
+        # Determine current module based on endpoint
+        current_module = None
+        if hasattr(request, 'endpoint') and request.endpoint:
+            endpoint = request.endpoint
+            # Check purchases FIRST (before sales) to avoid conflicts with 'orders'
+            if 'purchases_frontend' in endpoint or 'purchase_orders' in endpoint or 'purchase_requests' in endpoint or 'purchase_receipts' in endpoint or 'supplier_invoices' in endpoint or 'suppliers' in endpoint:
+                current_module = 'purchases'
+            elif 'customers' in endpoint or 'sales' in endpoint or 'quotes' in endpoint or ('orders' in endpoint and 'purchase' not in endpoint) or 'promotions' in endpoint or 'billing' in endpoint or 'invoices' in endpoint or ('payments' in endpoint and 'supplier' not in endpoint):
+                current_module = 'sales'
+            elif 'stock' in endpoint or 'inventory' in endpoint:
+                current_module = 'inventory'
+            elif 'products' in endpoint or 'price' in endpoint:
+                current_module = 'catalog'
+            elif 'dashboard' in endpoint:
+                current_module = 'dashboard'
+        
         return {
             'locale': locale,
             'direction': 'rtl' if locale == 'ar' else 'ltr',
             '_': _,
             'date': date,
-            'datetime': datetime
+            'datetime': datetime,
+            'current_module': current_module
         }
     
     # Register custom Jinja2 filters
@@ -738,6 +756,7 @@ def create_app() -> Flask:
         from .routes.stock_routes import stock_routes
         from .routes.sales_routes import sales_routes
         from .routes.promotions_routes import promotions_routes
+        from .routes.modules_routes import modules_routes
         
         app.register_blueprint(auth_routes)
         app.register_blueprint(dashboard_routes)
@@ -749,6 +768,7 @@ def create_app() -> Flask:
         app.register_blueprint(promotions_routes)
         from .routes.billing_routes import billing_routes
         app.register_blueprint(billing_routes)
+        app.register_blueprint(modules_routes)
         
         print(f"[OK] Registered frontend blueprints: {list(app.blueprints.keys())}")
     except Exception as e:

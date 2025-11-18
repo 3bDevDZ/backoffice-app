@@ -27,7 +27,7 @@ from app.services.fec_export_service import FECExportService
 from app.infrastructure.db import get_session
 from app.security.session_auth import require_roles_or_redirect
 
-billing_routes = Blueprint('billing', __name__, url_prefix='/billing')
+billing_routes = Blueprint('billing', __name__)
 
 
 @billing_routes.route('/invoices')
@@ -80,7 +80,7 @@ def invoices_list():
         return render_template('billing/invoices_list.html', invoices=[])
 
 
-@billing_routes.route('/invoices/new', methods=['GET', 'POST'])
+@billing_routes.route('/invoices-new', methods=['GET', 'POST'])
 @require_roles_or_redirect('admin', 'accountant', 'direction')
 def create_invoice():
     """Create invoice from order - show form or create directly."""
@@ -345,7 +345,7 @@ def create_credit_note(invoice_id: int):
         return redirect(url_for('billing.invoice_view', invoice_id=invoice_id))
 
 
-@billing_routes.route('/invoices/fec')
+@billing_routes.route('/invoices-fec')
 @require_roles_or_redirect('admin', 'accountant', 'direction')
 def export_fec():
     """Export FEC file."""
@@ -468,7 +468,7 @@ def payments_list():
         return render_template('billing/payments_list.html', payments=[], customers=[], filters={})
 
 
-@billing_routes.route('/payments/new', methods=['GET', 'POST'])
+@billing_routes.route('/payments-new', methods=['GET', 'POST'])
 @require_roles_or_redirect('admin', 'accountant', 'direction')
 def create_payment():
     """Create a new payment."""
@@ -664,7 +664,7 @@ def allocate_payment(payment_id: int):
         return redirect(url_for('billing.payment_view', payment_id=payment_id))
 
 
-@billing_routes.route('/payments/reconcile', methods=['GET', 'POST'])
+@billing_routes.route('/payments-reconcile', methods=['GET', 'POST'])
 @require_roles_or_redirect('admin', 'accountant', 'direction')
 def reconcile_payments():
     """Bank reconciliation page."""
@@ -759,7 +759,7 @@ def reconcile_payments():
         return redirect(url_for('billing.payments_list'))
 
 
-@billing_routes.route('/payments/overdue')
+@billing_routes.route('/payments-overdue')
 @require_roles_or_redirect('admin', 'commercial', 'accountant', 'direction')
 def overdue_invoices():
     """List overdue invoices."""
@@ -796,7 +796,7 @@ def overdue_invoices():
         return render_template('billing/overdue_invoices.html', overdue_invoices=[], customers=[], filters={})
 
 
-@billing_routes.route('/payments/aging')
+@billing_routes.route('/payments-aging')
 @require_roles_or_redirect('admin', 'commercial', 'accountant', 'direction')
 def aging_report():
     """Aging report for outstanding invoices."""
@@ -902,7 +902,7 @@ def get_customer_outstanding_json():
         return jsonify({'total_outstanding': 0, 'invoice_count': 0, 'invoices': [], 'error': str(e)}), 500
 
 
-@billing_routes.route('/payments/dashboard')
+@billing_routes.route('/payments-dashboard')
 @require_roles_or_redirect('admin', 'commercial', 'accountant', 'direction')
 def payments_dashboard():
     """Dashboard for outstanding payments with KPIs and charts."""
