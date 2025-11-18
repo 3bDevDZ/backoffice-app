@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('New Supplier Invoice') }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('New Supplier Invoice') }}{% endblock %}
+{% block page_subtitle %}{{ _('Create a new supplier invoice') }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <form method="POST" action="{{ url_for('purchases_frontend.create_supplier_invoice') }}">
+        <div class="space-y-6">
+            <!-- Invoice Header -->
+            <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                <h3 class="text-lg font-bold mb-4">{{ _('Invoice Information') }}</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">{{ _('Invoice Number') }} <span style="color: var(--color-error);">*</span></label>
+                        <input type="text" name="number" required class="modern-input" placeholder="{{ _('Invoice number') }}">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">{{ _('Supplier') }} <span style="color: var(--color-error);">*</span></label>
+                        <select name="supplier_id" required class="modern-input">
+                            <option value="">{{ _('Select supplier') }}</option>
+                            {% for supplier in suppliers %}
+                            <option value="{{ supplier.id }}">{{ supplier.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">{{ _('Invoice Date') }}</label>
+                            <input type="date" name="invoice_date" required class="modern-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">{{ _('Due Date') }}</label>
+                            <input type="date" name="due_date" class="modern-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">{{ _('Received Date') }}</label>
+                            <input type="date" name="received_date" value="{{ date.today().isoformat() }}" class="modern-input">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">{{ _('Subtotal (HT)') }}</label>
+                            <input type="number" name="subtotal_ht" step="0.01" min="0" value="0" class="modern-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">{{ _('Tax Amount') }}</label>
+                            <input type="number" name="tax_amount" step="0.01" min="0" value="0" class="modern-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">{{ _('Total (TTC)') }}</label>
+                            <input type="number" name="total_ttc" step="0.01" min="0" value="0" class="modern-input">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">{{ _('Notes') }}</label>
+                        <textarea name="notes" rows="3" class="modern-input"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-3{% else %}space-x-3{% endif %}">
+                <button type="submit" class="btn-primary">{{ _('Save Invoice') }}</button>
+                <a href="{{ url_for('purchases_frontend.list_supplier_invoices') }}" class="btn-secondary">{{ _('Cancel') }}</a>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+

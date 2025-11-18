@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Purchase Receipt') }} #{{ receipt.number }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Purchase Receipt') }} #{{ receipt.number }}{% endblock %}
+{% block page_subtitle %}{{ _('View receipt details') }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <!-- Receipt Header -->
+    <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="text-lg font-bold">{{ _('Receipt Information') }}</h3>
+                <p class="text-sm text-gray-600">{{ _('Status') }}: 
+                    {% if receipt.status == 'draft' %}
+                    <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-medium rounded-full">{{ _('Draft') }}</span>
+                    {% elif receipt.status == 'validated' %}
+                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">{{ _('Validated') }}</span>
+                    {% elif receipt.status == 'cancelled' %}
+                    <span class="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">{{ _('Cancelled') }}</span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+                {% if receipt.status == 'draft' %}
+                <form method="POST" action="{{ url_for('purchases_frontend.validate_purchase_receipt', receipt_id=receipt.id) }}" class="inline">
+                    <button type="submit" class="btn-primary">{{ _('Validate Receipt') }}</button>
+                </form>
+                {% endif %}
+                <a href="{{ url_for('purchases_frontend.list_purchase_receipts') }}" class="btn-secondary">{{ _('Back to List') }}</a>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="text-sm font-medium text-gray-600">{{ _('Purchase Order') }}</label>
+                <p class="text-gray-900">{{ receipt.purchase_order_number or '-' }}</p>
+            </div>
+            <div>
+                <label class="text-sm font-medium text-gray-600">{{ _('Receipt Date') }}</label>
+                <p class="text-gray-900">{{ receipt.receipt_date.strftime('%Y-%m-%d') if receipt.receipt_date else '-' }}</p>
+            </div>
+            {% if receipt.notes %}
+            <div class="col-span-2">
+                <label class="text-sm font-medium text-gray-600">{{ _('Notes') }}</label>
+                <p class="text-gray-900">{{ receipt.notes }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Receipt Lines -->
+    <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+        <h3 class="text-lg font-bold mb-4">{{ _('Receipt Lines') }}</h3>
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Product') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Ordered') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Received') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Location') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if receipt.lines %}
+                    {% for line in receipt.lines %}
+                    <tr>
+                        <td>{{ line.product_name }} ({{ line.product_code }})</td>
+                        <td>{{ line.quantity_ordered }}</td>
+                        <td>{{ line.quantity_received }}</td>
+                        <td>{{ line.location_name or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center text-gray-500">{{ _('No lines') }}</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+

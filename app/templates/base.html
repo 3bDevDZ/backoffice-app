@@ -10,6 +10,9 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/rtl.css') }}">
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body class="bg-gray-50" style="background: var(--color-bg-primary);">
@@ -57,9 +60,21 @@
                         <i class="fas fa-truck w-5 flex-shrink-0"></i>
                         <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Suppliers') }}</span>
                     </a>
+                    <a href="{{ url_for('purchases_frontend.list_purchase_requests') }}" class="flex items-center px-6 py-3 hover:bg-indigo-800 {% if 'purchase_requests' in request.endpoint and direction == 'rtl' %}border-l-4 border-indigo-400{% elif 'purchase_requests' in request.endpoint %}border-r-4 border-indigo-400{% endif %}">
+                        <i class="fas fa-clipboard-list w-5 flex-shrink-0"></i>
+                        <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Purchase Requests') }}</span>
+                    </a>
                     <a href="{{ url_for('purchases_frontend.list_purchase_orders') }}" class="flex items-center px-6 py-3 hover:bg-indigo-800 {% if 'purchase_orders' in request.endpoint and direction == 'rtl' %}border-l-4 border-indigo-400{% elif 'purchase_orders' in request.endpoint %}border-r-4 border-indigo-400{% endif %}">
                         <i class="fas fa-shopping-bag w-5 flex-shrink-0"></i>
                         <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Purchase Orders') }}</span>
+                    </a>
+                    <a href="{{ url_for('purchases_frontend.list_purchase_receipts') }}" class="flex items-center px-6 py-3 hover:bg-indigo-800 {% if 'purchase_receipts' in request.endpoint and direction == 'rtl' %}border-l-4 border-indigo-400{% elif 'purchase_receipts' in request.endpoint %}border-r-4 border-indigo-400{% endif %}">
+                        <i class="fas fa-clipboard-check w-5 flex-shrink-0"></i>
+                        <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Purchase Receipts') }}</span>
+                    </a>
+                    <a href="{{ url_for('purchases_frontend.list_supplier_invoices') }}" class="flex items-center px-6 py-3 hover:bg-indigo-800 {% if 'supplier_invoices' in request.endpoint and direction == 'rtl' %}border-l-4 border-indigo-400{% elif 'supplier_invoices' in request.endpoint %}border-r-4 border-indigo-400{% endif %}">
+                        <i class="fas fa-file-invoice-dollar w-5 flex-shrink-0"></i>
+                        <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Supplier Invoices') }}</span>
                     </a>
                 </div>
 

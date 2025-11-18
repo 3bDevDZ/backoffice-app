@@ -7,6 +7,20 @@ from alembic import context
 # Import SQLAlchemy Base metadata from the app
 from app.infrastructure.db import Base
 
+# Import all models to ensure they are registered with Base.metadata
+from app.domain.models.user import User
+from app.domain.models.product import Product, ProductVariant, ProductPriceHistory, ProductCostHistory, PriceList, ProductPriceList, ProductVolumePricing, ProductPromotionalPrice
+from app.domain.models.category import Category
+from app.domain.models.customer import Customer, Address, Contact, CommercialConditions
+from app.domain.models.supplier import Supplier, SupplierAddress, SupplierContact, SupplierConditions
+from app.domain.models.purchase import PurchaseOrder, PurchaseOrderLine, PurchaseRequest, PurchaseRequestLine, PurchaseReceipt, PurchaseReceiptLine, SupplierInvoice
+from app.domain.models.stock import StockItem, StockMovement, Location
+from app.domain.models.quote import Quote, QuoteLine, QuoteVersion
+from app.domain.models.order import Order, OrderLine, StockReservation
+from app.domain.models.invoice import Invoice, InvoiceLine, CreditNote
+from app.domain.models.payment import Payment, PaymentAllocation, PaymentReminder
+from app.infrastructure.outbox.outbox_event import OutboxEvent
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config

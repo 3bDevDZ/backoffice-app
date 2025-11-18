@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('New Purchase Receipt') }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('New Purchase Receipt') }}{% endblock %}
+{% block page_subtitle %}{{ _('Create a new purchase receipt') }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <form method="POST" action="{{ url_for('purchases_frontend.create_purchase_receipt') }}">
+        <input type="hidden" name="purchase_order_id" value="{{ purchase_order.id }}">
+        
+        <div class="space-y-6">
+            <!-- Receipt Header -->
+            <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                <h3 class="text-lg font-bold mb-4">{{ _('Receipt Information') }}</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">{{ _('Purchase Order') }}</label>
+                        <input type="text" value="{{ purchase_order.number }}" disabled class="modern-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">{{ _('Receipt Date') }}</label>
+                        <input type="date" name="receipt_date" value="{{ date.today().isoformat() }}" required class="modern-input">
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <label class="block text-sm font-medium mb-2">{{ _('Notes') }}</label>
+                    <textarea name="notes" rows="3" class="modern-input"></textarea>
+                </div>
+            </div>
+
+            <!-- Receipt Lines -->
+            <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                <h3 class="text-lg font-bold mb-4">{{ _('Receipt Lines') }}</h3>
+                <table class="modern-table">
+                    <thead>
+                        <tr>
+                            <th>{{ _('Product') }}</th>
+                            <th>{{ _('Ordered') }}</th>
+                            <th>{{ _('Received') }}</th>
+                            <th>{{ _('Location') }}</th>
+                            <th>{{ _('Notes') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if purchase_order.lines %}
+                            {% for line in purchase_order.lines %}
+                            <tr>
+                                <td>{{ line.product_name }} ({{ line.product_code }})</td>
+                                <td>{{ line.quantity }}</td>
+                                <td>
+                                    <input type="hidden" name="lines[{{ loop.index0 }}][purchase_order_line_id]" value="{{ line.id }}">
+                                    <input type="hidden" name="lines[{{ loop.index0 }}][product_id]" value="{{ line.product_id }}">
+                                    <input type="hidden" name="lines[{{ loop.index0 }}][quantity_ordered]" value="{{ line.quantity }}">
+                                    <input type="number" name="lines[{{ loop.index0 }}][quantity_received]" step="0.01" min="0" max="{{ line.quantity }}" value="{{ line.quantity }}" required class="modern-input">
+                                </td>
+                                <td>
+                                    <select name="lines[{{ loop.index0 }}][location_id]" class="modern-input">
+                                        <option value="">{{ _('Select location') }}</option>
+                                        {% for location in locations %}
+                                        <option value="{{ location.id }}">{{ location.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="text" name="lines[{{ loop.index0 }}][quality_notes]" class="modern-input">
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-3{% else %}space-x-3{% endif %}">
+                <button type="submit" class="btn-primary">{{ _('Save Receipt') }}</button>
+                <a href="{{ url_for('purchases_frontend.list_purchase_receipts') }}" class="btn-secondary">{{ _('Cancel') }}</a>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+

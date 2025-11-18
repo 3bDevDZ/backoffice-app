@@ -2,6 +2,8 @@ from flask import Flask, request, g
 from flask_babel import Babel, gettext as _
 from dotenv import load_dotenv
 import os
+import logging
+from logging.handlers import RotatingFileHandler
 
 # Load environment variables from .env file
 load_dotenv()
@@ -12,6 +14,29 @@ def create_app() -> Flask:
     from .config import Config
 
     app.config.from_object(Config)
+    
+    # Configure logging
+    if not app.debug:
+        # In production, log to file
+        if not os.path.exists('logs'):
+            os.mkdir('logs')
+        file_handler = RotatingFileHandler('logs/gmflow.log', maxBytes=10240000, backupCount=10)
+        file_handler.setFormatter(logging.Formatter(
+            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+        ))
+        file_handler.setLevel(logging.INFO)
+        app.logger.addHandler(file_handler)
+        app.logger.setLevel(logging.INFO)
+        app.logger.info('GMFlow startup')
+    
+    # Always log to console as well
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(logging.Formatter(
+        '%(asctime)s [%(levelname)s] %(message)s'
+    ))
+    console_handler.setLevel(logging.DEBUG)
+    app.logger.addHandler(console_handler)
+    app.logger.setLevel(logging.DEBUG)
     
     # Configure session
     from datetime import timedelta
@@ -54,11 +79,14 @@ def create_app() -> Flask:
     
     @app.context_processor
     def inject_locale():
+        from datetime import date, datetime
         locale = get_locale()
         return {
             'locale': locale,
             'direction': 'rtl' if locale == 'ar' else 'ltr',
-            '_': _
+            '_': _,
+            'date': date,
+            'datetime': datetime
         }
     
     # Register custom Jinja2 filters
@@ -273,13 +301,15 @@ def create_app() -> Flask:
     from .domain.models.category import CategoryCreatedDomainEvent
     from .domain.models.purchase import (
         PurchaseOrderReceivedDomainEvent,
-        PurchaseOrderLineReceivedDomainEvent
+        PurchaseOrderLineReceivedDomainEvent,
+        PurchaseReceiptValidatedDomainEvent
     )
     from .application.products.events.product_created_handler import ProductCreatedDomainEventHandler
     from .application.products.events.product_updated_handler import ProductUpdatedDomainEventHandler
     from .application.products.events.product_archived_handler import ProductArchivedDomainEventHandler
     from .application.purchases.events.purchase_order_received_handler import PurchaseOrderReceivedDomainEventHandler
     from .application.purchases.events.purchase_order_line_received_handler import PurchaseOrderLineReceivedDomainEventHandler
+    from .application.purchases.receipts.events.purchase_receipt_validated_handler import PurchaseReceiptValidatedDomainEventHandler
     
     # Register product domain event handlers
     domain_event_dispatcher.register_handler(
@@ -303,6 +333,10 @@ def create_app() -> Flask:
     domain_event_dispatcher.register_handler(
         PurchaseOrderReceivedDomainEvent,
         PurchaseOrderReceivedDomainEventHandler().handle
+    )
+    domain_event_dispatcher.register_handler(
+        PurchaseReceiptValidatedDomainEvent,
+        PurchaseReceiptValidatedDomainEventHandler().handle
     )
     
     # Register order domain event handlers
@@ -403,12 +437,99 @@ def create_app() -> Flask:
     mediator.register_command(RemovePurchaseOrderLineCommand, RemovePurchaseOrderLineHandler())
     mediator.register_command(ReceivePurchaseOrderLineCommand, ReceivePurchaseOrderLineHandler())
     
+    # User Story 9: Purchase Request Commands
+    from .application.purchases.requests.commands.commands import (
+        CreatePurchaseRequestCommand,
+        SubmitPurchaseRequestCommand,
+        ApprovePurchaseRequestCommand,
+        RejectPurchaseRequestCommand,
+        ConvertPurchaseRequestCommand
+    )
+    from .application.purchases.requests.commands.handlers import (
+        CreatePurchaseRequestHandler,
+        SubmitPurchaseRequestHandler,
+        ApprovePurchaseRequestHandler,
+        RejectPurchaseRequestHandler,
+        ConvertPurchaseRequestHandler
+    )
+    
+    mediator.register_command(CreatePurchaseRequestCommand, CreatePurchaseRequestHandler())
+    mediator.register_command(SubmitPurchaseRequestCommand, SubmitPurchaseRequestHandler())
+    mediator.register_command(ApprovePurchaseRequestCommand, ApprovePurchaseRequestHandler())
+    mediator.register_command(RejectPurchaseRequestCommand, RejectPurchaseRequestHandler())
+    mediator.register_command(ConvertPurchaseRequestCommand, ConvertPurchaseRequestHandler())
+    
+    # User Story 9: Purchase Receipt Commands
+    from .application.purchases.receipts.commands.commands import (
+        CreatePurchaseReceiptCommand,
+        ValidatePurchaseReceiptCommand
+    )
+    from .application.purchases.receipts.commands.handlers import (
+        CreatePurchaseReceiptHandler,
+        ValidatePurchaseReceiptHandler
+    )
+    
+    mediator.register_command(CreatePurchaseReceiptCommand, CreatePurchaseReceiptHandler())
+    mediator.register_command(ValidatePurchaseReceiptCommand, ValidatePurchaseReceiptHandler())
+    
+    # User Story 9: Supplier Invoice Commands
+    from .application.purchases.invoices.commands.commands import (
+        CreateSupplierInvoiceCommand,
+        MatchSupplierInvoiceCommand
+    )
+    from .application.purchases.invoices.commands.handlers import (
+        CreateSupplierInvoiceHandler,
+        MatchSupplierInvoiceHandler
+    )
+    
+    mediator.register_command(CreateSupplierInvoiceCommand, CreateSupplierInvoiceHandler())
+    mediator.register_command(MatchSupplierInvoiceCommand, MatchSupplierInvoiceHandler())
+    
     # Register Purchase Queries
     mediator.register_query(GetSupplierByIdQuery, GetSupplierByIdHandler())
     mediator.register_query(ListSuppliersQuery, ListSuppliersHandler())
     mediator.register_query(SearchSuppliersQuery, SearchSuppliersHandler())
     mediator.register_query(GetPurchaseOrderByIdQuery, GetPurchaseOrderByIdHandler())
     mediator.register_query(ListPurchaseOrdersQuery, ListPurchaseOrdersHandler())
+    
+    # User Story 9: Purchase Receipt Queries
+    from .application.purchases.receipts.queries.queries import (
+        ListPurchaseReceiptsQuery,
+        GetPurchaseReceiptByIdQuery
+    )
+    from .application.purchases.receipts.queries.handlers import (
+        ListPurchaseReceiptsHandler,
+        GetPurchaseReceiptByIdHandler
+    )
+    
+    mediator.register_query(ListPurchaseReceiptsQuery, ListPurchaseReceiptsHandler())
+    mediator.register_query(GetPurchaseReceiptByIdQuery, GetPurchaseReceiptByIdHandler())
+    
+    # User Story 9: Purchase Request Queries
+    from .application.purchases.requests.queries.queries import (
+        ListPurchaseRequestsQuery,
+        GetPurchaseRequestByIdQuery
+    )
+    from .application.purchases.requests.queries.handlers import (
+        ListPurchaseRequestsHandler,
+        GetPurchaseRequestByIdHandler
+    )
+    
+    mediator.register_query(ListPurchaseRequestsQuery, ListPurchaseRequestsHandler())
+    mediator.register_query(GetPurchaseRequestByIdQuery, GetPurchaseRequestByIdHandler())
+    
+    # User Story 9: Supplier Invoice Queries
+    from .application.purchases.invoices.queries.queries import (
+        ListSupplierInvoicesQuery,
+        GetSupplierInvoiceByIdQuery
+    )
+    from .application.purchases.invoices.queries.handlers import (
+        ListSupplierInvoicesHandler,
+        GetSupplierInvoiceByIdHandler
+    )
+    
+    mediator.register_query(ListSupplierInvoicesQuery, ListSupplierInvoicesHandler())
+    mediator.register_query(GetSupplierInvoiceByIdQuery, GetSupplierInvoiceByIdHandler())
     
     # Stock Commands/Queries
     from .application.stock.commands.commands import (

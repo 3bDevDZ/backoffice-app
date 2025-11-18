@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Purchase Request') }} #{{ request.number }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Purchase Request') }} #{{ request.number }}{% endblock %}
+{% block page_subtitle %}{{ _('View purchase request details') }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <!-- Request Header -->
+    <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="text-lg font-bold" style="color: var(--color-text-primary);">{{ _('Request Information') }}</h3>
+                <p class="text-sm text-gray-600">{{ _('Status') }}: 
+                    {% if request.status == 'draft' %}
+                    <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-medium rounded-full">{{ _('Draft') }}</span>
+                    {% elif request.status == 'pending_approval' %}
+                    <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">{{ _('Pending Approval') }}</span>
+                    {% elif request.status == 'approved' %}
+                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">{{ _('Approved') }}</span>
+                    {% elif request.status == 'rejected' %}
+                    <span class="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">{{ _('Rejected') }}</span>
+                    {% elif request.status == 'converted' %}
+                    <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">{{ _('Converted') }}</span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="flex items-center {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+                {% if request.status == 'draft' %}
+                <form method="POST" action="{{ url_for('purchases_frontend.submit_purchase_request', request_id=request.id) }}" class="inline">
+                    <button type="submit" class="btn-primary inline-flex items-center">{{ _('Submit for Approval') }}</button>
+                </form>
+                {% elif request.status == 'pending_approval' %}
+                <form method="POST" action="{{ url_for('purchases_frontend.approve_purchase_request', request_id=request.id) }}" class="inline">
+                    <button type="submit" class="btn-primary inline-flex items-center">{{ _('Approve') }}</button>
+                </form>
+                <form method="POST" action="{{ url_for('purchases_frontend.reject_purchase_request', request_id=request.id) }}" class="inline flex items-center {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+                    <input type="text" name="reason" placeholder="{{ _('Rejection reason') }}" required class="modern-input">
+                    <button type="submit" class="btn-secondary inline-flex items-center">{{ _('Reject') }}</button>
+                </form>
+                {% elif request.status == 'approved' %}
+                <form method="POST" action="{{ url_for('purchases_frontend.convert_purchase_request', request_id=request.id) }}" class="inline flex items-center {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+                    <select name="supplier_id" required class="modern-input">
+                        <option value="">{{ _('Select supplier') }}</option>
+                        {% if suppliers %}
+                        {% for supplier in suppliers %}
+                        <option value="{{ supplier.id }}">{{ supplier.name }}{% if supplier.code %} ({{ supplier.code }}){% endif %}</option>
+                        {% endfor %}
+                        {% endif %}
+                    </select>
+                    <button type="submit" class="btn-primary inline-flex items-center">{{ _('Convert to PO') }}</button>
+                </form>
+                {% endif %}
+                <a href="{{ url_for('purchases_frontend.list_purchase_requests') }}" class="btn-secondary inline-flex items-center">{{ _('Back to List') }}</a>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="text-sm font-medium text-gray-600">{{ _('Requested By') }}</label>
+                <p class="text-gray-900">{{ request.requested_by_name or _('Unknown') }}</p>
+            </div>
+            <div>
+                <label class="text-sm font-medium text-gray-600">{{ _('Requested Date') }}</label>
+                <p class="text-gray-900">{{ request.requested_date.strftime('%Y-%m-%d') if request.requested_date else '-' }}</p>
+            </div>
+            <div>
+                <label class="text-sm font-medium text-gray-600">{{ _('Required Date') }}</label>
+                <p class="text-gray-900">{{ request.required_date.strftime('%Y-%m-%d') if request.required_date else '-' }}</p>
+            </div>
+            {% if request.notes %}
+            <div class="col-span-2">
+                <label class="text-sm font-medium text-gray-600">{{ _('Notes') }}</label>
+                <p class="text-gray-900">{{ request.notes }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Request Lines -->
+    <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+        <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Request Lines') }}</h3>
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Product') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Quantity') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Est. Price') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Notes') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if request.lines %}
+                    {% for line in request.lines %}
+                    <tr>
+                        <td>{{ line.product_name }} ({{ line.product_code }})</td>
+                        <td>{{ line.quantity }}</td>
+                        <td>{{ "%.2f"|format(line.unit_price_estimate|to_float) if line.unit_price_estimate else '-' }} €</td>
+                        <td>{{ line.notes or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center text-gray-500">{{ _('No lines') }}</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+

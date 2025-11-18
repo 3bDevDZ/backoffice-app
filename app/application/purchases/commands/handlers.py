@@ -1,4 +1,5 @@
 """Command handlers for purchase management."""
+from datetime import datetime
 from app.application.common.cqrs import CommandHandler
 from app.domain.models.supplier import (
     Supplier, SupplierAddress, SupplierContact, SupplierConditions
@@ -336,7 +337,10 @@ class UpdatePurchaseOrderHandler(CommandHandler):
             if not order:
                 raise ValueError("Purchase order not found")
             
-            if order.status != 'draft':
+            # Allow updating notes and expected_delivery_date even if not in draft status
+            # This is useful for purchase orders converted from purchase requests
+            # Only restrict updates that affect lines or totals when not in draft
+            if order.status in ['received', 'cancelled']:
                 raise ValueError(f"Cannot update purchase order in status '{order.status}'.")
             
             if command.expected_delivery_date is not None:
@@ -346,6 +350,7 @@ class UpdatePurchaseOrderHandler(CommandHandler):
             if command.internal_notes is not None:
                 order.internal_notes = command.internal_notes
             
+            order.updated_at = datetime.utcnow()
             session.commit()
             return order
 

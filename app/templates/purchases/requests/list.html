@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Purchase Requests') }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Purchase Requests') }}{% endblock %}
+{% block page_subtitle %}{{ _('Manage purchase requests and approvals') }}{% endblock %}
+
+{% block content %}
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="stat-card">
+        <div class="stat-card-label">{{ _('Total Requests') }}</div>
+        <div class="stat-card-metric" style="color: var(--color-text-primary);">{{ purchase_requests|length if purchase_requests else 0 }}</div>
+    </div>
+    <div class="stat-card stat-card-draft">
+        <div class="stat-card-label">{{ _('Draft') }}</div>
+        <div class="stat-card-metric">
+            {{ purchase_requests|selectattr('status', 'equalto', 'draft')|list|length if purchase_requests else 0 }}
+        </div>
+    </div>
+    <div class="stat-card stat-card-confirmed">
+        <div class="stat-card-label">{{ _('Pending Approval') }}</div>
+        <div class="stat-card-metric">
+            {{ purchase_requests|selectattr('status', 'equalto', 'pending_approval')|list|length if purchase_requests else 0 }}
+        </div>
+    </div>
+    <div class="stat-card stat-card-received">
+        <div class="stat-card-label">{{ _('Approved') }}</div>
+        <div class="stat-card-metric">
+            {{ purchase_requests|selectattr('status', 'equalto', 'approved')|list|length if purchase_requests else 0 }}
+        </div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="mb-6 flex {% if direction == 'rtl' %}justify-start{% else %}justify-end{% endif %} {% if direction == 'rtl' %}space-x-reverse space-x-3{% else %}space-x-3{% endif %}">
+    <a href="{{ url_for('purchases_frontend.create_purchase_request') }}" class="btn-primary">
+        <i class="fas fa-plus"></i>
+        <span>{{ _('New Purchase Request') }}</span>
+    </a>
+</div>
+
+<!-- Filters & Search -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+    <form method="GET" action="{{ url_for('purchases_frontend.list_purchase_requests') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <!-- Status Filter -->
+        <select name="status" class="modern-select">
+            <option value="">{{ _('All Statuses') }}</option>
+            <option value="draft" {% if filters.status == 'draft' %}selected{% endif %}>{{ _('Draft') }}</option>
+            <option value="pending_approval" {% if filters.status == 'pending_approval' %}selected{% endif %}>{{ _('Pending Approval') }}</option>
+            <option value="approved" {% if filters.status == 'approved' %}selected{% endif %}>{{ _('Approved') }}</option>
+            <option value="rejected" {% if filters.status == 'rejected' %}selected{% endif %}>{{ _('Rejected') }}</option>
+            <option value="converted" {% if filters.status == 'converted' %}selected{% endif %}>{{ _('Converted') }}</option>
+        </select>
+
+        <!-- Date From -->
+        <input type="date" name="date_from" value="{{ filters.date_from or '' }}" class="modern-input" placeholder="{{ _('Date From') }}">
+
+        <!-- Date To -->
+        <input type="date" name="date_to" value="{{ filters.date_to or '' }}" class="modern-input" placeholder="{{ _('Date To') }}">
+
+        <!-- Actions -->
+        <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+            <button type="submit" class="btn-secondary flex-1">
+                <i class="fas fa-filter {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                {{ _('Filter') }}
+            </button>
+            <a href="{{ url_for('purchases_frontend.list_purchase_requests') }}" class="btn-secondary" style="padding: 0.75rem;">
+                <i class="fas fa-redo"></i>
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Purchase Requests Table -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100">
+    <div class="p-4 border-b border-gray-100 flex items-center justify-between">
+        <div class="text-sm text-gray-600">
+            {{ purchase_requests|length if purchase_requests else 0 }} {{ _('requests') }}
+        </div>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Request Number') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Requested By') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Requested Date') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Required Date') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Status') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}left{% else %}right{% endif %}">{{ _('Actions') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if purchase_requests %}
+                    {% for req in purchase_requests %}
+                    <tr>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-gray-900">{{ req.number }}</div>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600">
+                            {{ req.requested_by_name or _('Unknown') }}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600">
+                            {{ req.requested_date.strftime('%Y-%m-%d') if req.requested_date else '-' }}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600">
+                            {{ req.required_date.strftime('%Y-%m-%d') if req.required_date else '-' }}
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if req.status == 'draft' %}
+                            <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-medium rounded-full">{{ _('Draft') }}</span>
+                            {% elif req.status == 'pending_approval' %}
+                            <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">{{ _('Pending Approval') }}</span>
+                            {% elif req.status == 'approved' %}
+                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">{{ _('Approved') }}</span>
+                            {% elif req.status == 'rejected' %}
+                            <span class="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">{{ _('Rejected') }}</span>
+                            {% elif req.status == 'converted' %}
+                            <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">{{ _('Converted') }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-{% if direction == 'rtl' %}left{% else %}right{% endif %} text-sm font-medium">
+                            <a href="{{ url_for('purchases_frontend.view_purchase_request', request_id=req.id) }}" 
+                               class="text-indigo-600 hover:text-indigo-900">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                            {{ _('No purchase requests found.') }}
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+

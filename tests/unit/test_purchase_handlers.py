@@ -340,3 +340,178 @@ class TestAddPurchaseOrderLineHandler:
         with pytest.raises(ValueError, match="status"):
             handler.handle(command)
 
+
+class TestUpdatePurchaseOrderHandler:
+    """Unit tests for UpdatePurchaseOrderHandler."""
+    
+    def test_update_purchase_order_draft_success(self, db_session, sample_purchase_order):
+        """Test successful update of draft purchase order."""
+        handler = UpdatePurchaseOrderHandler()
+        new_date = date(2025, 12, 31)
+        command = UpdatePurchaseOrderCommand(
+            id=sample_purchase_order.id,
+            expected_delivery_date=new_date,
+            notes="Updated notes",
+            internal_notes="Updated internal notes"
+        )
+        
+        handler.handle(command)
+        
+        # Expire and refresh to see changes from handler's session
+        db_session.expire_all()
+        order_in_session = db_session.query(PurchaseOrder).filter(PurchaseOrder.id == sample_purchase_order.id).first()
+        
+        assert order_in_session.expected_delivery_date == new_date
+        assert order_in_session.notes == "Updated notes"
+        assert order_in_session.internal_notes == "Updated internal notes"
+        assert order_in_session.updated_at is not None
+    
+    def test_update_purchase_order_confirmed_success(self, db_session, sample_purchase_order, sample_user, sample_product):
+        """Test that notes and dates can be updated even when order is confirmed."""
+        # Add a line and confirm the order
+        from app.domain.models.purchase import PurchaseOrderLine
+        line = PurchaseOrderLine.create(
+            purchase_order_id=sample_purchase_order.id,
+            product_id=sample_product.id,
+            quantity=Decimal("10"),
+            unit_price=Decimal("5.00"),
+            sequence=1
+        )
+        db_session.add(line)
+        sample_purchase_order.lines.append(line)
+        sample_purchase_order.calculate_totals()
+        sample_purchase_order.confirm(sample_user.id)
+        db_session.commit()
+        
+        # Now try to update notes and date (should work)
+        handler = UpdatePurchaseOrderHandler()
+        new_date = date(2026, 1, 15)
+        command = UpdatePurchaseOrderCommand(
+            id=sample_purchase_order.id,
+            expected_delivery_date=new_date,
+            notes="Updated notes for confirmed order",
+            internal_notes="Updated internal notes"
+        )
+        
+        handler.handle(command)
+        
+        # Expire and refresh to see changes
+        db_session.expire_all()
+        order_in_session = db_session.query(PurchaseOrder).filter(PurchaseOrder.id == sample_purchase_order.id).first()
+        
+        assert order_in_session.status == "confirmed"  # Status should remain confirmed
+        assert order_in_session.expected_delivery_date == new_date
+        assert order_in_session.notes == "Updated notes for confirmed order"
+        assert order_in_session.internal_notes == "Updated internal notes"
+    
+    def test_update_purchase_order_sent_success(self, db_session, sample_purchase_order, sample_user, sample_product):
+        """Test that notes and dates can be updated when order is sent."""
+        # Add a line and set status to sent
+        from app.domain.models.purchase import PurchaseOrderLine
+        line = PurchaseOrderLine.create(
+            purchase_order_id=sample_purchase_order.id,
+            product_id=sample_product.id,
+            quantity=Decimal("10"),
+            unit_price=Decimal("5.00"),
+            sequence=1
+        )
+        db_session.add(line)
+        sample_purchase_order.lines.append(line)
+        sample_purchase_order.calculate_totals()
+        sample_purchase_order.status = "sent"
+        db_session.commit()
+        
+        # Now try to update notes and date (should work)
+        handler = UpdatePurchaseOrderHandler()
+        new_date = date(2026, 2, 1)
+        command = UpdatePurchaseOrderCommand(
+            id=sample_purchase_order.id,
+            expected_delivery_date=new_date,
+            notes="Updated notes for sent order"
+        )
+        
+        handler.handle(command)
+        
+        # Expire and refresh to see changes
+        db_session.expire_all()
+        order_in_session = db_session.query(PurchaseOrder).filter(PurchaseOrder.id == sample_purchase_order.id).first()
+        
+        assert order_in_session.status == "sent"  # Status should remain sent
+        assert order_in_session.expected_delivery_date == new_date
+        assert order_in_session.notes == "Updated notes for sent order"
+    
+    def test_update_purchase_order_received_fails(self, db_session, sample_purchase_order, sample_user, sample_product):
+        """Test that updating received order fails."""
+        # Add a line and mark as received
+        from app.domain.models.purchase import PurchaseOrderLine
+        line = PurchaseOrderLine.create(
+            purchase_order_id=sample_purchase_order.id,
+            product_id=sample_product.id,
+            quantity=Decimal("10"),
+            unit_price=Decimal("5.00"),
+            sequence=1
+        )
+        db_session.add(line)
+        sample_purchase_order.lines.append(line)
+        sample_purchase_order.calculate_totals()
+        sample_purchase_order.status = "received"
+        db_session.commit()
+        
+        # Now try to update (should fail)
+        handler = UpdatePurchaseOrderHandler()
+        command = UpdatePurchaseOrderCommand(
+            id=sample_purchase_order.id,
+            notes="Should not work"
+        )
+        
+        with pytest.raises(ValueError, match="received"):
+            handler.handle(command)
+    
+    def test_update_purchase_order_cancelled_fails(self, db_session, sample_purchase_order):
+        """Test that updating cancelled order fails."""
+        sample_purchase_order.status = "cancelled"
+        db_session.commit()
+        
+        handler = UpdatePurchaseOrderHandler()
+        command = UpdatePurchaseOrderCommand(
+            id=sample_purchase_order.id,
+            notes="Should not work"
+        )
+        
+        with pytest.raises(ValueError, match="cancelled"):
+            handler.handle(command)
+    
+    def test_update_purchase_order_nonexistent_fails(self, db_session):
+        """Test that updating nonexistent order fails."""
+        handler = UpdatePurchaseOrderHandler()
+        command = UpdatePurchaseOrderCommand(
+            id=99999,
+            notes="Test"
+        )
+        
+        with pytest.raises(ValueError, match="not found"):
+            handler.handle(command)
+    
+    def test_update_purchase_order_partial_fields(self, db_session, sample_purchase_order):
+        """Test updating only some fields."""
+        handler = UpdatePurchaseOrderHandler()
+        new_date = date(2025, 12, 31)
+        command = UpdatePurchaseOrderCommand(
+            id=sample_purchase_order.id,
+            expected_delivery_date=new_date,
+            notes=None,  # Not updating notes
+            internal_notes=None  # Not updating internal notes
+        )
+        
+        original_notes = sample_purchase_order.notes
+        handler.handle(command)
+        
+        # Expire and refresh to see changes
+        db_session.expire_all()
+        order_in_session = db_session.query(PurchaseOrder).filter(PurchaseOrder.id == sample_purchase_order.id).first()
+        
+        assert order_in_session.expected_delivery_date == new_date
+        # Notes should remain unchanged if None was passed
+        if original_notes:
+            assert order_in_session.notes == original_notes
+

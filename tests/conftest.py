@@ -23,20 +23,19 @@ def db_session():
     """Create a test database session."""
     # Use in-memory SQLite for tests with shared connection
     # This ensures handlers and tests use the same database
-    engine = create_engine("sqlite:///:memory:", echo=False, connect_args={"check_same_thread": False})
-    Base.metadata.create_all(engine)
-    SessionLocal = sessionmaker(bind=engine)
+    from app.infrastructure.db import init_db
+    init_db("sqlite:///:memory:")
+    
+    from app.infrastructure.db import SessionLocal
     session = SessionLocal()
     
-    # Initialize the global SessionLocal for handlers to use the same engine
-    import app.infrastructure.db as db_module
-    db_module.engine = engine
-    db_module.SessionLocal = SessionLocal
+    # Create all tables
+    Base.metadata.create_all(session.bind)
     
     yield session
     
     session.close()
-    Base.metadata.drop_all(engine)
+    Base.metadata.drop_all(session.bind)
 
 
 @pytest.fixture

@@ -118,6 +118,9 @@ class ListSuppliersHandler(QueryHandler):
             if query.category:
                 q = q.filter(Supplier.category == query.category)
             
+            # Order by name
+            q = q.order_by(Supplier.name.asc())
+            
             # Pagination
             suppliers = q.offset((query.page - 1) * query.per_page).limit(query.per_page).all()
             

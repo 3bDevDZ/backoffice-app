@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('New Purchase Request') }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('New Purchase Request') }}{% endblock %}
+{% block page_subtitle %}{{ _('Create a new purchase request') }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <form method="POST" action="{{ url_for('purchases_frontend.create_purchase_request') }}">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Column - Main Info & Lines -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Request Header -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Request Information') }}</h3>
+                    
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                    {{ _('Requested Date') }}
+                                </label>
+                                <input type="date" 
+                                    name="requested_date"
+                                    value="{{ date.today().isoformat() }}"
+                                    class="modern-input">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                    {{ _('Required Date') }}
+                                </label>
+                                <input type="date" 
+                                    name="required_date"
+                                    class="modern-input">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Notes') }}
+                            </label>
+                            <textarea name="notes" rows="3" class="modern-input" placeholder="{{ _('Internal notes') }}"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Request Lines -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-gray-900">{{ _('Request Lines') }}</h3>
+                        <button type="button" onclick="addRequestLine()" class="btn-secondary">
+                            <i class="fas fa-plus"></i> {{ _('Add Line') }}
+                        </button>
+                    </div>
+
+                    <div id="request-lines" class="space-y-4">
+                        <!-- Lines will be added here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Actions -->
+            <div class="space-y-6">
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Actions') }}</h3>
+                    <div class="space-y-3">
+                        <button type="submit" class="btn-primary w-full">
+                            <i class="fas fa-save"></i> {{ _('Save Request') }}
+                        </button>
+                        <a href="{{ url_for('purchases_frontend.list_purchase_requests') }}" class="btn-secondary w-full block text-center">
+                            {{ _('Cancel') }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let lineIndex = 0;
+
+function addRequestLine() {
+    const container = document.getElementById('request-lines');
+    const lineDiv = document.createElement('div');
+    lineDiv.className = 'grid grid-cols-12 gap-4 items-end border-b pb-4';
+    lineDiv.innerHTML = `
+        <div class="col-span-5">
+            <label class="block text-sm font-medium mb-2">{{ _('Product') }}</label>
+            <select name="lines[${lineIndex}][product_id]" required class="modern-input">
+                <option value="">{{ _('Select product') }}</option>
+                {% for product in products %}
+                <option value="{{ product.id }}">{{ product.name }} ({{ product.code }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-span-2">
+            <label class="block text-sm font-medium mb-2">{{ _('Quantity') }}</label>
+            <input type="number" name="lines[${lineIndex}][quantity]" step="0.01" min="0" required class="modern-input">
+        </div>
+        <div class="col-span-2">
+            <label class="block text-sm font-medium mb-2">{{ _('Est. Price') }}</label>
+            <input type="number" name="lines[${lineIndex}][unit_price_estimate]" step="0.01" min="0" class="modern-input">
+        </div>
+        <div class="col-span-2">
+            <label class="block text-sm font-medium mb-2">{{ _('Notes') }}</label>
+            <input type="text" name="lines[${lineIndex}][notes]" class="modern-input">
+        </div>
+        <div class="col-span-1">
+            <button type="button" onclick="this.closest('div').remove()" class="btn-secondary w-full">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(lineDiv);
+    lineIndex++;
+}
+
+// Add first line on load
+document.addEventListener('DOMContentLoaded', function() {
+    addRequestLine();
+});
+</script>
+{% endblock %}
+
+

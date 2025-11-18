@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Purchase Receipts') }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Purchase Receipts') }}{% endblock %}
+{% block page_subtitle %}{{ _('Manage purchase receipts') }}{% endblock %}
+
+{% block content %}
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="stat-card">
+        <div class="stat-card-label">{{ _('Total Receipts') }}</div>
+        <div class="stat-card-metric" style="color: var(--color-text-primary);">{{ purchase_receipts|length if purchase_receipts else 0 }}</div>
+    </div>
+    <div class="stat-card stat-card-draft">
+        <div class="stat-card-label">{{ _('Draft') }}</div>
+        <div class="stat-card-metric">
+            {{ purchase_receipts|selectattr('status', 'equalto', 'draft')|list|length if purchase_receipts else 0 }}
+        </div>
+    </div>
+    <div class="stat-card stat-card-confirmed">
+        <div class="stat-card-label">{{ _('Validated') }}</div>
+        <div class="stat-card-metric">
+            {{ purchase_receipts|selectattr('status', 'equalto', 'validated')|list|length if purchase_receipts else 0 }}
+        </div>
+    </div>
+    <div class="stat-card stat-card-received">
+        <div class="stat-card-label">{{ _('Cancelled') }}</div>
+        <div class="stat-card-metric">
+            {{ purchase_receipts|selectattr('status', 'equalto', 'cancelled')|list|length if purchase_receipts else 0 }}
+        </div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="mb-6 flex {% if direction == 'rtl' %}justify-start{% else %}justify-end{% endif %} {% if direction == 'rtl' %}space-x-reverse space-x-3{% else %}space-x-3{% endif %}">
+    <a href="{{ url_for('purchases_frontend.create_purchase_receipt') }}" class="btn-primary">
+        <i class="fas fa-plus"></i>
+        <span>{{ _('New Receipt') }}</span>
+    </a>
+</div>
+
+<!-- Filters -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+    <form method="GET" action="{{ url_for('purchases_frontend.list_purchase_receipts') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <select name="status" class="modern-select">
+            <option value="">{{ _('All Statuses') }}</option>
+            <option value="draft" {% if filters.status == 'draft' %}selected{% endif %}>{{ _('Draft') }}</option>
+            <option value="validated" {% if filters.status == 'validated' %}selected{% endif %}>{{ _('Validated') }}</option>
+            <option value="cancelled" {% if filters.status == 'cancelled' %}selected{% endif %}>{{ _('Cancelled') }}</option>
+        </select>
+        <input type="date" name="date_from" value="{{ filters.date_from or '' }}" class="modern-input" placeholder="{{ _('Date From') }}">
+        <input type="date" name="date_to" value="{{ filters.date_to or '' }}" class="modern-input" placeholder="{{ _('Date To') }}">
+        <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+            <button type="submit" class="btn-secondary flex-1">{{ _('Filter') }}</button>
+            <a href="{{ url_for('purchases_frontend.list_purchase_receipts') }}" class="btn-secondary" style="padding: 0.75rem;"><i class="fas fa-redo"></i></a>
+        </div>
+    </form>
+</div>
+
+<!-- Receipts Table -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100">
+    <div class="overflow-x-auto">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Receipt Number') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Purchase Order') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Receipt Date') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Status') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}left{% else %}right{% endif %}">{{ _('Actions') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if purchase_receipts %}
+                    {% for receipt in purchase_receipts %}
+                    <tr>
+                        <td>{{ receipt.number }}</td>
+                        <td>{{ receipt.purchase_order_number or '-' }}</td>
+                        <td>{{ receipt.receipt_date.strftime('%Y-%m-%d') if receipt.receipt_date else '-' }}</td>
+                        <td>
+                            {% if receipt.status == 'draft' %}
+                            <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-medium rounded-full">{{ _('Draft') }}</span>
+                            {% elif receipt.status == 'validated' %}
+                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">{{ _('Validated') }}</span>
+                            {% elif receipt.status == 'cancelled' %}
+                            <span class="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">{{ _('Cancelled') }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-{% if direction == 'rtl' %}left{% else %}right{% endif %}">
+                            <a href="{{ url_for('purchases_frontend.view_purchase_receipt', receipt_id=receipt.id) }}" class="text-indigo-600 hover:text-indigo-900">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-gray-500">{{ _('No receipts found.') }}</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+

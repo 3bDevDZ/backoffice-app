@@ -15,7 +15,7 @@ from app.domain.models.product import Product, ProductVariant, ProductPriceHisto
 from app.domain.models.category import Category
 from app.domain.models.customer import Customer, Address, Contact, CommercialConditions
 from app.domain.models.supplier import Supplier, SupplierAddress, SupplierContact, SupplierConditions
-from app.domain.models.purchase import PurchaseOrder, PurchaseOrderLine
+from app.domain.models.purchase import PurchaseOrder, PurchaseOrderLine, PurchaseRequest, PurchaseRequestLine, PurchaseReceipt, PurchaseReceiptLine, SupplierInvoice
 from app.domain.models.stock import StockItem, StockMovement, Location
 from app.domain.models.quote import Quote, QuoteLine, QuoteVersion
 from app.domain.models.order import Order, OrderLine, StockReservation

@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Supplier Invoices') }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Supplier Invoices') }}{% endblock %}
+{% block page_subtitle %}{{ _('Manage supplier invoices') }}{% endblock %}
+
+{% block content %}
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="stat-card">
+        <div class="stat-card-label">{{ _('Total Invoices') }}</div>
+        <div class="stat-card-metric" style="color: var(--color-text-primary);">{{ supplier_invoices|length if supplier_invoices else 0 }}</div>
+    </div>
+    <div class="stat-card stat-card-draft">
+        <div class="stat-card-label">{{ _('Pending') }}</div>
+        <div class="stat-card-metric">
+            {{ supplier_invoices|selectattr('status', 'equalto', 'pending')|list|length if supplier_invoices else 0 }}
+        </div>
+    </div>
+    <div class="stat-card stat-card-confirmed">
+        <div class="stat-card-label">{{ _('Matched') }}</div>
+        <div class="stat-card-metric">
+            {{ supplier_invoices|selectattr('matching_status', 'equalto', 'matched')|list|length if supplier_invoices else 0 }}
+        </div>
+    </div>
+    <div class="stat-card stat-card-received">
+        <div class="stat-card-label">{{ _('Paid') }}</div>
+        <div class="stat-card-metric">
+            {{ supplier_invoices|selectattr('status', 'equalto', 'paid')|list|length if supplier_invoices else 0 }}
+        </div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="mb-6 flex {% if direction == 'rtl' %}justify-start{% else %}justify-end{% endif %} {% if direction == 'rtl' %}space-x-reverse space-x-3{% else %}space-x-3{% endif %}">
+    <a href="{{ url_for('purchases_frontend.create_supplier_invoice') }}" class="btn-primary">
+        <i class="fas fa-plus"></i>
+        <span>{{ _('New Invoice') }}</span>
+    </a>
+</div>
+
+<!-- Filters -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+    <form method="GET" action="{{ url_for('purchases_frontend.list_supplier_invoices') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <select name="status" class="modern-select">
+            <option value="">{{ _('All Statuses') }}</option>
+            <option value="pending" {% if filters.status == 'pending' %}selected{% endif %}>{{ _('Pending') }}</option>
+            <option value="matched" {% if filters.status == 'matched' %}selected{% endif %}>{{ _('Matched') }}</option>
+            <option value="paid" {% if filters.status == 'paid' %}selected{% endif %}>{{ _('Paid') }}</option>
+        </select>
+        <select name="matching_status" class="modern-select">
+            <option value="">{{ _('All Matching Statuses') }}</option>
+            <option value="unmatched" {% if filters.matching_status == 'unmatched' %}selected{% endif %}>{{ _('Unmatched') }}</option>
+            <option value="matched" {% if filters.matching_status == 'matched' %}selected{% endif %}>{{ _('Matched') }}</option>
+            <option value="partially_matched" {% if filters.matching_status == 'partially_matched' %}selected{% endif %}>{{ _('Partially Matched') }}</option>
+        </select>
+        <input type="date" name="date_from" value="{{ filters.date_from or '' }}" class="modern-input" placeholder="{{ _('Date From') }}">
+        <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+            <button type="submit" class="btn-secondary flex-1">{{ _('Filter') }}</button>
+            <a href="{{ url_for('purchases_frontend.list_supplier_invoices') }}" class="btn-secondary" style="padding: 0.75rem;"><i class="fas fa-redo"></i></a>
+        </div>
+    </form>
+</div>
+
+<!-- Invoices Table -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100">
+    <div class="overflow-x-auto">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Invoice Number') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Supplier') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Invoice Date') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Total') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Status') }}</th>
+                    <th class="text-{% if direction == 'rtl' %}left{% else %}right{% endif %}">{{ _('Actions') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if supplier_invoices %}
+                    {% for invoice in supplier_invoices %}
+                    <tr>
+                        <td>{{ invoice.number }}</td>
+                        <td>{{ invoice.supplier_name or '-' }}</td>
+                        <td>{{ invoice.invoice_date.strftime('%Y-%m-%d') if invoice.invoice_date else '-' }}</td>
+                        <td>{{ "%.2f"|format(invoice.total_ttc|to_float) }} €</td>
+                        <td>
+                            {% if invoice.status == 'pending' %}
+                            <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">{{ _('Pending') }}</span>
+                            {% elif invoice.status == 'matched' %}
+                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">{{ _('Matched') }}</span>
+                            {% elif invoice.status == 'paid' %}
+                            <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">{{ _('Paid') }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-{% if direction == 'rtl' %}left{% else %}right{% endif %}">
+                            <a href="{{ url_for('purchases_frontend.view_supplier_invoice', invoice_id=invoice.id) }}" class="text-indigo-600 hover:text-indigo-900">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-gray-500">{{ _('No invoices found.') }}</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+

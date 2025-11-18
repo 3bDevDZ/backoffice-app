@@ -138,7 +138,7 @@ class CreditNote(Base, AggregateRoot):
     updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    invoice = relationship("Invoice", foreign_keys=[invoice_id])
+    invoice = relationship("Invoice", foreign_keys=[invoice_id], overlaps="credit_notes")
     customer = relationship("Customer")
     creator = relationship("User", foreign_keys=[created_by])
     validator = relationship("User", foreign_keys=[validated_by])
@@ -288,7 +288,7 @@ class Invoice(Base, AggregateRoot):
     order = relationship("Order", foreign_keys=[order_id])
     customer = relationship("Customer")
     lines = relationship("InvoiceLine", back_populates="invoice", cascade="all, delete-orphan", order_by="InvoiceLine.sequence")
-    credit_notes = relationship("CreditNote", foreign_keys="CreditNote.invoice_id", backref="original_invoice")
+    credit_notes = relationship("CreditNote", foreign_keys="CreditNote.invoice_id", back_populates="invoice", overlaps="invoice")
     payment_allocations = relationship("PaymentAllocation", back_populates="invoice")
     reminders = relationship("PaymentReminder", back_populates="invoice")
     sent_by_user = relationship("User", foreign_keys=[sent_by])

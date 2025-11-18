@@ -30,7 +30,7 @@
 
 {% block content %}
 <div class="max-w-7xl mx-auto">
-    <form id="purchase-order-form">
+    <form id="purchase-order-form" method="POST" action="{% if order %}{{ url_for('purchases_frontend.update_purchase_order', order_id=order.id) }}{% else %}{{ url_for('purchases_frontend.create_purchase_order') }}{% endif %}">
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <!-- Left Column - Main Info & Lines -->
             <div class="lg:col-span-3 space-y-6">
@@ -129,12 +129,14 @@
                                                    class="variant-id-input" 
                                                    value="{{ line.variant_id if line.variant_id else '' }}">
                                             <input type="text" 
-                                                   class="product-display-input flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 cursor-pointer" 
+                                                   class="product-display-input flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 {% if order.status not in ['confirmed', 'partially_received', 'received', 'cancelled'] %}cursor-pointer{% endif %}" 
                                                    readonly
                                                    placeholder="{{ _('Click to select product...') }}"
-                                                   onclick="openProductPicker({{ loop.index0 }})"
+                                                   {% if order.status not in ['confirmed', 'partially_received', 'received', 'cancelled'] %}onclick="openProductPicker({{ loop.index0 }})"{% endif %}
                                                    data-line-index="{{ loop.index0 }}"
-                                                   {% if order.status != 'draft' %}disabled{% endif %}>
+                                                   {% if order.status != 'draft' %}disabled{% endif %}
+                                                   value="{% if line.product_name %}{{ line.product_name }}{% if line.product_code %} ({{ line.product_code }}){% endif %}{% endif %}">
+                                            {% if order.status not in ['confirmed', 'partially_received', 'received', 'cancelled'] %}
                                             <button type="button" 
                                                     class="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
                                                     onclick="openProductPicker({{ loop.index0 }})"
@@ -142,6 +144,7 @@
                                                     {% if order.status != 'draft' %}disabled{% endif %}>
                                                 <i class="fas fa-search"></i>
                                             </button>
+                                            {% endif %}
                                         </div>
                                     </div>
                                     <div class="col-span-2">
@@ -183,7 +186,7 @@
                                     </div>
                                     <div class="col-span-2">
                                         <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Total HT') }}</label>
-                                        <div class="px-2 py-1 text-sm font-medium text-gray-900">
+                                        <div class="px-2 py-1 text-sm font-medium text-gray-900 line-total-ht" data-line-total="{{ line.line_total_ht }}">
                                             {{ "%.2f"|format(line.line_total_ht) }} €
                                         </div>
                                     </div>
@@ -274,16 +277,16 @@
                     <div class="space-y-3">
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-600">{{ _('Subtotal HT') }}</span>
-                            <span class="font-medium" id="subtotal-ht">0.00 €</span>
+                            <span class="font-medium" id="subtotal-ht">{% if order %}{{ "%.2f"|format(order.subtotal_ht) }} €{% else %}0.00 €{% endif %}</span>
                         </div>
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-600">{{ _('Tax') }}</span>
-                            <span class="font-medium" id="total-tax">0.00 €</span>
+                            <span class="font-medium" id="total-tax">{% if order %}{{ "%.2f"|format(order.total_tax) }} €{% else %}0.00 €{% endif %}</span>
                         </div>
                         <div class="border-t border-gray-200 pt-3">
                             <div class="flex justify-between">
                                 <span class="font-bold" style="color: var(--color-text-primary);">{{ _('Total TTC') }}</span>
-                                <span class="font-bold text-lg text-indigo-600" id="total-ttc">0.00 €</span>
+                                <span class="font-bold text-lg text-indigo-600" id="total-ttc">{% if order %}{{ "%.2f"|format(order.total_ttc) }} €{% else %}0.00 €{% endif %}</span>
                             </div>
                         </div>
                     </div>
@@ -324,6 +327,13 @@
                             <i class="fas fa-check {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
                             {{ _('Confirm Order') }}
                         </button>
+                        {% endif %}
+                        {% if order and order.status in ['confirmed', 'sent', 'partially_received'] %}
+                        <a href="{{ url_for('purchases_frontend.create_purchase_receipt', purchase_order_id=order.id) }}" 
+                           class="w-full text-{% if direction == 'rtl' %}right{% else %}left{% endif %} px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition inline-flex items-center justify-{% if direction == 'rtl' %}end{% else %}start{% endif %}">
+                            <i class="fas fa-clipboard-check {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                            {{ _('Create Receipt') }}
+                        </a>
                         {% endif %}
                         {% if order and order.status != 'received' and order.status != 'cancelled' %}
                         <button type="button" onclick="cancelOrder({{ order.id }})" class="w-full text-{% if direction == 'rtl' %}right{% else %}left{% endif %} px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition">
@@ -405,9 +415,11 @@
                             name="location_id"
                             class="modern-input">
                         <option value="">{{ _('Select location (optional)') }}</option>
+                        {% if locations is defined %}
                         {% for location in locations %}
                         <option value="{{ location.id }}">{{ location.name }} ({{ location.code }})</option>
                         {% endfor %}
+                        {% endif %}
                     </select>
                     <p class="mt-1 text-xs text-gray-500">{{ _('Select where the goods will be stored') }}</p>
                 </div>
@@ -543,9 +555,11 @@
                     </label>
                     <select id="quick-product-category" name="category_ids" class="modern-input">
                         <option value="">{{ _('Select category') }}</option>
+                        {% if categories is defined %}
                         {% for category in categories %}
                         <option value="{{ category.id }}">{{ category.name }}</option>
                         {% endfor %}
+                        {% endif %}
                     </select>
                 </div>
             </div>
@@ -576,8 +590,8 @@ if (typeof jQuery.fn.select2 === 'undefined') {
     console.error('Select2 is not loaded!');
 }
 let lineCounter = 0;
-const products = {{ products|tojson|safe }};
-const allProducts = {{ products|tojson|safe }};
+const products = {{ products|tojson|safe if products is defined else '[]' }};
+const allProducts = {{ products|tojson|safe if products is defined else '[]' }};
 const selectProductText = '{{ _("Select product") }}';
 
 // Get selected product IDs from all lines
@@ -1057,8 +1071,22 @@ function calculateTotals() {
     let totalTax = 0;
     
     document.querySelectorAll('.line-item').forEach(lineItem => {
-        const totalHTText = lineItem.querySelector('.line-total-ht').textContent;
-        const totalHT = parseFloat(totalHTText.replace(' €', '').replace(',', '.')) || 0;
+        let totalHT = 0;
+        
+        // Try to find .line-total-ht element (works for both draft and confirmed)
+        const lineTotalHTElement = lineItem.querySelector('.line-total-ht');
+        if (lineTotalHTElement) {
+            // First try data attribute (for confirmed orders)
+            const dataTotal = lineTotalHTElement.getAttribute('data-line-total');
+            if (dataTotal) {
+                totalHT = parseFloat(dataTotal) || 0;
+            } else {
+                // Otherwise parse from text content
+                const totalHTText = lineTotalHTElement.textContent;
+                totalHT = parseFloat(totalHTText.replace(' €', '').replace(',', '.').trim()) || 0;
+            }
+        }
+        
         subtotalHT += totalHT;
         // Assume 20% VAT for now
         totalTax += totalHT * 0.20;
@@ -1152,14 +1180,24 @@ document.addEventListener('DOMContentLoaded', async function() {
 });
 
 // Form submission
-document.getElementById('purchase-order-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const supplierId = document.getElementById('supplier_id').value;
-    if (!supplierId) {
-        alert('{{ _("Please select a supplier") }}');
-        return;
-    }
+const purchaseOrderForm = document.getElementById('purchase-order-form');
+if (!purchaseOrderForm) {
+    console.error('Purchase order form not found!');
+} else {
+    purchaseOrderForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        console.log('=== FORM SUBMISSION DEBUG ===');
+        console.log('Form action:', purchaseOrderForm.action);
+        console.log('Is new order:', {% if not order %}true{% else %}false{% endif %});
+        
+        const supplierId = document.getElementById('supplier_id').value;
+        console.log('Supplier ID:', supplierId);
+        if (!supplierId) {
+            alert('{{ _("Please select a supplier") }}');
+            return false;
+        }
     
     const lines = [];
     document.querySelectorAll('.line-item').forEach((lineItem, index) => {
@@ -1217,75 +1255,62 @@ document.getElementById('purchase-order-form').addEventListener('submit', async 
     
     try {
         {% if order %}
-        // Update existing order - use frontend route with session
-        const url = '{{ url_for("purchases_frontend.update_purchase_order", order_id=order.id) }}';
-        const method = 'POST';
+        // Update existing order - use form submission for session-based authentication
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("purchases_frontend.update_purchase_order", order_id=order.id) }}';
         
-        const response = await fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data)
+        // Add form fields
+        Object.keys(data).forEach(key => {
+            if (data[key] !== null && data[key] !== undefined) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = data[key];
+                form.appendChild(input);
+            }
         });
         
-        // Check if response is JSON
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-            const text = await response.text();
-            console.error('Non-JSON response:', text);
-            alert('{{ _("Error") }}: ' + (text || response.statusText));
-            return;
-        }
-        
-        const result = await response.json();
-        
-        if (result.status === 'success') {
-            alert(result.message || '{{ _("Purchase order updated successfully") }}');
-            window.location.href = '{{ url_for("purchases_frontend.list_purchase_orders") }}';
-        } else {
-            alert(result.message || '{{ _("An error occurred") }}');
-        }
+        document.body.appendChild(form);
+        form.submit();
         {% else %}
-        // Create new order - use frontend route with session
-        const url = '{{ url_for("purchases_frontend.create_purchase_order") }}';
-        const method = 'POST';
+        // Create new order - use form submission for session-based authentication
+        console.log('Creating new purchase order...');
+        console.log('Data:', data);
+        console.log('Lines:', lines);
+        console.log('Target URL:', '{{ url_for("purchases_frontend.create_purchase_order") }}');
         
-        // Prepare data with lines
-        const orderData = {
-            ...data,
-            lines: lines
-        };
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("purchases_frontend.create_purchase_order") }}';
         
-        const response = await fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(orderData)
+        // Add form fields
+        Object.keys(data).forEach(key => {
+            if (data[key] !== null && data[key] !== undefined) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = data[key];
+                form.appendChild(input);
+                console.log(`Added field: ${key} = ${data[key]}`);
+            }
         });
         
-        // Check if response is JSON
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-            const text = await response.text();
-            console.error('Non-JSON response:', text);
-            alert('{{ _("Error") }}: ' + (text || response.statusText));
-            return;
-        }
+        // Add lines as form fields
+        lines.forEach((line, index) => {
+            Object.keys(line).forEach(key => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = `lines[${index}][${key}]`;
+                input.value = line[key];
+                form.appendChild(input);
+                console.log(`Added line field: lines[${index}][${key}] = ${line[key]}`);
+            });
+        });
         
-        const result = await response.json();
-        
-        if (result.status === 'success') {
-            const orderId = result.data?.id;
-            
-            // Lines are already added in the create_purchase_order route
-            
-            alert(result.message || '{{ _("Purchase order created successfully") }}');
-            window.location.href = '{{ url_for("purchases_frontend.list_purchase_orders") }}';
-        } else {
-            alert(result.message || result.error || '{{ _("An error occurred") }}');
-        }
+        console.log('Submitting form to:', form.action);
+        document.body.appendChild(form);
+        form.submit();
         {% endif %}
     } catch (error) {
         console.error('Error:', error);
@@ -1295,7 +1320,8 @@ document.getElementById('purchase-order-form').addEventListener('submit', async 
         }
         alert(errorMessage);
     }
-});
+    });
+}
 
 {% if order %}
 function confirmOrder(id) {

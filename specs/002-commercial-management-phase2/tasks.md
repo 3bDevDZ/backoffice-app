@@ -210,31 +210,31 @@
 
 ### Implementation for User Story 9
 
-- [ ] T246 [P] [US9] Create PurchaseRequest domain model in `app/domain/models/purchase.py` with status workflow (draft, pending_approval, approved, rejected, converted) and business logic methods
-- [ ] T247 [P] [US9] Create PurchaseRequestLine domain model in `app/domain/models/purchase.py` for purchase request line items
-- [ ] T248 [P] [US9] Create PurchaseReceipt domain model in `app/domain/models/purchase.py` for tracking goods received
-- [ ] T249 [P] [US9] Create PurchaseReceiptLine domain model in `app/domain/models/purchase.py` for receipt line items with quantity discrepancies
-- [ ] T250 [P] [US9] Create SupplierInvoice domain model in `app/domain/models/purchase.py` for supplier invoice processing
-- [ ] T251 [US9] Extend existing PurchaseOrder model in `app/domain/models/purchase.py` with receipt and invoice relationships
-- [ ] T252 [US9] Create PurchaseRequestService in `app/services/purchase_request_service.py` for automatic generation from low stock
-- [ ] T253 [US9] Create PurchaseRequest commands (CreatePurchaseRequestCommand, ApprovePurchaseRequestCommand, ConvertPurchaseRequestCommand) in `app/application/purchases/requests/commands/commands.py`
-- [ ] T254 [US9] Create PurchaseRequest command handlers in `app/application/purchases/requests/commands/handlers.py` with approval workflow
-- [ ] T255 [US9] Create PurchaseReceipt commands (CreatePurchaseReceiptCommand, ValidateReceiptCommand) in `app/application/purchases/receipts/commands/commands.py`
-- [ ] T256 [US9] Create PurchaseReceipt command handlers in `app/application/purchases/receipts/commands/handlers.py` with stock movement creation and quantity validation
-- [ ] T257 [US9] Create SupplierInvoice commands (CreateSupplierInvoiceCommand, MatchSupplierInvoiceCommand) in `app/application/purchases/invoices/commands/commands.py`
-- [ ] T258 [US9] Create SupplierInvoice command handlers in `app/application/purchases/invoices/commands/handlers.py` with 3-way matching logic
-- [ ] T259 [US9] Create ThreeWayMatchingService in `app/services/three_way_matching_service.py` for matching PO/Receipt/Invoice
-- [ ] T260 [US9] Create PurchaseReceipt queries (ListPurchaseReceiptsQuery, GetPurchaseReceiptByIdQuery) in `app/application/purchases/receipts/queries/queries.py`
-- [ ] T261 [US9] Create PurchaseReceipt query handlers in `app/application/purchases/receipts/queries/handlers.py`
-- [ ] T262 [US9] Create PurchaseReceipt DTO in `app/application/purchases/receipts/queries/receipt_dto.py` for API responses
+- [x] T246 [P] [US9] Create PurchaseRequest domain model in `app/domain/models/purchase.py` with status workflow (draft, pending_approval, approved, rejected, converted) and business logic methods
+- [x] T247 [P] [US9] Create PurchaseRequestLine domain model in `app/domain/models/purchase.py` for purchase request line items
+- [x] T248 [P] [US9] Create PurchaseReceipt domain model in `app/domain/models/purchase.py` for tracking goods received
+- [x] T249 [P] [US9] Create PurchaseReceiptLine domain model in `app/domain/models/purchase.py` for receipt line items with quantity discrepancies
+- [x] T250 [P] [US9] Create SupplierInvoice domain model in `app/domain/models/purchase.py` for supplier invoice processing
+- [x] T251 [US9] Extend existing PurchaseOrder model in `app/domain/models/purchase.py` with receipt and invoice relationships
+- [x] T252 [US9] Create PurchaseRequestService in `app/services/purchase_request_service.py` for automatic generation from low stock
+- [x] T253 [US9] Create PurchaseRequest commands (CreatePurchaseRequestCommand, ApprovePurchaseRequestCommand, ConvertPurchaseRequestCommand) in `app/application/purchases/requests/commands/commands.py`
+- [x] T254 [US9] Create PurchaseRequest command handlers in `app/application/purchases/requests/commands/handlers.py` with approval workflow
+- [x] T255 [US9] Create PurchaseReceipt commands (CreatePurchaseReceiptCommand, ValidateReceiptCommand) in `app/application/purchases/receipts/commands/commands.py`
+- [x] T256 [US9] Create PurchaseReceipt command handlers in `app/application/purchases/receipts/commands/handlers.py` with stock movement creation and quantity validation
+- [x] T257 [US9] Create SupplierInvoice commands (CreateSupplierInvoiceCommand, MatchSupplierInvoiceCommand) in `app/application/purchases/invoices/commands/commands.py`
+- [x] T258 [US9] Create SupplierInvoice command handlers in `app/application/purchases/invoices/commands/handlers.py` with 3-way matching logic
+- [x] T259 [US9] Create ThreeWayMatchingService in `app/services/three_way_matching_service.py` for matching PO/Receipt/Invoice
+- [x] T260 [US9] Create PurchaseReceipt queries (ListPurchaseReceiptsQuery, GetPurchaseReceiptByIdQuery) in `app/application/purchases/receipts/queries/queries.py`
+- [x] T261 [US9] Create PurchaseReceipt query handlers in `app/application/purchases/receipts/queries/handlers.py`
+- [x] T262 [US9] Create PurchaseReceipt DTO in `app/application/purchases/receipts/queries/receipt_dto.py` for API responses
 - [ ] T263 [US9] Create PurchaseReceiptPDFService in `app/services/purchase_receipt_pdf_service.py` for generating receipt documents
 - [ ] T264 [US9] Create PurchaseRequest API endpoints (GET /api/purchase-requests, POST /api/purchase-requests, POST /api/purchase-requests/{id}/approve, POST /api/purchase-requests/{id}/convert) in `app/api/purchases.py`
 - [ ] T265 [US9] Create PurchaseReceipt API endpoints (GET /api/purchase-receipts, POST /api/purchase-receipts, POST /api/purchase-receipts/{id}/validate) in `app/api/purchases.py`
 - [ ] T266 [US9] Create SupplierInvoice API endpoints (GET /api/supplier-invoices, POST /api/supplier-invoices, POST /api/supplier-invoices/{id}/match) in `app/api/purchases.py`
-- [ ] T267 [US9] Create frontend route handler for purchase requests list in `app/routes/purchases_routes.py` (GET /purchase-requests)
-- [ ] T268 [US9] Create frontend route handler for purchase request form in `app/routes/purchases_routes.py` (GET /purchase-requests/new, POST /purchase-requests)
-- [ ] T269 [US9] Create frontend route handler for purchase receipts in `app/routes/purchases_routes.py` (GET /purchase-receipts, POST /purchase-receipts)
-- [ ] T270 [US9] Create frontend route handler for supplier invoices in `app/routes/purchases_routes.py` (GET /supplier-invoices, POST /supplier-invoices)
+- [x] T267 [US9] Create frontend route handler for purchase requests list in `app/routes/purchases_routes.py` (GET /purchase-requests)
+- [x] T268 [US9] Create frontend route handler for purchase request form in `app/routes/purchases_routes.py` (GET /purchase-requests/new, POST /purchase-requests)
+- [x] T269 [US9] Create frontend route handler for purchase receipts in `app/routes/purchases_routes.py` (GET /purchase-receipts, POST /purchase-receipts)
+- [x] T270 [US9] Create frontend route handler for supplier invoices in `app/routes/purchases_routes.py` (GET /supplier-invoices, POST /supplier-invoices)
 - [ ] T271 [US9] Convert design file to Jinja2 template `app/templates/purchases/requests_list.html` with i18n and RTL support
 - [ ] T272 [US9] Convert design file to Jinja2 template `app/templates/purchases/request_form.html` with i18n and RTL support
 - [ ] T273 [US9] Convert design file to Jinja2 template `app/templates/purchases/receipts_list.html` with i18n and RTL support
