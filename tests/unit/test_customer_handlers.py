@@ -223,6 +223,9 @@ class TestUpdateCustomerHandler:
     
     def test_update_customer_raises_domain_event(self, db_session, sample_b2b_customer):
         """Test that customer update raises domain event."""
+        from unittest.mock import patch
+        from app.application.common.domain_event_dispatcher import domain_event_dispatcher
+        
         handler = UpdateCustomerHandler()
         original_name = sample_b2b_customer.name
         command = UpdateCustomerCommand(
@@ -230,13 +233,26 @@ class TestUpdateCustomerHandler:
             name="New Name"
         )
         
-        updated_customer = handler.handle(command)
+        # Mock the dispatcher to capture events
+        dispatched_events = []
+        original_dispatch = domain_event_dispatcher.dispatch
         
-        # Check that domain event was raised
-        events = updated_customer.get_domain_events()
-        assert len(events) > 0
-        assert events[0].customer_id == sample_b2b_customer.id
-        assert 'name' in events[0].changes
+        def mock_dispatch(event):
+            dispatched_events.append(event)
+            return original_dispatch(event)
+        
+        with patch.object(domain_event_dispatcher, 'dispatch', side_effect=mock_dispatch):
+            updated_customer = handler.handle(command)
+        
+        # Check that domain event was dispatched (events are cleared after dispatch)
+        # The event should have been dispatched during commit
+        assert len(dispatched_events) > 0
+        # Find CustomerUpdatedDomainEvent
+        from app.domain.models.customer import CustomerUpdatedDomainEvent
+        update_events = [e for e in dispatched_events if isinstance(e, CustomerUpdatedDomainEvent)]
+        assert len(update_events) > 0
+        assert update_events[0].customer_id == sample_b2b_customer.id
+        assert 'name' in update_events[0].changes
 
 
 class TestArchiveCustomerHandler:
@@ -267,16 +283,29 @@ class TestArchiveCustomerHandler:
     
     def test_archive_customer_raises_domain_event(self, db_session, sample_b2b_customer):
         """Test that customer archival raises domain event."""
+        from unittest.mock import patch
+        from app.application.common.domain_event_dispatcher import domain_event_dispatcher
+        
         handler = ArchiveCustomerHandler()
         command = ArchiveCustomerCommand(id=sample_b2b_customer.id)
         
-        archived_customer = handler.handle(command)
+        # Mock the dispatcher to capture events
+        dispatched_events = []
+        original_dispatch = domain_event_dispatcher.dispatch
         
-        # Check that domain event was raised
-        events = archived_customer.get_domain_events()
-        assert len(events) > 0
-        assert events[0].customer_id == sample_b2b_customer.id
-        assert events[0].customer_code == sample_b2b_customer.code
+        def mock_dispatch(event):
+            dispatched_events.append(event)
+            return original_dispatch(event)
+        
+        with patch.object(domain_event_dispatcher, 'dispatch', side_effect=mock_dispatch):
+            archived_customer = handler.handle(command)
+        
+        # Check that domain event was dispatched (events are cleared after dispatch)
+        from app.domain.models.customer import CustomerArchivedDomainEvent
+        archive_events = [e for e in dispatched_events if isinstance(e, CustomerArchivedDomainEvent)]
+        assert len(archive_events) > 0
+        assert archive_events[0].customer_id == sample_b2b_customer.id
+        assert archive_events[0].customer_code == sample_b2b_customer.code
 
 
 class TestActivateDeactivateCustomerHandler:

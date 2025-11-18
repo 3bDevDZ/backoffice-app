@@ -85,6 +85,9 @@ class TestCreateProductHandler:
     
     def test_create_product_raises_domain_event(self, db_session, sample_category):
         """Test that product creation raises domain event."""
+        from unittest.mock import patch
+        from app.application.common.domain_event_dispatcher import domain_event_dispatcher
+        
         handler = CreateProductHandler()
         command = CreateProductCommand(
             code="PROD-004",
@@ -93,13 +96,23 @@ class TestCreateProductHandler:
             category_ids=[sample_category.id]
         )
         
-        product = handler.handle(command)
+        # Mock the dispatcher to capture events
+        dispatched_events = []
+        original_dispatch = domain_event_dispatcher.dispatch
         
-        # Check that domain event was raised
-        events = product.get_domain_events()
-        assert len(events) > 0
-        assert events[0].product_code == "PROD-004"
-        assert events[0].product_name == "Product With Event"
+        def mock_dispatch(event):
+            dispatched_events.append(event)
+            return original_dispatch(event)
+        
+        with patch.object(domain_event_dispatcher, 'dispatch', side_effect=mock_dispatch):
+            product = handler.handle(command)
+        
+        # Check that domain event was dispatched (events are cleared after dispatch)
+        from app.domain.models.product import ProductCreatedDomainEvent
+        create_events = [e for e in dispatched_events if isinstance(e, ProductCreatedDomainEvent)]
+        assert len(create_events) > 0
+        assert create_events[0].product_code == "PROD-004"
+        assert create_events[0].product_name == "Product With Event"
 
 
 class TestUpdateProductHandler:
@@ -145,6 +158,9 @@ class TestUpdateProductHandler:
     
     def test_update_product_raises_domain_event(self, db_session, sample_product):
         """Test that product update raises domain event."""
+        from unittest.mock import patch
+        from app.application.common.domain_event_dispatcher import domain_event_dispatcher
+        
         handler = UpdateProductHandler()
         original_name = sample_product.name
         command = UpdateProductCommand(
@@ -152,13 +168,23 @@ class TestUpdateProductHandler:
             name="New Name"
         )
         
-        updated_product = handler.handle(command)
+        # Mock the dispatcher to capture events
+        dispatched_events = []
+        original_dispatch = domain_event_dispatcher.dispatch
         
-        # Check that domain event was raised
-        events = updated_product.get_domain_events()
-        assert len(events) > 0
-        assert events[0].product_id == sample_product.id
-        assert 'name' in events[0].changes
+        def mock_dispatch(event):
+            dispatched_events.append(event)
+            return original_dispatch(event)
+        
+        with patch.object(domain_event_dispatcher, 'dispatch', side_effect=mock_dispatch):
+            updated_product = handler.handle(command)
+        
+        # Check that domain event was dispatched (events are cleared after dispatch)
+        from app.domain.models.product import ProductUpdatedDomainEvent
+        update_events = [e for e in dispatched_events if isinstance(e, ProductUpdatedDomainEvent)]
+        assert len(update_events) > 0
+        assert update_events[0].product_id == sample_product.id
+        assert 'name' in update_events[0].changes
 
 
 class TestArchiveProductHandler:
@@ -194,16 +220,29 @@ class TestArchiveProductHandler:
     
     def test_archive_product_raises_domain_event(self, db_session, sample_product):
         """Test that product archival raises domain event."""
+        from unittest.mock import patch
+        from app.application.common.domain_event_dispatcher import domain_event_dispatcher
+        
         handler = ArchiveProductHandler()
         command = ArchiveProductCommand(id=sample_product.id)
         
-        archived_product = handler.handle(command)
+        # Mock the dispatcher to capture events
+        dispatched_events = []
+        original_dispatch = domain_event_dispatcher.dispatch
         
-        # Check that domain event was raised
-        events = archived_product.get_domain_events()
-        assert len(events) > 0
-        assert events[0].product_id == sample_product.id
-        assert events[0].product_code == sample_product.code
+        def mock_dispatch(event):
+            dispatched_events.append(event)
+            return original_dispatch(event)
+        
+        with patch.object(domain_event_dispatcher, 'dispatch', side_effect=mock_dispatch):
+            archived_product = handler.handle(command)
+        
+        # Check that domain event was dispatched (events are cleared after dispatch)
+        from app.domain.models.product import ProductArchivedDomainEvent
+        archive_events = [e for e in dispatched_events if isinstance(e, ProductArchivedDomainEvent)]
+        assert len(archive_events) > 0
+        assert archive_events[0].product_id == sample_product.id
+        assert archive_events[0].product_code == sample_product.code
 
 
 class TestDeleteProductHandler:
