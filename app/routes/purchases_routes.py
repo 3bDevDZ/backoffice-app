@@ -1118,6 +1118,36 @@ def view_purchase_receipt(receipt_id: int):
         return redirect(url_for('purchases_frontend.list_purchase_receipts'))
 
 
+@purchases_routes.route('/purchase-receipts/<int:receipt_id>/pdf')
+@require_roles_or_redirect('admin', 'commercial', 'direction')
+def purchase_receipt_pdf(receipt_id: int):
+    """Download purchase receipt PDF."""
+    try:
+        from flask import send_file
+        from app.services.purchase_receipt_pdf_service import PurchaseReceiptPDFService
+        
+        query = GetPurchaseReceiptByIdQuery(id=receipt_id)
+        receipt = mediator.dispatch(query)
+        
+        if not receipt:
+            flash(_('Purchase receipt not found'), 'error')
+            return redirect(url_for('purchases_frontend.list_purchase_receipts'))
+        
+        # Generate PDF
+        pdf_service = PurchaseReceiptPDFService()
+        pdf_buffer = pdf_service.generate_receipt_pdf(receipt)
+        
+        return send_file(
+            pdf_buffer,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=f"Bon_Reception_{receipt.number}.pdf"
+        )
+    except Exception as e:
+        flash(_('An error occurred: %(error)s', error=str(e)), 'error')
+        return redirect(url_for('purchases_frontend.view_purchase_receipt', receipt_id=receipt_id))
+
+
 @purchases_routes.route('/purchase-receipts/<int:receipt_id>/validate', methods=['POST'])
 @require_roles_or_redirect('admin', 'commercial')
 def validate_purchase_receipt(receipt_id: int):

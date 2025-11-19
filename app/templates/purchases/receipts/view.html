@@ -23,6 +23,9 @@
                 </p>
             </div>
             <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+                <a href="{{ url_for('purchases_frontend.purchase_receipt_pdf', receipt_id=receipt.id) }}" class="btn-secondary" target="_blank">
+                    <i class="fas fa-file-pdf"></i> {{ _('Download PDF') }}
+                </a>
                 {% if receipt.status == 'draft' %}
                 <form method="POST" action="{{ url_for('purchases_frontend.validate_purchase_receipt', receipt_id=receipt.id) }}" class="inline">
                     <button type="submit" class="btn-primary">{{ _('Validate Receipt') }}</button>
@@ -69,7 +72,7 @@
                         <td>{{ line.product_name }} ({{ line.product_code }})</td>
                         <td>{{ line.quantity_ordered }}</td>
                         <td>{{ line.quantity_received }}</td>
-                        <td>{{ line.location_name or '-' }}</td>
+                        <td>{{ line.location_code or '-' }}</td>
                     </tr>
                     {% endfor %}
                 {% else %}

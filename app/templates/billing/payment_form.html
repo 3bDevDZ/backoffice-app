@@ -206,30 +206,50 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize Select2 for customer selection
     if (typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined') {
+        // Pre-populate with existing options from the select element
+        const existingOptions = [];
+        {% for customer in customers %}
+        existingOptions.push({
+            id: {{ customer.id }},
+            text: '{{ (customer.name or customer.company_name or "")|e }} ({{ customer.code|e }})'
+        });
+        {% endfor %}
+        
         $(customerSelect).select2({
             theme: 'bootstrap-5',
             placeholder: '{{ _("Select a customer...") }}',
             allowClear: true,
             width: '100%',
+            data: existingOptions, // Pre-populate with existing customers
             ajax: {
                 url: '{{ url_for("billing.get_payment_customers_json") }}',
                 dataType: 'json',
                 delay: 250,
                 data: function (params) {
                     return {
-                        q: params.term,
+                        q: params.term || '',
                         page: params.page || 1,
                         per_page: 20,
                         status: 'active'
                     };
                 },
                 processResults: function (data) {
-                    if (data.success && data.data && data.data.items) {
+                    // Handle both response formats
+                    if (data.results && Array.isArray(data.results)) {
+                        // Direct results format
+                        return {
+                            results: data.results,
+                            pagination: {
+                                more: data.pagination ? data.pagination.more : false
+                            }
+                        };
+                    } else if (data.success && data.data && data.data.items) {
+                        // Nested format
                         return {
                             results: data.data.items.map(function(customer) {
                                 return {
                                     id: customer.id,
-                                    text: (customer.code || '') + ' - ' + (customer.name || '')
+                                    text: (customer.code || '') + ' - ' + (customer.name || customer.company_name || '')
                                 };
                             }),
                             pagination: {
@@ -262,27 +282,48 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await fetch(`{{ url_for("billing.get_customer_outstanding_json") }}?customer_id=${customerId}`);
             const data = await response.json();
             
+            // Handle both response formats
+            let invoices = [];
+            let total = 0;
+            let count = 0;
+            
             if (data.success && data.data) {
-                overdueInvoices = data.data.invoices || [];
-                const total = data.data.total_outstanding || 0;
-                const count = data.data.invoice_count || 0;
-                
-                // Update outstanding info display
-                totalOutstandingAmount.textContent = total.toFixed(2);
-                outstandingInvoiceCount.textContent = `(${count} {{ _('invoices') }})`;
-                outstandingInfo.classList.remove('hidden');
-                
-                // Enable/disable add allocation button
-                if (overdueInvoices.length === 0) {
-                    addBtn.disabled = true;
-                    addBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                } else {
-                    addBtn.disabled = false;
-                    addBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                }
+                // Nested format
+                invoices = data.data.invoices || [];
+                total = data.data.total_outstanding || 0;
+                count = data.data.invoice_count || 0;
+            } else if (data.invoices !== undefined) {
+                // Direct format
+                invoices = data.invoices || [];
+                total = data.total_outstanding || 0;
+                count = data.invoice_count || 0;
             } else {
-                console.error('Error loading customer outstanding:', data.error);
+                console.error('Error loading customer outstanding: unexpected format', data);
                 hideOutstandingInfo();
+                return;
+            }
+            
+            // Map invoices to expected format
+            overdueInvoices = invoices.map(inv => ({
+                invoice_id: inv.id,
+                invoice_number: inv.number,
+                remaining_amount: inv.remaining_amount,
+                due_date: inv.due_date,
+                days_overdue: inv.days_overdue
+            }));
+            
+            // Update outstanding info display
+            totalOutstandingAmount.textContent = total.toFixed(2);
+            outstandingInvoiceCount.textContent = `(${count} {{ _('invoices') }})`;
+            outstandingInfo.classList.remove('hidden');
+            
+            // Enable/disable add allocation button
+            if (overdueInvoices.length === 0) {
+                addBtn.disabled = true;
+                addBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                addBtn.disabled = false;
+                addBtn.classList.remove('opacity-50', 'cursor-not-allowed');
             }
         } catch (error) {
             console.error('Error loading customer outstanding:', error);

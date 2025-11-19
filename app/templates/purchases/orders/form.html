@@ -1494,52 +1494,79 @@ function submitReceiveLine(event) {
 // Product Picker Modal
 let currentLineIndex = null;
 let productsPickerData = [];
-let filteredProducts = [];
+let pickerCurrentPage = 1;
+let pickerTotalPages = 1;
+let pickerTotal = 0;
+let pickerPerPage = 20;
+let searchTimeout = null;
 
 // Open product picker modal
 function openProductPicker(lineIndex) {
     currentLineIndex = typeof lineIndex === 'string' ? parseInt(lineIndex) : lineIndex;
     console.log('Opening product picker for line index:', currentLineIndex);
+    pickerCurrentPage = 1;
     document.getElementById('product-picker-modal').classList.remove('hidden');
-    loadProductsForPicker();
+    document.getElementById('product-picker-search').value = '';
+    loadProductsForPicker('', 1);
 }
 
 // Close product picker modal
 function closeProductPicker() {
     document.getElementById('product-picker-modal').classList.add('hidden');
     currentLineIndex = null;
+    pickerCurrentPage = 1;
 }
 
-// Load products for picker
-async function loadProductsForPicker(search = '') {
+// Load products for picker with server-side search and pagination
+async function loadProductsForPicker(search = '', page = 1) {
     try {
-        const response = await fetch(`/products/data/picker?search=${encodeURIComponent(search)}&page=1&per_page=100`);
+        const container = document.getElementById('product-picker-list');
+        if (container) {
+            container.innerHTML = '<div class="text-center py-8 text-gray-500"><i class="fas fa-spinner fa-spin"></i> {{ _("Loading...") }}</div>';
+        }
+        
+        const response = await fetch(`/products/data/picker?search=${encodeURIComponent(search)}&page=${page}&per_page=${pickerPerPage}`);
         const data = await response.json();
         
         if (data.error) {
             console.error('Error loading products:', data.error);
+            if (container) {
+                container.innerHTML = '<div class="text-center py-8 text-red-500">{{ _("Error loading products") }}</div>';
+            }
             return;
         }
         
         productsPickerData = data.items || [];
-        filteredProducts = productsPickerData;
+        pickerCurrentPage = data.page || 1;
+        pickerTotalPages = data.total_pages || 1;
+        pickerTotal = data.total || 0;
         renderProductsList();
+        renderPagination();
     } catch (error) {
         console.error('Error loading products:', error);
+        const container = document.getElementById('product-picker-list');
+        if (container) {
+            container.innerHTML = '<div class="text-center py-8 text-red-500">{{ _("Error loading products") }}</div>';
+        }
     }
 }
 
 // Render products list in modal
 function renderProductsList() {
     const container = document.getElementById('product-picker-list');
+    if (!container) {
+        console.error('product-picker-list container not found');
+        return;
+    }
+    
     container.innerHTML = '';
     
-    if (filteredProducts.length === 0) {
+    if (productsPickerData.length === 0) {
         container.innerHTML = '<div class="text-center py-8 text-gray-500">{{ _("No products found") }}</div>';
         return;
     }
     
-    filteredProducts.forEach(item => {
+    productsPickerData.forEach(item => {
         // Product row
         const productRow = document.createElement('div');
         productRow.className = 'border-b border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer';
@@ -1685,24 +1712,79 @@ function selectProduct(productId, variantId, product, variant = null) {
     closeProductPicker();
 }
 
-// Search in product picker
+// Search in product picker with debounce (server-side)
 function searchProductsPicker() {
     const searchInput = document.getElementById('product-picker-search');
-    const searchTerm = searchInput.value.toLowerCase();
+    const searchTerm = searchInput.value.trim();
     
-    filteredProducts = productsPickerData.filter(item => {
-        const matchesProduct = item.name.toLowerCase().includes(searchTerm) || 
-                              item.code.toLowerCase().includes(searchTerm);
-        if (matchesProduct) return true;
-        
-        // Check variants
-        return item.variants.some(v => 
-            v.name.toLowerCase().includes(searchTerm) || 
-            v.code.toLowerCase().includes(searchTerm)
-        );
-    });
+    // Clear existing timeout
+    if (searchTimeout) {
+        clearTimeout(searchTimeout);
+    }
     
-    renderProductsList();
+    // Debounce: wait 500ms after user stops typing
+    searchTimeout = setTimeout(() => {
+        pickerCurrentPage = 1; // Reset to first page on new search
+        loadProductsForPicker(searchTerm, 1);
+    }, 500);
+}
+
+// Pagination functions
+function goToPickerPage(page) {
+    if (page < 1 || page > pickerTotalPages) return;
+    const searchInput = document.getElementById('product-picker-search');
+    const searchTerm = searchInput ? searchInput.value.trim() : '';
+    pickerCurrentPage = page;
+    loadProductsForPicker(searchTerm, page);
+}
+
+function nextPickerPage() {
+    if (pickerCurrentPage < pickerTotalPages) {
+        goToPickerPage(pickerCurrentPage + 1);
+    }
+}
+
+function prevPickerPage() {
+    if (pickerCurrentPage > 1) {
+        goToPickerPage(pickerCurrentPage - 1);
+    }
+}
+
+// Render pagination controls
+function renderPagination() {
+    const paginationContainer = document.getElementById('product-picker-pagination');
+    if (!paginationContainer) return;
+    
+    if (pickerTotalPages <= 1) {
+        paginationContainer.innerHTML = '';
+        return;
+    }
+    
+    const startItem = (pickerCurrentPage - 1) * pickerPerPage + 1;
+    const endItem = Math.min(pickerCurrentPage * pickerPerPage, pickerTotal);
+    
+    paginationContainer.innerHTML = `
+        <div class="flex items-center justify-between px-4 py-3 border-t border-gray-200">
+            <div class="text-sm text-gray-700">
+                {{ _("Showing") }} ${startItem} {{ _("to") }} ${endItem} {{ _("of") }} ${pickerTotal} {{ _("products") }}
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="prevPickerPage()" 
+                        class="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        ${pickerCurrentPage === 1 ? 'disabled' : ''}>
+                    <i class="fas fa-chevron-{% if direction == 'rtl' %}right{% else %}left{% endif %}"></i> {{ _("Previous") }}
+                </button>
+                <span class="text-sm text-gray-700">
+                    {{ _("Page") }} ${pickerCurrentPage} {{ _("of") }} ${pickerTotalPages}
+                </span>
+                <button onclick="nextPickerPage()" 
+                        class="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        ${pickerCurrentPage === pickerTotalPages ? 'disabled' : ''}>
+                    {{ _("Next") }} <i class="fas fa-chevron-{% if direction == 'rtl' %}left{% else %}right{% endif %}"></i>
+                </button>
+            </div>
+        </div>
+    `;
 }
 </script>
 
@@ -1733,6 +1815,11 @@ function searchProductsPicker() {
             <!-- Products List -->
             <div id="product-picker-list" class="flex-1 overflow-y-auto p-4">
                 <!-- Products will be rendered here -->
+            </div>
+            
+            <!-- Pagination -->
+            <div id="product-picker-pagination" class="border-t border-gray-200">
+                <!-- Pagination controls will be rendered here -->
             </div>
         </div>
     </div>

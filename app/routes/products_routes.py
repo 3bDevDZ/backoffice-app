@@ -452,6 +452,24 @@ def get_products_picker_data():
         )
         products = mediator.dispatch(products_query)
         
+        # Calculate total count for pagination
+        from app.domain.models.product import Product
+        from app.infrastructure.db import get_session
+        with get_session() as session:
+            count_q = session.query(Product)
+            if search:
+                search_term = f"%{search}%"
+                from sqlalchemy import or_
+                count_q = count_q.filter(
+                    or_(
+                        Product.name.ilike(search_term),
+                        Product.code.ilike(search_term),
+                        Product.description.ilike(search_term)
+                    )
+                )
+            count_q = count_q.filter(Product.status == 'active')
+            total = count_q.count()
+        
         # Build response with products and variants
         items = []
         for product in products:
@@ -514,11 +532,15 @@ def get_products_picker_data():
                 'variant_attrs': variant_attrs if has_variants else []
             })
         
+        total_pages = (total + per_page - 1) // per_page if total > 0 else 0
+        
         return jsonify({
             'items': items,
             'page': page,
             'per_page': per_page,
-            'has_more': len(items) == per_page
+            'total': total,
+            'total_pages': total_pages,
+            'has_more': page < total_pages
         })
     except Exception as e:
         import traceback
