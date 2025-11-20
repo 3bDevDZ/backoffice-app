@@ -76,21 +76,21 @@
             <dl class="space-y-2">
                 <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %}">
                     <dt class="text-sm" style="color: var(--color-text-secondary);">{{ _('Subtotal HT') }}:</dt>
-                    <dd class="text-sm font-medium" style="color: var(--color-text-primary);">{{ "%.2f"|format(quote.subtotal) }} €</dd>
+                    <dd class="text-sm font-medium" style="color: var(--color-text-primary);">{{ quote.subtotal|currency }}</dd>
                 </div>
                 {% if quote.discount_amount > 0 %}
                 <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %}">
                     <dt class="text-sm" style="color: var(--color-text-secondary);">{{ _('Discount') }}:</dt>
-                    <dd class="text-sm font-medium" style="color: var(--color-error);">-{{ "%.2f"|format(quote.discount_amount) }} €</dd>
+                    <dd class="text-sm font-medium" style="color: var(--color-error);">-{{ quote.discount_amount|currency }}</dd>
                 </div>
                 {% endif %}
                 <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %}">
                     <dt class="text-sm" style="color: var(--color-text-secondary);">{{ _('Tax') }}:</dt>
-                    <dd class="text-sm font-medium" style="color: var(--color-text-primary);">{{ "%.2f"|format(quote.tax_amount) }} €</dd>
+                    <dd class="text-sm font-medium" style="color: var(--color-text-primary);">{{ quote.tax_amount|currency }}</dd>
                 </div>
                 <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %} border-t pt-2">
                     <dt class="text-base font-bold text-gray-900">{{ _('Total TTC') }}:</dt>
-                    <dd class="text-base font-bold text-indigo-600">{{ "%.2f"|format(quote.total) }} €</dd>
+                    <dd class="text-base font-bold text-indigo-600">{{ quote.total|currency }}</dd>
                 </div>
             </dl>
         </div>
@@ -120,7 +120,7 @@
                             <div class="text-sm text-gray-500">{{ line.product_code }}</div>
                         </td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ "%.3f"|format(line.quantity) }}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ "%.2f"|format(line.unit_price) }} €</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ line.unit_price|currency }}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                             {% if line.discount_percent > 0 %}
                                 {{ "%.2f"|format(line.discount_percent) }}%
@@ -128,8 +128,8 @@
                                 -
                             {% endif %}
                         </td>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ "%.2f"|format(line.line_total_ht) }} €</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{{ "%.2f"|format(line.line_total_ttc) }} €</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ line.line_total_ht|currency }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{{ line.line_total_ttc|currency }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

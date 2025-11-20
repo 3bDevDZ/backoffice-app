@@ -51,7 +51,7 @@
             </div>
             <div>
                 <label class="text-sm font-medium text-gray-600">{{ _('Total (TTC)') }}</label>
-                <p class="text-gray-900 font-bold">{{ "%.2f"|format(invoice.total_ttc|to_float) }} €</p>
+                <p class="text-gray-900 font-bold">{{ invoice.total_ttc|to_float|currency }}</p>
             </div>
             {% if matched_po %}
             <div class="col-span-2">

@@ -89,19 +89,19 @@
                         <td>{{ product.product_name }}</td>
                         <td>
                             <span class="text-sm" style="color: var(--color-text-secondary);">
-                                {{ "%.2f"|format(product.base_price) }} €
+                                {{ product.base_price|currency }}
                             </span>
                         </td>
                         <td>
                             <span class="font-semibold" style="color: var(--color-text-primary);">
-                                {{ "%.2f"|format(product.price) }} €
+                                {{ product.price|currency }}
                             </span>
                         </td>
                         <td>
                             {% set diff = product.price - product.base_price %}
                             {% set diff_percent = (diff / product.base_price * 100) if product.base_price > 0 else 0 %}
                             <span class="{% if diff > 0 %}text-red-600{% elif diff < 0 %}text-green-600{% else %}text-gray-500{% endif %}">
-                                {% if diff > 0 %}+{% endif %}{{ "%.2f"|format(diff) }} €
+                                {% if diff > 0 %}+{% endif %}{{ diff|currency }}
                                 ({% if diff_percent > 0 %}+{% endif %}{{ "%.1f"|format(diff_percent) }}%)
                             </span>
                         </td>

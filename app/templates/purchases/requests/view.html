@@ -96,7 +96,7 @@
                     <tr>
                         <td>{{ line.product_name }} ({{ line.product_code }})</td>
                         <td>{{ line.quantity }}</td>
-                        <td>{{ "%.2f"|format(line.unit_price_estimate|to_float) if line.unit_price_estimate else '-' }} €</td>
+                        <td>{% if line.unit_price_estimate %}{{ line.unit_price_estimate|to_float|currency }}{% else %}-{% endif %}</td>
                         <td>{{ line.notes or '-' }}</td>
                     </tr>
                     {% endfor %}

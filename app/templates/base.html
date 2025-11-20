@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/rtl.css') }}">
+    <script src="{{ url_for('static', filename='js/currency.js') }}"></script>
     <style>
         [x-cloak] { display: none !important; }
     </style>
@@ -106,17 +107,31 @@
                         <div class="mb-2">
                             <div class="px-6 py-2 text-xs text-indigo-300 font-semibold sidebar-text">{{ _('INVENTORY') }}</div>
                             {% set is_stock_index = request.endpoint == 'stock.index' %}
+                            {% set is_stock_sites = 'stock.list_sites' in request.endpoint or 'stock.view_site' in request.endpoint or 'stock.new_site' in request.endpoint or 'stock.edit_site' in request.endpoint %}
                             {% set is_stock_locations = request.endpoint == 'stock.locations' %}
+                            {% set is_stock_transfers = 'stock.list_transfers' in request.endpoint or 'stock.view_transfer' in request.endpoint or 'stock.new_transfer' in request.endpoint %}
                             {% set is_stock_movements = request.endpoint == 'stock.movements' %}
                             {% set is_stock_alerts = request.endpoint == 'stock.alerts' %}
                             <a href="{{ url_for('stock.index') }}" class="flex items-center px-6 py-3 transition-all duration-200 {% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} {% if is_stock_index %}active{% endif %}" style="border-radius: 8px; {% if is_stock_index %}background: var(--color-sidebar-active); border-left: 3px solid var(--color-sidebar-accent); font-weight: 600;{% else %}margin: 0.25rem 0.5rem;{% endif %}" onmouseover="if (!this.classList.contains('active')) this.style.background='var(--color-sidebar-hover)'; this.style.transform='translateX(2px)'" onmouseout="if (this.classList.contains('active')) this.style.background='var(--color-sidebar-active)'; else this.style.background='transparent'; this.style.transform='translateX(0)'">
                                 <i class="fas fa-boxes w-5 flex-shrink-0" style="{% if is_stock_index %}color: var(--color-sidebar-accent);{% else %}color: #CBD5E1;{% endif %}"></i>
                                 <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Stock') }}</span>
                             </a>
+                            {% if stock_management_mode == 'advanced' %}
+                            <a href="{{ url_for('stock.list_sites') }}" class="flex items-center px-6 py-3 transition-all duration-200 {% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} {% if is_stock_sites %}active{% endif %}" style="border-radius: 8px; {% if is_stock_sites %}background: var(--color-sidebar-active); border-left: 3px solid var(--color-sidebar-accent); font-weight: 600;{% else %}margin: 0.25rem 0.5rem;{% endif %}" onmouseover="if (!this.classList.contains('active')) this.style.background='var(--color-sidebar-hover)'; this.style.transform='translateX(2px)'" onmouseout="if (this.classList.contains('active')) this.style.background='var(--color-sidebar-active)'; else this.style.background='transparent'; this.style.transform='translateX(0)'">
+                                <i class="fas fa-building w-5 flex-shrink-0" style="{% if is_stock_sites %}color: var(--color-sidebar-accent);{% else %}color: #CBD5E1;{% endif %}"></i>
+                                <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Sites') }}</span>
+                            </a>
+                            {% endif %}
                             <a href="{{ url_for('stock.locations') }}" class="flex items-center px-6 py-3 transition-all duration-200 {% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} {% if is_stock_locations %}active{% endif %}" style="border-radius: 8px; {% if is_stock_locations %}background: var(--color-sidebar-active); border-left: 3px solid var(--color-sidebar-accent); font-weight: 600;{% else %}margin: 0.25rem 0.5rem;{% endif %}" onmouseover="if (!this.classList.contains('active')) this.style.background='var(--color-sidebar-hover)'; this.style.transform='translateX(2px)'" onmouseout="if (this.classList.contains('active')) this.style.background='var(--color-sidebar-active)'; else this.style.background='transparent'; this.style.transform='translateX(0)'">
                                 <i class="fas fa-warehouse w-5 flex-shrink-0" style="{% if is_stock_locations %}color: var(--color-sidebar-accent);{% else %}color: #CBD5E1;{% endif %}"></i>
                                 <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Warehouses') }}</span>
                             </a>
+                            {% if stock_management_mode == 'advanced' %}
+                            <a href="{{ url_for('stock.list_transfers') }}" class="flex items-center px-6 py-3 transition-all duration-200 {% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} {% if is_stock_transfers %}active{% endif %}" style="border-radius: 8px; {% if is_stock_transfers %}background: var(--color-sidebar-active); border-left: 3px solid var(--color-sidebar-accent); font-weight: 600;{% else %}margin: 0.25rem 0.5rem;{% endif %}" onmouseover="if (!this.classList.contains('active')) this.style.background='var(--color-sidebar-hover)'; this.style.transform='translateX(2px)'" onmouseout="if (this.classList.contains('active')) this.style.background='var(--color-sidebar-active)'; else this.style.background='transparent'; this.style.transform='translateX(0)'">
+                                <i class="fas fa-truck-loading w-5 flex-shrink-0" style="{% if is_stock_transfers %}color: var(--color-sidebar-accent);{% else %}color: #CBD5E1;{% endif %}"></i>
+                                <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Transfers') }}</span>
+                            </a>
+                            {% endif %}
                             <a href="{{ url_for('stock.movements') }}" class="flex items-center px-6 py-3 transition-all duration-200 {% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} {% if is_stock_movements %}active{% endif %}" style="border-radius: 8px; {% if is_stock_movements %}background: var(--color-sidebar-active); border-left: 3px solid var(--color-sidebar-accent); font-weight: 600;{% else %}margin: 0.25rem 0.5rem;{% endif %}" onmouseover="if (!this.classList.contains('active')) this.style.background='var(--color-sidebar-hover)'; this.style.transform='translateX(2px)'" onmouseout="if (this.classList.contains('active')) this.style.background='var(--color-sidebar-active)'; else this.style.background='transparent'; this.style.transform='translateX(0)'">
                                 <i class="fas fa-exchange-alt w-5 flex-shrink-0" style="{% if is_stock_movements %}color: var(--color-sidebar-accent);{% else %}color: #CBD5E1;{% endif %}"></i>
                                 <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Movements') }}</span>
@@ -124,6 +139,11 @@
                             <a href="{{ url_for('stock.alerts') }}" class="flex items-center px-6 py-3 transition-all duration-200 {% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} {% if is_stock_alerts %}active{% endif %}" style="border-radius: 8px; {% if is_stock_alerts %}background: var(--color-sidebar-active); border-left: 3px solid var(--color-sidebar-accent); font-weight: 600;{% else %}margin: 0.25rem 0.5rem;{% endif %}" onmouseover="if (!this.classList.contains('active')) this.style.background='var(--color-sidebar-hover)'; this.style.transform='translateX(2px)'" onmouseout="if (this.classList.contains('active')) this.style.background='var(--color-sidebar-active)'; else this.style.background='transparent'; this.style.transform='translateX(0)'">
                                 <i class="fas fa-exclamation-triangle w-5 flex-shrink-0" style="{% if is_stock_alerts %}color: var(--color-sidebar-accent);{% else %}color: #CBD5E1;{% endif %}"></i>
                                 <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Alerts') }}</span>
+                            </a>
+                            {% set is_purchase_receipts = 'purchase_receipts' in request.endpoint %}
+                            <a href="{{ url_for('purchases_frontend.list_purchase_receipts') }}" class="flex items-center px-6 py-3 transition-all duration-200 {% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} {% if is_purchase_receipts %}active{% endif %}" style="border-radius: 8px; {% if is_purchase_receipts %}background: var(--color-sidebar-active); border-left: 3px solid var(--color-sidebar-accent); font-weight: 600;{% else %}margin: 0.25rem 0.5rem;{% endif %}" onmouseover="if (!this.classList.contains('active')) this.style.background='var(--color-sidebar-hover)'; this.style.transform='translateX(2px)'" onmouseout="if (this.classList.contains('active')) this.style.background='var(--color-sidebar-active)'; else this.style.background='transparent'; this.style.transform='translateX(0)'">
+                                <i class="fas fa-clipboard-check w-5 flex-shrink-0" style="{% if is_purchase_receipts %}color: var(--color-sidebar-accent);{% else %}color: #CBD5E1;{% endif %}"></i>
+                                <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Purchase Receipts') }}</span>
                             </a>
                         </div>
 
@@ -157,34 +177,15 @@
                             <i class="fas fa-th-large w-5 flex-shrink-0" style="{% if request.endpoint == 'modules.home' %}color: var(--color-sidebar-accent);{% else %}color: #CBD5E1;{% endif %}"></i>
                             <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Modules') }}</span>
                         </a>
+                        {% if g.user and (g.user.role == 'admin' or g.user.role == 'direction') %}
+                        <a href="{{ url_for('settings.index') }}" class="flex items-center px-6 py-3 transition-all duration-200 {% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %}" style="border-radius: 8px; {% if 'settings' in request.endpoint %}background: var(--color-sidebar-active); border-left: 3px solid var(--color-sidebar-accent); font-weight: 600;{% else %}margin: 0.25rem 0.5rem;{% endif %}" onmouseover="if (!this.classList.contains('active')) this.style.background='var(--color-sidebar-hover)'; this.style.transform='translateX(2px)'" onmouseout="if (!this.classList.contains('active')) this.style.background='transparent'; this.style.transform='translateX(0)'" {% if 'settings' in request.endpoint %}class="active"{% endif %}>
+                            <i class="fas fa-cog w-5 flex-shrink-0" style="{% if 'settings' in request.endpoint %}color: var(--color-sidebar-accent);{% else %}color: #CBD5E1;{% endif %}"></i>
+                            <span class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} sidebar-text">{{ _('Settings') }}</span>
+                        </a>
+                        {% endif %}
                     </div>
                 {% endif %}
             </nav>
-
-            <!-- User Profile -->
-            <div class="p-4 border-t border-indigo-800">
-                <div class="flex items-center">
-                    <div class="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <div class="{% if direction == 'rtl' %}mr-3{% else %}ml-3{% endif %} flex-1">
-                        <div class="text-sm font-medium">{% if g.user %}{{ g.user.username }}{% else %}Guest{% endif %}</div>
-                        <div class="text-xs text-indigo-300">{% if g.user %}{{ g.user.role }}{% else %}Guest{% endif %}</div>
-                    </div>
-                    <!-- Language Switcher -->
-                    <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-1{% else %}space-x-1{% endif %}">
-                        <button onclick="window.i18n.switchLanguage('fr')" 
-                                class="px-2 py-1 text-xs {% if locale == 'fr' %}bg-indigo-700{% else %}hover:bg-indigo-800{% endif %} rounded"
-                                data-locale="fr">FR</button>
-                        <button onclick="window.i18n.switchLanguage('ar')" 
-                                class="px-2 py-1 text-xs {% if locale == 'ar' %}bg-indigo-700{% else %}hover:bg-indigo-800{% endif %} rounded"
-                                data-locale="ar">AR</button>
-                    </div>
-                    <button class="text-indigo-300 hover:text-white {% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %}">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </button>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -263,6 +264,10 @@
     {% block extra_js %}{% endblock %}
     
     <script>
+        // Set current locale for i18n.js
+        window.__LOCALE__ = '{{ locale }}';
+        window.__DIRECTION__ = '{{ direction }}';
+        
         // Set current date
         document.getElementById('current-date').textContent = new Date().toLocaleDateString('{{ locale }}', {
             weekday: 'long',
@@ -412,6 +417,14 @@
             // Initialize on page load
             initSidebar();
         })();
+    </script>
+    
+    <!-- Global currency configuration -->
+    <script>
+        // Expose currency configuration to JavaScript
+        window.appConfig = window.appConfig || {};
+        window.appConfig.currency = '{{ default_currency }}';
+        window.appConfig.locale = '{{ locale }}';
     </script>
 </body>
 </html>

@@ -33,13 +33,26 @@
             <!-- Receipt Lines -->
             <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
                 <h3 class="text-lg font-bold mb-4">{{ _('Receipt Lines') }}</h3>
+                {% if stock_mode == 'simple' and default_location %}
+                <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p class="text-sm text-blue-800">
+                        <i class="fas fa-info-circle {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                        {{ _('Mode simple: Les produits seront reçus automatiquement à l\'emplacement par défaut') }} <strong>{{ default_location.name }}</strong>
+                    </p>
+                </div>
+                {% endif %}
                 <table class="modern-table">
                     <thead>
                         <tr>
                             <th>{{ _('Product') }}</th>
                             <th>{{ _('Ordered') }}</th>
                             <th>{{ _('Received') }}</th>
+                            {% if stock_mode == 'advanced' %}
+                            <th>{{ _('Site') }}</th>
+                            {% endif %}
+                            {% if stock_mode == 'advanced' %}
                             <th>{{ _('Location') }}</th>
+                            {% endif %}
                             <th>{{ _('Notes') }}</th>
                         </tr>
                     </thead>
@@ -55,16 +68,40 @@
                                     <input type="hidden" name="lines[{{ loop.index0 }}][quantity_ordered]" value="{{ line.quantity }}">
                                     <input type="number" name="lines[{{ loop.index0 }}][quantity_received]" step="0.01" min="0" max="{{ line.quantity }}" value="{{ line.quantity }}" required class="modern-input">
                                 </td>
+                                {% if stock_mode == 'simple' and default_location %}
+                                    {# Mode simple: utiliser la location par défaut automatiquement #}
+                                    <input type="hidden" name="lines[{{ loop.index0 }}][location_id]" value="{{ default_location.id }}">
+                                {% elif stock_mode == 'advanced' %}
+                                    {# Mode avancé: permettre la sélection de site et location #}
+                                    <td>
+                                        <select name="lines[{{ loop.index0 }}][site_id]" class="modern-input" onchange="updateLocationsForSite(this, {{ loop.index0 }})">
+                                            <option value="">{{ _('Select site') }}</option>
+                                            {% for site in sites %}
+                                            <option value="{{ site.id }}">{{ site.name }} ({{ site.code }})</option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select name="lines[{{ loop.index0 }}][location_id]" class="modern-input" id="location-select-{{ loop.index0 }}">
+                                            <option value="">{{ _('Select location') }}</option>
+                                            {% for location in locations %}
+                                            <option value="{{ location.id }}" data-site-id="{{ location.site_id or '' }}">{{ location.name }} ({{ location.code }})</option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+                                {% else %}
+                                    {# Fallback: mode simple sans location par défaut #}
+                                    <td>
+                                        <select name="lines[{{ loop.index0 }}][location_id]" class="modern-input">
+                                            <option value="">{{ _('Select location') }}</option>
+                                            {% for location in locations %}
+                                            <option value="{{ location.id }}">{{ location.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+                                {% endif %}
                                 <td>
-                                    <select name="lines[{{ loop.index0 }}][location_id]" class="modern-input">
-                                        <option value="">{{ _('Select location') }}</option>
-                                        {% for location in locations %}
-                                        <option value="{{ location.id }}">{{ location.name }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </td>
-                                <td>
-                                    <input type="text" name="lines[{{ loop.index0 }}][quality_notes]" class="modern-input">
+                                    <input type="text" name="lines[{{ loop.index0 }}][quality_notes]" class="modern-input" placeholder="{{ _('Quality notes, damages, etc.') }}">
                                 </td>
                             </tr>
                             {% endfor %}
@@ -81,6 +118,39 @@
         </div>
     </form>
 </div>
+
+{% if stock_mode == 'advanced' %}
+<script>
+function updateLocationsForSite(siteSelect, lineIndex) {
+    const siteId = siteSelect.value;
+    const locationSelect = document.getElementById('location-select-' + lineIndex);
+    const options = locationSelect.querySelectorAll('option');
+    
+    // Show/hide options based on site
+    options.forEach(option => {
+        if (option.value === '') {
+            option.style.display = 'block'; // Always show empty option
+        } else {
+            const optionSiteId = option.getAttribute('data-site-id');
+            if (siteId === '' || optionSiteId === siteId) {
+                option.style.display = 'block';
+            } else {
+                option.style.display = 'none';
+            }
+        }
+    });
+    
+    // Reset selection if current selection doesn't match site
+    if (siteId && locationSelect.value) {
+        const selectedOption = locationSelect.options[locationSelect.selectedIndex];
+        const selectedSiteId = selectedOption.getAttribute('data-site-id');
+        if (selectedSiteId !== siteId) {
+            locationSelect.value = '';
+        }
+    }
+}
+</script>
+{% endif %}
 {% endblock %}
 
 

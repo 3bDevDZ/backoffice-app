@@ -7,7 +7,7 @@ from sqlalchemy.orm import joinedload
 
 from app.application.common.cqrs import QueryHandler
 from app.infrastructure.db import get_session
-from app.domain.models.stock import StockItem, StockMovement, Location
+from app.domain.models.stock import StockItem, StockMovement, Location, Site
 from app.domain.models.product import Product
 from app.domain.models.user import User
 from app.domain.models.order import Order
@@ -19,13 +19,15 @@ from .queries import (
     GetStockMovementsQuery,
     GetLocationHierarchyQuery,
     GetStockItemByIdQuery,
-    GetLocationByIdQuery
+    GetLocationByIdQuery,
+    GlobalStockQuery
 )
 from .stock_dto import (
     StockItemDTO,
     StockMovementDTO,
     StockAlertDTO,
-    LocationDTO
+    LocationDTO,
+    GlobalStockItemDTO
 )
 
 
@@ -433,4 +435,150 @@ class GetLocationByIdHandler(QueryHandler):
             
             handler = GetLocationHierarchyHandler()
             return handler._to_location_dto(session, location, include_inactive=True)
+
+
+class GlobalStockHandler(QueryHandler):
+    """Handler for GlobalStockQuery - consolidated stock view across all sites."""
+    
+    def handle(self, query: GlobalStockQuery) -> List[GlobalStockItemDTO]:
+        """
+        Get consolidated stock view across all sites (or specific site).
+        
+        Args:
+            query: GlobalStockQuery with filters
+            
+        Returns:
+            List of GlobalStockItemDTO with aggregated stock by product/variant
+        """
+        with get_session() as session:
+            # Build base query
+            q = session.query(
+                StockItem.product_id,
+                StockItem.variant_id,
+                func.sum(StockItem.physical_quantity).label('total_physical'),
+                func.sum(StockItem.reserved_quantity).label('total_reserved')
+            ).join(Product)
+            
+            # Apply filters
+            if query.product_id:
+                q = q.filter(StockItem.product_id == query.product_id)
+            
+            if query.variant_id is not None:
+                q = q.filter(StockItem.variant_id == query.variant_id)
+            
+            if query.site_id:
+                q = q.filter(StockItem.site_id == query.site_id)
+            
+            if not query.include_zero:
+                q = q.filter(StockItem.physical_quantity > 0)
+            
+            # Search by product code or name
+            if query.search:
+                search_term = f"%{query.search}%"
+                q = q.filter(
+                    or_(
+                        Product.code.ilike(search_term),
+                        Product.name.ilike(search_term)
+                    )
+                )
+            
+            # Group by product and variant
+            q = q.group_by(StockItem.product_id, StockItem.variant_id)
+            
+            # Get total count for pagination
+            total = q.count()
+            
+            # Pagination
+            offset = (query.page - 1) * query.per_page
+            aggregated = q.offset(offset).limit(query.per_page).all()
+            
+            # Pre-load products and variants
+            product_ids = [row.product_id for row in aggregated]
+            products_dict = {}
+            if product_ids:
+                products = session.query(Product).filter(Product.id.in_(product_ids)).all()
+                products_dict = {p.id: p for p in products}
+            
+            variant_ids = [row.variant_id for row in aggregated if row.variant_id]
+            variants_dict = {}
+            if variant_ids:
+                from app.domain.models.product import ProductVariant
+                variants = session.query(ProductVariant).filter(ProductVariant.id.in_(variant_ids)).all()
+                variants_dict = {v.id: v for v in variants}
+            
+            # Get detailed stock by site for each product/variant
+            result = []
+            for row in aggregated:
+                product = products_dict.get(row.product_id)
+                product_code = getattr(product, 'code', None) if product else None
+                product_name = getattr(product, 'name', None) if product else None
+                
+                variant_code = None
+                variant_name = None
+                if row.variant_id and variants_dict:
+                    variant = variants_dict.get(row.variant_id)
+                    if variant:
+                        variant_code = getattr(variant, 'code', None)
+                        variant_name = getattr(variant, 'name', None)
+                
+                # Get stock breakdown by site
+                site_query = session.query(
+                    StockItem.site_id,
+                    func.sum(StockItem.physical_quantity).label('site_physical'),
+                    func.sum(StockItem.reserved_quantity).label('site_reserved')
+                ).filter(
+                    StockItem.product_id == row.product_id,
+                    StockItem.variant_id == row.variant_id
+                )
+                
+                if query.site_id:
+                    site_query = site_query.filter(StockItem.site_id == query.site_id)
+                
+                site_query = site_query.group_by(StockItem.site_id)
+                site_breakdown = site_query.all()
+                
+                # Get site names
+                site_ids = [b.site_id for b in site_breakdown if b.site_id]
+                sites_dict = {}
+                if site_ids:
+                    sites = session.query(Site).filter(Site.id.in_(site_ids)).all()
+                    sites_dict = {s.id: s for s in sites}
+                
+                by_site = []
+                for site_row in site_breakdown:
+                    site = sites_dict.get(site_row.site_id) if site_row.site_id else None
+                    site_code = getattr(site, 'code', None) if site else None
+                    site_name = getattr(site, 'name', None) if site else None
+                    
+                    site_physical = site_row.site_physical or Decimal('0')
+                    site_reserved = site_row.site_reserved or Decimal('0')
+                    site_available = site_physical - site_reserved
+                    
+                    by_site.append({
+                        'site_id': site_row.site_id,
+                        'site_code': site_code,
+                        'site_name': site_name,
+                        'physical_quantity': float(site_physical),
+                        'reserved_quantity': float(site_reserved),
+                        'available_quantity': float(site_available)
+                    })
+                
+                total_physical = row.total_physical or Decimal('0')
+                total_reserved = row.total_reserved or Decimal('0')
+                total_available = total_physical - total_reserved
+                
+                result.append(GlobalStockItemDTO(
+                    product_id=row.product_id,
+                    product_code=product_code,
+                    product_name=product_name,
+                    variant_id=row.variant_id,
+                    variant_code=variant_code,
+                    variant_name=variant_name,
+                    total_physical_quantity=total_physical,
+                    total_reserved_quantity=total_reserved,
+                    total_available_quantity=total_available,
+                    by_site=by_site
+                ))
+            
+            return result
 

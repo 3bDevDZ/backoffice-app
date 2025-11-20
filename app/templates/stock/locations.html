@@ -2,6 +2,29 @@
 
 {% block title %}{{ _('Locations') }} - CommerceFlow{% endblock %}
 
+{% block extra_css %}
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<style>
+    .select2-container {
+        width: 100% !important;
+    }
+    .select2-container--default .select2-selection--single {
+        height: 38px;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 36px;
+        padding-left: 12px;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 36px;
+    }
+</style>
+{% endblock %}
+
 {% block page_title %}{{ _('Warehouse Locations') }}{% endblock %}
 {% block page_subtitle %}{{ _('Manage your warehouse structure') }}{% endblock %}
 
@@ -103,7 +126,7 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex {% if direction == 'rtl' %}justify-start space-x-reverse space-x-2{% else %}justify-end space-x-2{% endif %}">
-                                    <button onclick="openEditLocationModal({{ location.id }}, '{{ location.code }}', '{{ location.name }}', '{{ location.type }}', {{ location.parent_id if location.parent_id else 'null' }}, {{ location.capacity if location.capacity else 'null' }}, {{ 'true' if location.is_active else 'false' }})" 
+                                    <button onclick="openEditLocationModal({{ location.id }}, '{{ location.code }}', '{{ location.name }}', '{{ location.type }}', {{ location.parent_id if location.parent_id else 'null' }}, {{ location.site_id if location.site_id else 'null' }}, {{ location.capacity if location.capacity else 'null' }}, {{ 'true' if location.is_active else 'false' }})" 
                                             class="text-indigo-600 hover:text-indigo-900">
                                         <i class="fas fa-edit"></i>
                                     </button>
@@ -154,7 +177,7 @@
                            name="code"
                            required
                            maxlength="50"
-                           class="modern-input
+                           class="modern-input"
                            placeholder="WH-001">
                 </div>
                 
@@ -166,7 +189,7 @@
                            id="location-name"
                            name="name"
                            required
-                           class="modern-input
+                           class="modern-input"
                            placeholder="{{ _('Warehouse Name') }}">
                 </div>
                 
@@ -177,7 +200,7 @@
                     <select id="location-type" 
                             name="type"
                             required
-                            class="modern-input>
+                            class="modern-input">
                         <option value="">{{ _('Select type') }}</option>
                         <option value="warehouse">{{ _('Warehouse') }}</option>
                         <option value="zone">{{ _('Zone') }}</option>
@@ -188,13 +211,30 @@
                     </select>
                 </div>
                 
+                {% if stock_mode == 'advanced' %}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ _('Site') }}
+                    </label>
+                    <select id="location-site" 
+                            name="site_id"
+                            class="modern-input">
+                        <option value="">{{ _('None (No Site)') }}</option>
+                        {% for site in sites %}
+                        <option value="{{ site.id }}">{{ site.name }} ({{ site.code }})</option>
+                        {% endfor %}
+                    </select>
+                    <p class="mt-1 text-xs text-gray-500">{{ _('Optional: Link this location to a site') }}</p>
+                </div>
+                {% endif %}
+                
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">
                         {{ _('Parent Location') }}
                     </label>
                     <select id="location-parent" 
                             name="parent_id"
-                            class="modern-input>
+                            class="modern-input">
                         <option value="">{{ _('None (Top Level)') }}</option>
                         {% for loc in locations %}
                             {% if loc.type != 'warehouse' or not loc.parent_id %}
@@ -213,7 +253,7 @@
                            name="capacity"
                            step="0.01"
                            min="0"
-                           class="modern-input
+                           class="modern-input"
                            placeholder="0.00">
                 </div>
                 
@@ -243,28 +283,119 @@
     </div>
 </div>
 
+<!-- jQuery and Select2 JS -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <script>
+// Initialize Select2 when modal opens
+function initSelect2() {
+    if (typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined') {
+        // Initialize Type select
+        const typeSelect = document.getElementById('location-type');
+        if (typeSelect && !$(typeSelect).hasClass('select2-hidden-accessible')) {
+            $(typeSelect).select2({
+                theme: 'bootstrap-5',
+                placeholder: '{{ _("Select type") }}',
+                allowClear: false,
+                width: '100%',
+                minimumResultsForSearch: Infinity // Disable search for type
+            });
+        }
+        
+        // Initialize Site select (only in advanced mode)
+        {% if stock_mode == 'advanced' %}
+        const siteSelect = document.getElementById('location-site');
+        if (siteSelect && !$(siteSelect).hasClass('select2-hidden-accessible')) {
+            $(siteSelect).select2({
+                theme: 'bootstrap-5',
+                placeholder: '{{ _("None (No Site)") }}',
+                allowClear: true,
+                width: '100%'
+            });
+        }
+        {% endif %}
+        
+        // Initialize Parent Location select
+        const parentSelect = document.getElementById('location-parent');
+        if (parentSelect && !$(parentSelect).hasClass('select2-hidden-accessible')) {
+            $(parentSelect).select2({
+                theme: 'bootstrap-5',
+                placeholder: '{{ _("None (Top Level)") }}',
+                allowClear: true,
+                width: '100%'
+            });
+        }
+    }
+}
+
 function openCreateLocationModal() {
     document.getElementById('modal-title').textContent = '{{ _("Add Location") }}';
     document.getElementById('location-form').reset();
     document.getElementById('location-id').value = '';
     document.getElementById('location-active').checked = true;
     document.getElementById('location-modal').classList.remove('hidden');
+    
+    // Initialize Select2 after modal is shown
+    setTimeout(initSelect2, 100);
 }
 
-function openEditLocationModal(id, code, name, type, parentId, capacity, isActive) {
+function openEditLocationModal(id, code, name, type, parentId, siteId, capacity, isActive) {
     document.getElementById('modal-title').textContent = '{{ _("Edit Location") }}';
     document.getElementById('location-id').value = id;
     document.getElementById('location-code').value = code;
     document.getElementById('location-name').value = name;
-    document.getElementById('location-type').value = type;
-    document.getElementById('location-parent').value = parentId || '';
-    document.getElementById('location-capacity').value = capacity || '';
-    document.getElementById('location-active').checked = isActive === true || isActive === 'true';
     document.getElementById('location-modal').classList.remove('hidden');
+    
+    // Initialize Select2 first, then set values
+    setTimeout(function() {
+        initSelect2();
+        
+        // Set values after Select2 is initialized
+        setTimeout(function() {
+            if (type) {
+                $('#location-type').val(type).trigger('change');
+            }
+            if (parentId) {
+                $('#location-parent').val(parentId).trigger('change');
+            } else {
+                $('#location-parent').val('').trigger('change');
+            }
+            {% if stock_mode == 'advanced' %}
+            if (siteId) {
+                $('#location-site').val(siteId).trigger('change');
+            } else {
+                $('#location-site').val('').trigger('change');
+            }
+            {% endif %}
+            document.getElementById('location-capacity').value = capacity || '';
+            document.getElementById('location-active').checked = isActive === true || isActive === 'true';
+        }, 150);
+    }, 100);
 }
 
 function closeLocationModal() {
+    // Destroy Select2 instances before closing
+    if (typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined') {
+        const typeSelect = document.getElementById('location-type');
+        const parentSelect = document.getElementById('location-parent');
+        {% if stock_mode == 'advanced' %}
+        const siteSelect = document.getElementById('location-site');
+        {% endif %}
+        
+        if (typeSelect && $(typeSelect).hasClass('select2-hidden-accessible')) {
+            $(typeSelect).select2('destroy');
+        }
+        if (parentSelect && $(parentSelect).hasClass('select2-hidden-accessible')) {
+            $(parentSelect).select2('destroy');
+        }
+        {% if stock_mode == 'advanced' %}
+        if (siteSelect && $(siteSelect).hasClass('select2-hidden-accessible')) {
+            $(siteSelect).select2('destroy');
+        }
+        {% endif %}
+    }
+    
     document.getElementById('location-modal').classList.add('hidden');
 }
 
@@ -274,14 +405,14 @@ async function saveLocation(event) {
     const formData = {
         code: document.getElementById('location-code').value.trim(),
         name: document.getElementById('location-name').value.trim(),
-        type: document.getElementById('location-type').value,
-        parent_id: document.getElementById('location-parent').value || null,
+        type: $('#location-type').val(),
+        parent_id: $('#location-parent').val() || null,
         capacity: document.getElementById('location-capacity').value ? parseFloat(document.getElementById('location-capacity').value) : null,
         is_active: document.getElementById('location-active').checked
     };
     
     const locationId = document.getElementById('location-id').value;
-    const url = locationId ? `/stock/locations/${locationId}` : '/stock/locations';
+    const url = locationId ? `/locations/${locationId}` : '/locations';
     const method = locationId ? 'PUT' : 'POST';
     
     try {
@@ -315,7 +446,7 @@ function deleteLocation(id, name) {
     // Create a form and submit it to use session-based authentication
     const form = document.createElement('form');
     form.method = 'POST';
-    form.action = `/stock/locations/${id}/delete`;
+    form.action = `/locations/${id}/delete`;
     
     document.body.appendChild(form);
     form.submit();

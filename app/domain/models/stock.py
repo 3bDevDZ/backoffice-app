@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Optional, List
 from datetime import datetime
+import enum
 
 from sqlalchemy import Column, Integer, String, Numeric, Text, ForeignKey, DateTime, Boolean, UniqueConstraint
 from sqlalchemy.orm import relationship
@@ -32,12 +33,14 @@ class Location(Base):
     name = Column(String(200), nullable=False)
     type = Column(String(20), nullable=False)  # 'warehouse', 'zone', 'aisle', 'shelf', 'level', 'virtual'
     parent_id = Column(Integer, ForeignKey('locations.id'), nullable=True)
+    site_id = Column(Integer, ForeignKey('sites.id'), nullable=True)  # User Story 10: Multi-location support
     capacity = Column(Numeric(12, 2), nullable=True)  # Optional capacity limit
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, nullable=False, server_default=func.now())
 
     # Relationships
     parent = relationship("Location", remote_side=[id], backref="children")
+    site = relationship("Site", back_populates="locations")
     stock_items = relationship("StockItem", back_populates="location", cascade="all, delete-orphan")
 
     @staticmethod
@@ -46,6 +49,7 @@ class Location(Base):
         name: str,
         type: str,
         parent_id: Optional[int] = None,
+        site_id: Optional[int] = None,
         capacity: Optional[Decimal] = None,
         is_active: bool = True
     ) -> "Location":
@@ -57,6 +61,7 @@ class Location(Base):
             name: Location name
             type: Location type ('warehouse', 'zone', 'aisle', 'shelf', 'level', 'virtual')
             parent_id: Parent location ID for hierarchy
+            site_id: Optional site ID (User Story 10: Multi-location support)
             capacity: Optional capacity limit
             is_active: Whether location is active
             
@@ -81,6 +86,7 @@ class Location(Base):
         location.name = name.strip()
         location.type = type
         location.parent_id = parent_id
+        location.site_id = site_id
         location.capacity = capacity
         location.is_active = is_active
         
@@ -98,6 +104,7 @@ class StockItem(Base, AggregateRoot):
     product_id = Column(Integer, ForeignKey('products.id'), nullable=False)
     variant_id = Column(Integer, ForeignKey('product_variants.id'), nullable=True)  # Product variant ID
     location_id = Column(Integer, ForeignKey('locations.id'), nullable=False)
+    site_id = Column(Integer, ForeignKey('sites.id'), nullable=True)  # User Story 10: Multi-location support (denormalized for performance)
     physical_quantity = Column(Numeric(12, 3), nullable=False, default=Decimal('0'))
     reserved_quantity = Column(Numeric(12, 3), nullable=False, default=Decimal('0'))
     min_stock = Column(Numeric(12, 3), nullable=True)  # Minimum stock threshold
@@ -112,6 +119,7 @@ class StockItem(Base, AggregateRoot):
     # Relationships
     product = relationship("Product", backref="stock_items")
     location = relationship("Location", back_populates="stock_items")
+    site = relationship("Site", back_populates="stock_items")
     movements = relationship("StockMovement", back_populates="stock_item", cascade="all, delete-orphan")
 
     @property
@@ -125,6 +133,7 @@ class StockItem(Base, AggregateRoot):
         location_id: int,
         physical_quantity: Decimal = Decimal('0'),
         variant_id: Optional[int] = None,
+        site_id: Optional[int] = None,
         min_stock: Optional[Decimal] = None,
         max_stock: Optional[Decimal] = None,
         reorder_point: Optional[Decimal] = None,
@@ -139,6 +148,7 @@ class StockItem(Base, AggregateRoot):
             location_id: Location ID
             physical_quantity: Initial physical quantity
             variant_id: Optional product variant ID
+            site_id: Optional site ID (User Story 10: Multi-location support)
             min_stock: Minimum stock threshold
             max_stock: Maximum stock level
             reorder_point: Reorder point
@@ -162,6 +172,7 @@ class StockItem(Base, AggregateRoot):
         stock_item.product_id = product_id
         stock_item.variant_id = variant_id
         stock_item.location_id = location_id
+        stock_item.site_id = site_id
         stock_item.physical_quantity = physical_quantity
         stock_item.reserved_quantity = Decimal('0')
         stock_item.min_stock = min_stock
@@ -347,4 +358,300 @@ class StockMovement(Base, AggregateRoot):
         movement.related_document_id = related_document_id
         
         return movement
+
+
+# ============================================================================
+# User Story 10: Multi-Location Stock Management Models
+# ============================================================================
+
+class Site(Base, AggregateRoot):
+    """Site model for multi-location warehouse management."""
+    __tablename__ = "sites"
+
+    id = Column(Integer, primary_key=True)
+    code = Column(String(50), unique=True, nullable=False)
+    name = Column(String(200), nullable=False)
+    address = Column(Text, nullable=True)
+    manager_id = Column(Integer, ForeignKey('users.id'), nullable=True)  # Site manager
+    status = Column(String(20), nullable=False, default='active')  # 'active', 'inactive', 'archived'
+    created_at = Column(DateTime, nullable=False, server_default=func.now())
+    updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+
+    # Relationships
+    manager = relationship("User", foreign_keys=[manager_id], backref="managed_sites")
+    locations = relationship("Location", back_populates="site", cascade="all, delete-orphan")
+    stock_items = relationship("StockItem", back_populates="site")
+    transfers_from = relationship("StockTransfer", foreign_keys="StockTransfer.source_site_id", back_populates="source_site")
+    transfers_to = relationship("StockTransfer", foreign_keys="StockTransfer.destination_site_id", back_populates="destination_site")
+
+    @staticmethod
+    def create(
+        code: str,
+        name: str,
+        address: Optional[str] = None,
+        manager_id: Optional[int] = None,
+        status: str = 'active'
+    ) -> "Site":
+        """
+        Factory method to create a new Site.
+        
+        Args:
+            code: Unique site code
+            name: Site name
+            address: Optional site address
+            manager_id: Optional site manager user ID
+            status: Site status ('active', 'inactive', 'archived')
+            
+        Returns:
+            Site instance
+            
+        Raises:
+            ValueError: If validation fails
+        """
+        valid_statuses = ['active', 'inactive', 'archived']
+        if status not in valid_statuses:
+            raise ValueError(f"Site status must be one of: {', '.join(valid_statuses)}")
+        
+        if not code or not code.strip():
+            raise ValueError("Site code is required.")
+        
+        if not name or not name.strip():
+            raise ValueError("Site name is required.")
+        
+        site = Site()
+        site.code = code.strip()
+        site.name = name.strip()
+        site.address = address.strip() if address else None
+        site.manager_id = manager_id
+        site.status = status
+        
+        return site
+
+    def deactivate(self) -> None:
+        """Deactivate the site."""
+        if self.status == 'archived':
+            raise ValueError("Cannot deactivate an archived site.")
+        self.status = 'inactive'
+        self.updated_at = datetime.utcnow()
+
+    def activate(self) -> None:
+        """Activate the site."""
+        if self.status == 'archived':
+            raise ValueError("Cannot activate an archived site.")
+        self.status = 'active'
+        self.updated_at = datetime.utcnow()
+
+    def archive(self) -> None:
+        """Archive the site."""
+        self.status = 'archived'
+        self.updated_at = datetime.utcnow()
+
+
+class StockTransferStatus(enum.Enum):
+    """Stock transfer status enumeration."""
+    CREATED = "created"
+    IN_TRANSIT = "in_transit"
+    RECEIVED = "received"
+    CANCELLED = "cancelled"
+
+
+@dataclass
+class StockTransferCreatedDomainEvent(DomainEvent):
+    """Domain event raised when a stock transfer is created."""
+    transfer_id: int = 0
+    source_site_id: int = 0
+    destination_site_id: int = 0
+
+
+@dataclass
+class StockTransferReceivedDomainEvent(DomainEvent):
+    """Domain event raised when a stock transfer is received."""
+    transfer_id: int = 0
+    destination_site_id: int = 0
+
+
+class StockTransferLine(Base):
+    """StockTransferLine model for transfer line items."""
+    __tablename__ = "stock_transfer_lines"
+
+    id = Column(Integer, primary_key=True)
+    transfer_id = Column(Integer, ForeignKey('stock_transfers.id'), nullable=False)
+    product_id = Column(Integer, ForeignKey('products.id'), nullable=False)
+    variant_id = Column(Integer, ForeignKey('product_variants.id'), nullable=True)
+    quantity = Column(Numeric(12, 3), nullable=False)
+    quantity_received = Column(Numeric(12, 3), nullable=False, default=Decimal('0'))
+    sequence = Column(Integer, nullable=False, default=0)
+    notes = Column(Text, nullable=True)
+
+    # Relationships
+    transfer = relationship("StockTransfer", back_populates="lines")
+    product = relationship("Product", backref="transfer_lines")
+
+    @staticmethod
+    def create(
+        transfer_id: int,
+        product_id: int,
+        quantity: Decimal,
+        variant_id: Optional[int] = None,
+        sequence: int = 0,
+        notes: Optional[str] = None
+    ) -> "StockTransferLine":
+        """
+        Factory method to create a new StockTransferLine.
+        
+        Args:
+            transfer_id: StockTransfer ID
+            product_id: Product ID
+            quantity: Quantity to transfer
+            variant_id: Optional product variant ID
+            sequence: Line sequence number
+            notes: Optional notes
+            
+        Returns:
+            StockTransferLine instance
+            
+        Raises:
+            ValueError: If validation fails
+        """
+        if quantity <= 0:
+            raise ValueError("Transfer quantity must be positive.")
+        
+        line = StockTransferLine()
+        line.transfer_id = transfer_id
+        line.product_id = product_id
+        line.variant_id = variant_id
+        line.quantity = quantity
+        line.quantity_received = Decimal('0')
+        line.sequence = sequence
+        line.notes = notes
+        
+        return line
+
+
+class StockTransfer(Base, AggregateRoot):
+    """StockTransfer aggregate root for inter-site stock transfers."""
+    __tablename__ = "stock_transfers"
+
+    id = Column(Integer, primary_key=True)
+    number = Column(String(50), unique=True, nullable=False, index=True)
+    source_site_id = Column(Integer, ForeignKey('sites.id'), nullable=False)
+    destination_site_id = Column(Integer, ForeignKey('sites.id'), nullable=False)
+    status = Column(String(20), nullable=False, default='created')  # 'created', 'in_transit', 'received', 'cancelled'
+    requested_date = Column(DateTime, nullable=True)
+    shipped_date = Column(DateTime, nullable=True)
+    received_date = Column(DateTime, nullable=True)
+    shipped_by = Column(Integer, ForeignKey('users.id'), nullable=True)
+    received_by = Column(Integer, ForeignKey('users.id'), nullable=True)
+    notes = Column(Text, nullable=True)
+    created_by = Column(Integer, ForeignKey('users.id'), nullable=False)
+    created_at = Column(DateTime, nullable=False, server_default=func.now())
+    updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+
+    # Relationships
+    source_site = relationship("Site", foreign_keys=[source_site_id], back_populates="transfers_from")
+    destination_site = relationship("Site", foreign_keys=[destination_site_id], back_populates="transfers_to")
+    lines = relationship("StockTransferLine", back_populates="transfer", cascade="all, delete-orphan", order_by="StockTransferLine.sequence")
+    shipper = relationship("User", foreign_keys=[shipped_by], backref="shipped_transfers")
+    receiver = relationship("User", foreign_keys=[received_by], backref="received_transfers")
+    creator = relationship("User", foreign_keys=[created_by], backref="created_transfers")
+
+    @staticmethod
+    def create(
+        number: str,
+        source_site_id: int,
+        destination_site_id: int,
+        created_by: int,
+        requested_date: Optional[datetime] = None,
+        notes: Optional[str] = None
+    ) -> "StockTransfer":
+        """
+        Factory method to create a new StockTransfer.
+        
+        Args:
+            number: Unique transfer number
+            source_site_id: Source site ID
+            destination_site_id: Destination site ID
+            created_by: User ID who created the transfer
+            requested_date: Optional requested date
+            notes: Optional notes
+            
+        Returns:
+            StockTransfer instance
+            
+        Raises:
+            ValueError: If validation fails
+        """
+        if not number or not number.strip():
+            raise ValueError("Transfer number is required.")
+        
+        if source_site_id == destination_site_id:
+            raise ValueError("Source and destination sites must be different.")
+        
+        transfer = StockTransfer()
+        transfer.number = number.strip()
+        transfer.source_site_id = source_site_id
+        transfer.destination_site_id = destination_site_id
+        transfer.status = 'created'
+        transfer.requested_date = requested_date
+        transfer.notes = notes
+        transfer.created_by = created_by
+        
+        return transfer
+
+    def ship(self, shipped_by: int, shipped_date: Optional[datetime] = None) -> None:
+        """
+        Mark transfer as shipped.
+        
+        Args:
+            shipped_by: User ID who shipped the transfer
+            shipped_date: Optional shipping date (defaults to now)
+            
+        Raises:
+            ValueError: If transfer cannot be shipped
+        """
+        if self.status != 'created':
+            raise ValueError(f"Cannot ship transfer with status '{self.status}'. Only 'created' transfers can be shipped.")
+        
+        if not self.lines:
+            raise ValueError("Cannot ship transfer without lines.")
+        
+        self.status = 'in_transit'
+        self.shipped_by = shipped_by
+        self.shipped_date = shipped_date or datetime.utcnow()
+        self.updated_at = datetime.utcnow()
+
+    def receive(self, received_by: int, received_date: Optional[datetime] = None) -> None:
+        """
+        Mark transfer as received.
+        
+        Args:
+            received_by: User ID who received the transfer
+            received_date: Optional receiving date (defaults to now)
+            
+        Raises:
+            ValueError: If transfer cannot be received
+        """
+        if self.status != 'in_transit':
+            raise ValueError(f"Cannot receive transfer with status '{self.status}'. Only 'in_transit' transfers can be received.")
+        
+        self.status = 'received'
+        self.received_by = received_by
+        self.received_date = received_date or datetime.utcnow()
+        self.updated_at = datetime.utcnow()
+
+    def cancel(self) -> None:
+        """
+        Cancel the transfer.
+        
+        Raises:
+            ValueError: If transfer cannot be cancelled
+        """
+        if self.status == 'received':
+            raise ValueError("Cannot cancel a received transfer.")
+        
+        if self.status == 'cancelled':
+            raise ValueError("Transfer is already cancelled.")
+        
+        self.status = 'cancelled'
+        self.updated_at = datetime.utcnow()
 

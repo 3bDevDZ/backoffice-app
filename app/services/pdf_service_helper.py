@@ -77,17 +77,32 @@ def create_status_badge(status: str, styles) -> Paragraph:
 
 
 def get_company_info() -> Dict[str, str]:
-    """Get company information for PDF header.
-    
-    TODO: Move this to config or database for production use.
-    """
-    return {
-        'name': 'CommerceFlow',
-        'address': '123 Rue de la Commerce',
-        'postal_code': '69000',
-        'city': 'Lyon',
-        'country': 'France',
-        'phone': '+33 4 XX XX XX XX',
-        'email': 'contact@commerceflow.com',
-        'website': 'www.commerceflow.com'
-    }
+    """Get company information for PDF header from database settings."""
+    try:
+        from app.application.common.mediator import mediator
+        from app.application.settings.queries.queries import GetCompanySettingsQuery
+        
+        company_settings = mediator.dispatch(GetCompanySettingsQuery())
+        
+        return {
+            'name': company_settings.name or 'CommerceFlow',
+            'address': company_settings.address or '',
+            'postal_code': company_settings.postal_code or '',
+            'city': company_settings.city or '',
+            'country': company_settings.country or 'France',
+            'phone': company_settings.phone or '',
+            'email': company_settings.email or '',
+            'website': company_settings.website or ''
+        }
+    except Exception:
+        # Fallback to defaults if settings not available
+        return {
+            'name': 'CommerceFlow',
+            'address': '',
+            'postal_code': '',
+            'city': '',
+            'country': 'France',
+            'phone': '',
+            'email': '',
+            'website': ''
+        }

@@ -1,6 +1,6 @@
 """DTOs for stock queries."""
-from dataclasses import dataclass
-from typing import Optional, List
+from dataclasses import dataclass, field
+from typing import Optional, List, Dict
 from decimal import Decimal
 from datetime import datetime
 
@@ -92,4 +92,19 @@ class StockAlertDTO:
     current_quantity: Decimal
     message: str
     threshold: Optional[Decimal] = None  # min_stock or max_stock depending on alert type
+
+
+@dataclass
+class GlobalStockItemDTO:
+    """DTO for consolidated stock view across sites."""
+    product_id: int
+    product_code: Optional[str] = None
+    product_name: Optional[str] = None
+    variant_id: Optional[int] = None
+    variant_code: Optional[str] = None
+    variant_name: Optional[str] = None
+    total_physical_quantity: Decimal = Decimal('0')
+    total_reserved_quantity: Decimal = Decimal('0')
+    total_available_quantity: Decimal = Decimal('0')
+    by_site: List[Dict] = field(default_factory=list)  # List of dicts with site_id, site_code, site_name, physical_quantity, reserved_quantity, available_quantity
 

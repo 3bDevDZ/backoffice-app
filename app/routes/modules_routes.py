@@ -161,6 +161,10 @@ def inventory_menu():
     
     from flask import url_for
     
+    # Get stock management mode
+    from app.utils.settings_helper import get_stock_management_mode
+    stock_mode = get_stock_management_mode()
+    
     menu_items = [
         {
             'title': _('Stock Overview'),
@@ -168,12 +172,35 @@ def inventory_menu():
             'icon': 'fas fa-boxes',
             'color': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             'url': url_for('stock.index')
-        },
+        }
+    ]
+    
+    # Add Sites and Transfers only in advanced mode
+    if stock_mode == 'advanced':
+        menu_items.extend([
+            {
+                'title': _('Sites'),
+                'description': _('Manage warehouse sites and locations'),
+                'icon': 'fas fa-building',
+                'color': 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                'url': url_for('stock.list_sites')
+            },
+            {
+                'title': _('Stock Transfers'),
+                'description': _('Transfer stock between sites'),
+                'icon': 'fas fa-truck-loading',
+                'color': 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+                'url': url_for('stock.list_transfers')
+            }
+        ])
+    
+    # Add remaining items (available in both modes)
+    menu_items.extend([
         {
             'title': _('Warehouses'),
-            'description': _('Manage warehouse locations and sites'),
+            'description': _('Manage warehouse locations structure'),
             'icon': 'fas fa-warehouse',
-            'color': 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+            'color': 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
             'url': url_for('stock.locations')
         },
         {
@@ -189,8 +216,15 @@ def inventory_menu():
             'icon': 'fas fa-exclamation-triangle',
             'color': 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
             'url': url_for('stock.alerts')
+        },
+        {
+            'title': _('Purchase Receipts'),
+            'description': _('Record goods received from suppliers'),
+            'icon': 'fas fa-clipboard-check',
+            'color': 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+            'url': url_for('purchases_frontend.list_purchase_receipts')
         }
-    ]
+    ])
     
     return render_template(
         'modules/menu.html',

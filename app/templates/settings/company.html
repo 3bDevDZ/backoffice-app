@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Company Settings') }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Company Information') }}{% endblock %}
+{% block page_subtitle %}{{ _('Manage your company information') }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <form method="POST" action="{{ url_for('settings.company_settings') }}">
+        <div class="space-y-6">
+            <!-- Basic Information -->
+            <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                <h3 class="text-lg font-bold mb-4">{{ _('Basic Information') }}</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">{{ _('Company Name') }} <span class="text-red-500">*</span></label>
+                        <input type="text" name="name" value="{{ company_settings.name or '' }}" required class="modern-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">{{ _('Legal Name') }}</label>
+                        <input type="text" name="legal_name" value="{{ company_settings.legal_name or '' }}" class="modern-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">{{ _('SIRET') }}</label>
+                        <input type="text" name="siret" value="{{ company_settings.siret or '' }}" maxlength="14" class="modern-input" placeholder="14 digits">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">{{ _('VAT Number') }}</label>
+                        <input type="text" name="vat_number" value="{{ company_settings.vat_number or '' }}" class="modern-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">{{ _('RCS') }}</label>
+                        <input type="text" name="rcs" value="{{ company_settings.rcs or '' }}" class="modern-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">{{ _('Legal Form') }}</label>
+                        <input type="text" name="legal_form" value="{{ company_settings.legal_form or '' }}" class="modern-input" placeholder="SARL, SA, etc.">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Address Information -->
+            <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                <h3 class="text-lg font-bold mb-4">{{ _('Address Information') }}</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium mb-2">{{ _('Address') }}</label>
+                        <textarea name="address" rows="2" class="modern-input">{{ company_settings.address or '' }}</textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">{{ _('Postal Code') }}</label>
+                        <input type="text" name="postal_code" value="{{ company_settings.postal_code or '' }}" class="modern-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">{{ _('City') }}</label>
+                        <input type="text" name="city" value="{{ company_settings.city or '' }}" class="modern-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">{{ _('Country') }}</label>
+                        <input type="text" name="country" value="{{ company_settings.country or 'France' }}" class="modern-input">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Information -->
+            <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                <h3 class="text-lg font-bold mb-4">{{ _('Contact Information') }}</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">{{ _('Phone') }}</label>
+                        <input type="text" name="phone" value="{{ company_settings.phone or '' }}" class="modern-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">{{ _('Email') }}</label>
+                        <input type="email" name="email" value="{{ company_settings.email or '' }}" class="modern-input">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium mb-2">{{ _('Website') }}</label>
+                        <input type="url" name="website" value="{{ company_settings.website or '' }}" class="modern-input" placeholder="https://www.example.com">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-3{% else %}space-x-3{% endif %}">
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-save {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                    {{ _('Save Settings') }}
+                </button>
+                <a href="{{ url_for('settings.index') }}" class="btn-secondary">{{ _('Cancel') }}</a>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

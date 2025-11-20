@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Create Invoice from Receipt') }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Create Invoice from Receipt') }}{% endblock %}
+{% block page_subtitle %}{{ _('Create supplier invoice from validated receipt') }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Info Box -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex items-start">
+            <i class="fas fa-info-circle text-blue-600 text-xl {% if direction == 'rtl' %}ml-3{% else %}mr-3{% endif %} mt-1"></i>
+            <div>
+                <h3 class="font-semibold text-blue-900 mb-1">{{ _('Best Practice') }}</h3>
+                <p class="text-sm text-blue-800">
+                    {{ _('Creating an invoice from a validated receipt is a standard ERP workflow. The invoice amounts will be calculated based on the quantities actually received, using the prices from the purchase order.') }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Summary -->
+    <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+        <h3 class="text-lg font-bold mb-4">{{ _('Receipt Information') }}</h3>
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="text-sm font-medium text-gray-600">{{ _('Receipt Number') }}</label>
+                <p class="text-gray-900">{{ receipt.number }}</p>
+            </div>
+            <div>
+                <label class="text-sm font-medium text-gray-600">{{ _('Receipt Date') }}</label>
+                <p class="text-gray-900">{{ receipt.receipt_date.strftime('%Y-%m-%d') if receipt.receipt_date else '-' }}</p>
+            </div>
+            <div>
+                <label class="text-sm font-medium text-gray-600">{{ _('Purchase Order') }}</label>
+                <p class="text-gray-900">{{ purchase_order.number }}</p>
+            </div>
+            <div>
+                <label class="text-sm font-medium text-gray-600">{{ _('Supplier') }}</label>
+                <p class="text-gray-900">{{ purchase_order.supplier_name or '-' }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoice Form -->
+    <form method="POST" action="{{ url_for('purchases_frontend.create_invoice_from_receipt', receipt_id=receipt.id) }}" style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+        <h3 class="text-lg font-bold mb-4">{{ _('Invoice Details') }}</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+                <label for="number" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">
+                    {{ _('Invoice Number') }} <span class="text-red-500">*</span>
+                </label>
+                <input type="text" id="number" name="number" value="{{ suggested_invoice_number }}" required
+                       class="modern-input w-full" placeholder="{{ _('Enter supplier invoice number') }}">
+                <p class="text-xs text-gray-500 mt-1">{{ _('Enter the invoice number from the supplier') }}</p>
+            </div>
+            <div>
+                <label for="invoice_date" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">
+                    {{ _('Invoice Date') }}
+                </label>
+                <input type="date" id="invoice_date" name="invoice_date" 
+                       value="{{ receipt.receipt_date.strftime('%Y-%m-%d') if receipt.receipt_date else '' }}"
+                       class="modern-input w-full">
+            </div>
+            <div>
+                <label for="due_date" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">
+                    {{ _('Due Date') }}
+                </label>
+                <input type="date" id="due_date" name="due_date" class="modern-input w-full">
+                <p class="text-xs text-gray-500 mt-1">{{ _('Optional: Payment due date') }}</p>
+            </div>
+        </div>
+
+        <div class="bg-gray-50 rounded-lg p-4 mb-4">
+            <p class="text-sm text-gray-700">
+                <i class="fas fa-calculator {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                <strong>{{ _('Note') }}:</strong> {{ _('Invoice amounts will be automatically calculated based on received quantities and purchase order prices.') }}
+            </p>
+        </div>
+
+        <div class="flex {% if direction == 'rtl' %}justify-start space-x-reverse space-x-2{% else %}justify-end space-x-2{% endif %}">
+            <a href="{{ url_for('purchases_frontend.view_purchase_receipt', receipt_id=receipt.id) }}" class="btn-secondary">
+                {{ _('Cancel') }}
+            </a>
+            <button type="submit" class="btn-primary">
+                <i class="fas fa-file-invoice-dollar {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                {{ _('Create Invoice') }}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

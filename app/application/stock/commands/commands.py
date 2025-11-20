@@ -1,10 +1,13 @@
 """Commands for stock management."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Optional
 from datetime import datetime
 
 from app.application.common.cqrs import Command
+
+# Sentinel value to distinguish "not provided" from "explicitly None"
+_MISSING = object()
 
 
 @dataclass
@@ -14,6 +17,7 @@ class CreateLocationCommand(Command):
     name: str
     type: str  # 'warehouse', 'zone', 'aisle', 'shelf', 'level', 'virtual'
     parent_id: Optional[int] = None
+    site_id: Optional[int] = None  # Optional site ID for multi-location support
     capacity: Optional[Decimal] = None
     is_active: bool = True
 
@@ -26,6 +30,7 @@ class UpdateLocationCommand(Command):
     name: Optional[str] = None
     type: Optional[str] = None
     parent_id: Optional[int] = None
+    site_id: Optional[int] = field(default=_MISSING)  # Use sentinel to distinguish "not provided" from "explicitly None"
     capacity: Optional[Decimal] = None
     is_active: Optional[bool] = None
 

@@ -43,7 +43,7 @@
                 <div>
                     <p class="text-sm font-medium text-gray-500">{{ _('Total Outstanding') }}</p>
                     <p class="text-2xl font-bold text-gray-900 mt-2">
-                        {{ "%.2f"|format(total_outstanding) }} €
+                        {{ total_outstanding|currency }}
                     </p>
                 </div>
                 <div class="p-3 bg-blue-100 rounded-full">
@@ -58,7 +58,7 @@
                 <div>
                     <p class="text-sm font-medium text-gray-500">{{ _('Total Overdue') }}</p>
                     <p class="text-2xl font-bold text-red-600 mt-2">
-                        {{ "%.2f"|format(total_overdue_amount) }} €
+                        {{ total_overdue_amount|currency }}
                     </p>
                 </div>
                 <div class="p-3 bg-red-100 rounded-full">
@@ -88,7 +88,7 @@
                 <div>
                     <p class="text-sm font-medium text-gray-500">{{ _('Critical (>90 days)') }}</p>
                     <p class="text-2xl font-bold text-orange-600 mt-2">
-                        {{ "%.2f"|format(bucket_90_plus) }} €
+                        {{ bucket_90_plus|currency }}
                     </p>
                     <p class="text-xs text-gray-500 mt-1">{{ invoice_count_90_plus }} {{ _('invoices') }}</p>
                 </div>
@@ -106,7 +106,7 @@
             <!-- 0-30 days -->
             <div class="border-l-4 border-green-500 pl-4">
                 <p class="text-sm font-medium text-gray-500">{{ _('0-30 Days') }}</p>
-                <p class="text-xl font-bold text-gray-900">{{ "%.2f"|format(bucket_0_30) }} €</p>
+                <p class="text-xl font-bold text-gray-900">{{ bucket_0_30|currency }}</p>
                 <p class="text-xs text-gray-500 mt-1">
                     {{ invoice_count_0_30 }} {{ _('invoices') }} ({{ "%.1f"|format(pct_0_30) }}%)
                 </p>
@@ -115,7 +115,7 @@
             <!-- 31-60 days -->
             <div class="border-l-4 border-yellow-500 pl-4">
                 <p class="text-sm font-medium text-gray-500">{{ _('31-60 Days') }}</p>
-                <p class="text-xl font-bold text-gray-900">{{ "%.2f"|format(bucket_31_60) }} €</p>
+                <p class="text-xl font-bold text-gray-900">{{ bucket_31_60|currency }}</p>
                 <p class="text-xs text-gray-500 mt-1">
                     {{ invoice_count_31_60 }} {{ _('invoices') }} ({{ "%.1f"|format(pct_31_60) }}%)
                 </p>
@@ -124,7 +124,7 @@
             <!-- 61-90 days -->
             <div class="border-l-4 border-orange-500 pl-4">
                 <p class="text-sm font-medium text-gray-500">{{ _('61-90 Days') }}</p>
-                <p class="text-xl font-bold text-gray-900">{{ "%.2f"|format(bucket_61_90) }} €</p>
+                <p class="text-xl font-bold text-gray-900">{{ bucket_61_90|currency }}</p>
                 <p class="text-xs text-gray-500 mt-1">
                     {{ invoice_count_61_90 }} {{ _('invoices') }} ({{ "%.1f"|format(pct_61_90) }}%)
                 </p>
@@ -133,7 +133,7 @@
             <!-- 90+ days -->
             <div class="border-l-4 border-red-500 pl-4">
                 <p class="text-sm font-medium text-gray-500">{{ _('90+ Days') }}</p>
-                <p class="text-xl font-bold text-red-600">{{ "%.2f"|format(bucket_90_plus) }} €</p>
+                <p class="text-xl font-bold text-red-600">{{ bucket_90_plus|currency }}</p>
                 <p class="text-xs text-gray-500 mt-1">
                     {{ invoice_count_90_plus }} {{ _('invoices') }} ({{ "%.1f"|format(pct_90_plus) }}%)
                 </p>
@@ -194,7 +194,7 @@
                                 {% endif %}
                             </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-gray-900">
-                                {{ "%.2f"|format(customer.total_outstanding|to_float) }} €
+                                {{ customer.total_outstanding|to_float|currency }}
                             </td>
                             {% if customer.buckets %}
                                 {% set bucket_0_30_val = 0.0 %}
@@ -213,16 +213,16 @@
                                     {% endif %}
                                 {% endfor %}
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
-                                    {{ "%.2f"|format(bucket_0_30_val) }} €
+                                    {{ bucket_0_30_val|currency }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
-                                    {{ "%.2f"|format(bucket_31_60_val) }} €
+                                    {{ bucket_31_60_val|currency }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
-                                    {{ "%.2f"|format(bucket_61_90_val) }} €
+                                    {{ bucket_61_90_val|currency }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-red-600 font-semibold">
-                                    {{ "%.2f"|format(bucket_90_plus_val) }} €
+                                    {{ bucket_90_plus_val|currency }}
                                 </td>
                             {% else %}
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-400">-</td>
@@ -287,7 +287,7 @@ new Chart(agingCtx, {
             tooltip: {
                 callbacks: {
                     label: function(context) {
-                        return context.label + ': ' + context.parsed.toFixed(2) + ' €';
+                        return context.label + ': ' + formatCurrencyValue(context.parsed);
                     }
                 }
             }
@@ -323,7 +323,7 @@ new Chart(topCustomersCtx, {
             tooltip: {
                 callbacks: {
                     label: function(context) {
-                        return context.parsed.x.toFixed(2) + ' €';
+                        return formatCurrencyValue(context.parsed.x);
                     }
                 }
             }
@@ -333,7 +333,7 @@ new Chart(topCustomersCtx, {
                 beginAtZero: true,
                 ticks: {
                     callback: function(value) {
-                        return value.toFixed(0) + ' €';
+                        return formatCurrencyValue(value);
                     }
                 }
             }

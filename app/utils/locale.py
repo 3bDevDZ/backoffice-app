@@ -6,25 +6,25 @@ from flask_babel import get_locale
 def get_user_locale():
     """
     Get locale from multiple sources in priority order:
-    1. URL parameter (?locale=fr|ar)
+    1. URL parameter (?locale=en|fr|ar)
     2. User preference (from database)
     3. Accept-Language header
     4. Default to 'fr'
     """
     # 1. Check URL parameter
     locale = request.args.get('locale')
-    if locale in ['fr', 'ar']:
+    if locale in ['en', 'fr', 'ar']:
         return locale
     
     # 2. Check user preference (if logged in)
     if hasattr(g, 'user') and g.user and hasattr(g.user, 'locale'):
         user_locale = g.user.locale
-        if user_locale in ['fr', 'ar']:
+        if user_locale in ['en', 'fr', 'ar']:
             return user_locale
     
     # 3. Check Accept-Language header
     if request.accept_languages:
-        best_match = request.accept_languages.best_match(['fr', 'ar'])
+        best_match = request.accept_languages.best_match(['en', 'fr', 'ar'])
         if best_match:
             return best_match
     

@@ -135,7 +135,7 @@
                                 {% endif %}
                             </td>
                             <td class="text-sm text-gray-600">{{ line.quantity }}</td>
-                            <td class="text-sm text-gray-600">{{ "%.2f"|format(line.unit_price|to_float) }} €</td>
+                            <td class="text-sm text-gray-600">{{ line.unit_price|to_float|currency }}</td>
                             <td class="text-sm text-gray-600">
                                 {% if line.discount_percent and line.discount_percent > 0 %}
                                 {{ "%.2f"|format(line.discount_percent|to_float) }}%
@@ -153,8 +153,8 @@
                                 -
                                 {% endif %}
                             </td>
-                            <td class="text-sm font-medium text-gray-900">{{ "%.2f"|format(line.line_total_ht|to_float) }} €</td>
-                            <td class="text-sm font-medium text-gray-900">{{ "%.2f"|format(line.line_total_ttc|to_float) }} €</td>
+                            <td class="text-sm font-medium text-gray-900">{{ line.line_total_ht|to_float|currency }}</td>
+                            <td class="text-sm font-medium text-gray-900">{{ line.line_total_ttc|to_float|currency }}</td>
                         </tr>
                         {% endfor %}
                     {% else %}
@@ -174,15 +174,15 @@
             <div class="w-full md:w-1/3 space-y-2">
                 <div class="flex justify-between items-center py-2 border-b border-gray-200">
                     <span class="text-sm font-medium text-gray-600">{{ _('Subtotal HT') }}</span>
-                    <span class="text-sm font-medium text-gray-900">{{ "%.2f"|format(order.subtotal_ht|to_float) }} €</span>
+                    <span class="text-sm font-medium text-gray-900">{{ order.subtotal_ht|to_float|currency }}</span>
                 </div>
                 <div class="flex justify-between items-center py-2 border-b border-gray-200">
                     <span class="text-sm font-medium text-gray-600">{{ _('Total Tax') }}</span>
-                    <span class="text-sm font-medium text-gray-900">{{ "%.2f"|format(order.total_tax|to_float) }} €</span>
+                    <span class="text-sm font-medium text-gray-900">{{ order.total_tax|to_float|currency }}</span>
                 </div>
                 <div class="flex justify-between items-center py-2">
                     <span class="text-base font-bold text-gray-900">{{ _('Total TTC') }}</span>
-                    <span class="text-base font-bold text-gray-900">{{ "%.2f"|format(order.total_ttc|to_float) }} €</span>
+                    <span class="text-base font-bold text-gray-900">{{ order.total_ttc|to_float|currency }}</span>
                 </div>
             </div>
         </div>

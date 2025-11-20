@@ -21,7 +21,7 @@
             </div>
             <div>
                 <div class="text-xs text-gray-500">{{ _('Total') }}</div>
-                <div class="text-sm font-medium text-gray-900">{{ "%.2f"|format(order.total) }} €</div>
+                <div class="text-sm font-medium text-gray-900">{{ order.total|currency }}</div>
             </div>
             <div>
                 <div class="text-xs text-gray-500">{{ _('Status') }}</div>
@@ -121,9 +121,9 @@
                             <td class="px-4 py-3 text-sm font-medium text-indigo-600 text-right">
                                 {{ "%.3f"|format(line.quantity_delivered - line.quantity_invoiced) }}
                             </td>
-                            <td class="px-4 py-3 text-sm text-gray-900 text-right">{{ "%.2f"|format(line.unit_price) }} €</td>
+                            <td class="px-4 py-3 text-sm text-gray-900 text-right">{{ line.unit_price|currency }}</td>
                             <td class="px-4 py-3 text-sm font-medium text-gray-900 text-right">
-                                {{ "%.2f"|format((line.quantity_delivered - line.quantity_invoiced) * line.unit_price) }} €
+                                {{ ((line.quantity_delivered - line.quantity_invoiced) * line.unit_price)|currency }}
                             </td>
                         </tr>
                         {% endfor %}

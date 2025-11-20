@@ -32,12 +32,20 @@ class CreateLocationHandler(CommandHandler):
                 if not parent:
                     raise ValueError("Parent location not found")
             
+            # Validate site if provided (None is allowed for simple mode)
+            if command.site_id:
+                from app.domain.models.stock import Site
+                site = session.get(Site, command.site_id)
+                if not site:
+                    raise ValueError("Site not found")
+            
             # Create location using domain factory method
             location = Location.create(
                 code=command.code,
                 name=command.name,
                 type=command.type,
                 parent_id=command.parent_id,
+                site_id=command.site_id,
                 capacity=command.capacity,
                 is_active=command.is_active
             )
@@ -75,6 +83,19 @@ class UpdateLocationHandler(CommandHandler):
             
             if command.type is not None:
                 location.type = command.type
+            
+            # Handle site_id update: use sentinel to distinguish "not provided" from "explicitly None"
+            from app.application.stock.commands.commands import _MISSING
+            if command.site_id is not _MISSING:
+                # site_id was explicitly provided in the command (can be None)
+                if command.site_id is not None:
+                    # Validate site if provided
+                    from app.domain.models.stock import Site
+                    site = session.get(Site, command.site_id)
+                    if not site:
+                        raise ValueError("Site not found")
+                # Set site_id (can be None for simple mode)
+                location.site_id = command.site_id
             
             if command.parent_id is not None:
                 # Validate parent if provided

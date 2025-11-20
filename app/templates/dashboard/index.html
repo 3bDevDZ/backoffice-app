@@ -20,7 +20,7 @@
             </span>
         </div>
         <div class="stat-card-label">{{ _('Total Revenue') }}</div>
-        <div class="stat-card-metric" style="color: var(--color-success);" id="total-revenue">0,00 €</div>
+        <div class="stat-card-metric" style="color: var(--color-success);" id="total-revenue">{{ 0|currency }}</div>
         <div class="text-xs mt-2" style="color: var(--color-text-tertiary);">{{ _('This month') }}</div>
     </div>
 
@@ -161,11 +161,20 @@
 
 {% block extra_js %}
 <script>
-// Format currency
+// Format currency using configured currency
 function formatCurrency(value) {
-    return new Intl.NumberFormat('{{ locale }}', {
+    const currency = window.appConfig?.currency || 'EUR';
+    const locale = window.appConfig?.locale || '{{ locale }}';
+    const localeMap = {
+        'en': 'en-US',
+        'fr': 'fr-FR',
+        'ar': 'ar-DZ'
+    };
+    const intlLocale = localeMap[locale] || locale;
+    
+    return new Intl.NumberFormat(intlLocale, {
         style: 'currency',
-        currency: 'EUR',
+        currency: currency,
         minimumFractionDigits: 2
     }).format(value);
 }

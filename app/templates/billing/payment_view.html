@@ -77,7 +77,7 @@
             </div>
             <div>
                 <div class="text-xs text-gray-500">{{ _('Amount') }}</div>
-                <div class="text-sm font-medium text-gray-900">{{ "%.2f"|format(payment.amount) }} €</div>
+                <div class="text-sm font-medium text-gray-900">{{ payment.amount|currency }}</div>
             </div>
             <div>
                 <div class="text-xs text-gray-500">{{ _('Payment Date') }}</div>
@@ -100,12 +100,12 @@
         <div class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
             <div class="p-3 bg-gray-50 rounded-lg">
                 <div class="text-xs text-gray-500">{{ _('Total Allocated') }}</div>
-                <div class="text-lg font-bold text-gray-900">{{ "%.2f"|format(payment.total_allocated) }} €</div>
+                <div class="text-lg font-bold text-gray-900">{{ payment.total_allocated|currency }}</div>
             </div>
             <div class="p-3 bg-gray-50 rounded-lg">
                 <div class="text-xs text-gray-500">{{ _('Unallocated Amount') }}</div>
                 <div class="text-lg font-bold {% if payment.unallocated_amount > 0 %}text-orange-600{% else %}text-green-600{% endif %}">
-                    {{ "%.2f"|format(payment.unallocated_amount) }} €
+                    {{ payment.unallocated_amount|currency }}
                 </div>
             </div>
         </div>
@@ -144,7 +144,7 @@
                             </a>
                         </td>
                         <td class="px-4 py-3 text-sm font-medium text-gray-900 text-right">
-                            {{ "%.2f"|format(alloc.allocated_amount) }} €
+                            {{ alloc.allocated_amount|currency }}
                         </td>
                         <td class="px-4 py-3 text-sm text-gray-500">
                             {% if alloc.created_at %}
@@ -246,7 +246,7 @@ function addAllocationRow() {
         customerInvoices.forEach(inv => {
             const option = document.createElement('option');
             option.value = inv.invoice_id;
-            let text = inv.invoice_number + ' - ' + inv.remaining_amount.toFixed(2) + ' €';
+            let text = inv.invoice_number + ' - ' + formatCurrencyValue(inv.remaining_amount);
             if (inv.days_overdue >= 0) {
                 text += ' (' + inv.days_overdue + ' ' + daysOverdueText + ')';
             }
