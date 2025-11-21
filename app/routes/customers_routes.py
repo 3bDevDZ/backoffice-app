@@ -13,6 +13,21 @@ from app.security.session_auth import require_roles_or_redirect, get_current_use
 customers_routes = Blueprint('customers_frontend', __name__)
 
 
+def _convert_checkbox_to_bool(value):
+    """Convert checkbox value to boolean.
+    
+    HTML checkboxes send 'on' when checked, nothing when unchecked.
+    This function handles both cases and also boolean/string 'true'/'false'.
+    """
+    if value is None:
+        return False
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.lower() in ('on', 'true', '1', 'yes')
+    return bool(value)
+
+
 @customers_routes.route('/customers')
 @require_roles_or_redirect('admin', 'commercial', 'direction')
 def list():
@@ -127,7 +142,7 @@ def create():
             'price_list_id': int(data.get('price_list_id')) if data.get('price_list_id') else None,
             'default_discount_percent': Decimal(str(data.get('default_discount_percent', 0))),
             'credit_limit': Decimal(str(data.get('credit_limit', 0))) if data.get('credit_limit') else Decimal('0'),
-            'block_on_credit_exceeded': data.get('block_on_credit_exceeded', False)
+            'block_on_credit_exceeded': _convert_checkbox_to_bool(data.get('block_on_credit_exceeded', False))
         }
         
         # B2B fields
@@ -211,7 +226,8 @@ def update_customer(customer_id: int):
         if 'credit_limit' in data:
             update_data['credit_limit'] = Decimal(str(data.get('credit_limit'))) if data.get('credit_limit') else Decimal('0')
         if 'block_on_credit_exceeded' in data:
-            update_data['block_on_credit_exceeded'] = data.get('block_on_credit_exceeded', False)
+            # Convert checkbox value ('on' or None) to boolean
+            update_data['block_on_credit_exceeded'] = _convert_checkbox_to_bool(data.get('block_on_credit_exceeded'))
         
         # B2B fields
         if 'company_name' in data:

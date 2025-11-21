@@ -1,0 +1,2 @@
+"""Reports application module."""
+

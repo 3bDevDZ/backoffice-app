@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Reports') }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Reports') }}{% endblock %}
+{% block page_subtitle %}{{ _('Generate and view business reports and analytics') }}{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Sales Report -->
+    <a href="{{ url_for('reports.sales_report') }}" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow cursor-pointer">
+        <div class="flex items-center mb-4">
+            <div class="w-12 h-12 rounded-lg flex items-center justify-center mr-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <i class="fas fa-chart-line text-white text-xl"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold" style="color: var(--color-text-primary);">{{ _('Sales Report') }}</h3>
+                <p class="text-sm" style="color: var(--color-text-secondary);">{{ _('Revenue and sales analytics') }}</p>
+            </div>
+        </div>
+        <p class="text-sm" style="color: var(--color-text-tertiary);">{{ _('View revenue trends, top products, and top customers') }}</p>
+    </a>
+
+    <!-- Margin Report -->
+    <a href="{{ url_for('reports.margins_report') }}" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow cursor-pointer">
+        <div class="flex items-center mb-4">
+            <div class="w-12 h-12 rounded-lg flex items-center justify-center mr-4" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <i class="fas fa-percent text-white text-xl"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold" style="color: var(--color-text-primary);">{{ _('Margin Report') }}</h3>
+                <p class="text-sm" style="color: var(--color-text-secondary);">{{ _('Profitability analysis') }}</p>
+            </div>
+        </div>
+        <p class="text-sm" style="color: var(--color-text-tertiary);">{{ _('Analyze margins by product and customer') }}</p>
+    </a>
+
+    <!-- Stock Report -->
+    <a href="{{ url_for('reports.stock_report') }}" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow cursor-pointer">
+        <div class="flex items-center mb-4">
+            <div class="w-12 h-12 rounded-lg flex items-center justify-center mr-4" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <i class="fas fa-box text-white text-xl"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold" style="color: var(--color-text-primary);">{{ _('Stock Report') }}</h3>
+                <p class="text-sm" style="color: var(--color-text-secondary);">{{ _('Inventory analysis') }}</p>
+            </div>
+        </div>
+        <p class="text-sm" style="color: var(--color-text-tertiary);">{{ _('View stock value, turnover, and product movement') }}</p>
+    </a>
+
+    <!-- Customer Report -->
+    <a href="{{ url_for('reports.customers_report') }}" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow cursor-pointer">
+        <div class="flex items-center mb-4">
+            <div class="w-12 h-12 rounded-lg flex items-center justify-center mr-4" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <i class="fas fa-users text-white text-xl"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold" style="color: var(--color-text-primary);">{{ _('Customer Report') }}</h3>
+                <p class="text-sm" style="color: var(--color-text-secondary);">{{ _('Customer analytics') }}</p>
+            </div>
+        </div>
+        <p class="text-sm" style="color: var(--color-text-tertiary);">{{ _('Analyze customer revenue, frequency, and behavior') }}</p>
+    </a>
+
+    <!-- Purchase Report -->
+    <a href="{{ url_for('reports.purchases_report') }}" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow cursor-pointer">
+        <div class="flex items-center mb-4">
+            <div class="w-12 h-12 rounded-lg flex items-center justify-center mr-4" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                <i class="fas fa-shopping-bag text-white text-xl"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold" style="color: var(--color-text-primary);">{{ _('Purchase Report') }}</h3>
+                <p class="text-sm" style="color: var(--color-text-secondary);">{{ _('Purchase analytics') }}</p>
+            </div>
+        </div>
+        <p class="text-sm" style="color: var(--color-text-tertiary);">{{ _('View purchases by supplier and price evolution') }}</p>
+    </a>
+
+    <!-- Forecast Report -->
+    <a href="{{ url_for('reports.forecast_report') }}" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow cursor-pointer">
+        <div class="flex items-center mb-4">
+            <div class="w-12 h-12 rounded-lg flex items-center justify-center mr-4" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);">
+                <i class="fas fa-crystal-ball text-white text-xl"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold" style="color: var(--color-text-primary);">{{ _('Forecast Report') }}</h3>
+                <p class="text-sm" style="color: var(--color-text-secondary);">{{ _('Sales and stock forecasts') }}</p>
+            </div>
+        </div>
+        <p class="text-sm" style="color: var(--color-text-tertiary);">{{ _('Predict future sales and stock needs') }}</p>
+    </a>
+
+    <!-- Custom Report Builder -->
+    <a href="{{ url_for('reports.report_builder') }}" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow cursor-pointer">
+        <div class="flex items-center mb-4">
+            <div class="w-12 h-12 rounded-lg flex items-center justify-center mr-4" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
+                <i class="fas fa-tools text-white text-xl"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold" style="color: var(--color-text-primary);">{{ _('Custom Report Builder') }}</h3>
+                <p class="text-sm" style="color: var(--color-text-secondary);">{{ _('Create custom reports') }}</p>
+            </div>
+        </div>
+        <p class="text-sm" style="color: var(--color-text-tertiary);">{{ _('Build personalized reports with custom columns and filters') }}</p>
+    </a>
+</div>
+{% endblock %}
+

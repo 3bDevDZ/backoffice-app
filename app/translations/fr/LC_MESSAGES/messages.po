@@ -2995,7 +2995,7 @@ msgstr "Top 10 Customers by Outstanding"
 
 #: app/templates/billing/payments_dashboard.html:166
 msgid "Top Customers"
-msgstr "Top Customers"
+msgstr "Meilleurs clients"
 
 #: app/templates/billing/payments_dashboard.html:168
 msgid "View Full Report"
@@ -3546,13 +3546,13 @@ msgstr "Overview of your business activity"
 
 #: app/templates/dashboard/index.html:22
 msgid "Total Revenue"
-msgstr "Total Revenue"
+msgstr "Revenu total"
 
 #: app/templates/dashboard/index.html:38
 #: app/templates/purchases/orders/list.html:12
 #: app/templates/sales/orders_list.html:12
 msgid "Total Orders"
-msgstr "Total commandes"
+msgstr "Total des commandes"
 
 #: app/templates/dashboard/index.html:70
 msgid "Products in Stock"
@@ -3564,7 +3564,7 @@ msgstr "Active products"
 
 #: app/templates/dashboard/index.html:81
 msgid "Revenue Trend"
-msgstr "Revenue Trend"
+msgstr "Tendance des revenus"
 
 #: app/templates/dashboard/index.html:83 app/templates/dashboard/index.html:101
 msgid "Last 7 days"
@@ -3584,7 +3584,7 @@ msgstr "Chart will be displayed here"
 
 #: app/templates/dashboard/index.html:99
 msgid "Orders Trend"
-msgstr "Orders Trend"
+msgstr "Tendance des commandes"
 
 #: app/templates/dashboard/index.html:120
 msgid "Recent Orders"
@@ -6376,3 +6376,392 @@ msgstr "By"
 msgid "Created By"
 msgstr "Créé par"
 
+
+#: Reporting terms
+msgid "Sales Report"
+msgstr "Rapport de ventes"
+
+
+#: Reporting terms
+msgid "Revenue and sales analytics"
+msgstr "Analytique des revenus et ventes"
+
+
+#: Reporting terms
+msgid "Total Revenue"
+msgstr "Revenu total"
+
+
+#: Reporting terms
+msgid "Total Orders"
+msgstr "Total des commandes"
+
+
+#: Reporting terms
+msgid "Average Order Value"
+msgstr "Valeur moyenne de commande"
+
+
+#: Reporting terms
+msgid "Revenue Trend"
+msgstr "Tendance des revenus"
+
+
+#: Reporting terms
+msgid "Orders Trend"
+msgstr "Tendance des commandes"
+
+
+#: Reporting terms
+msgid "Top Products"
+msgstr "Meilleurs produits"
+
+
+#: Reporting terms
+msgid "Top Customers"
+msgstr "Meilleurs clients"
+
+
+#: Reporting terms
+msgid "Revenue"
+msgstr "Revenu"
+
+
+#: Reporting terms
+msgid "Customer Report"
+msgstr "Rapport clients"
+
+
+#: Reporting terms
+msgid "Customer analytics and revenue analysis"
+msgstr "Analytique clients et analyse des revenus"
+
+
+#: Reporting terms
+msgid "Customer Details"
+msgstr "Détails des clients"
+
+
+#: Reporting terms
+msgid "Orders Count"
+msgstr "Nombre de commandes"
+
+
+#: Reporting terms
+msgid "Last Order Date"
+msgstr "Date de dernière commande"
+
+
+#: Reporting terms
+msgid "Margin Report"
+msgstr "Rapport de marge"
+
+
+#: Reporting terms
+msgid "Profitability analysis by product and customer"
+msgstr "Analyse de rentabilité par produit et client"
+
+
+#: Reporting terms
+msgid "Total Margin"
+msgstr "Marge totale"
+
+
+#: Reporting terms
+msgid "Total Cost"
+msgstr "Coût total"
+
+
+#: Reporting terms
+msgid "Margin Details"
+msgstr "Détails de la marge"
+
+
+#: Reporting terms
+msgid "Quantity Sold"
+msgstr "Quantité vendue"
+
+
+#: Reporting terms
+msgid "Margin"
+msgstr "Marge"
+
+
+#: Reporting terms
+msgid "Margin %"
+msgstr "Marge %"
+
+
+#: Reporting terms
+msgid "Stock Report"
+msgstr "Rapport de stock"
+
+
+#: Reporting terms
+msgid "Inventory analysis and stock value"
+msgstr "Analyse des stocks et valeur du stock"
+
+
+#: Reporting terms
+msgid "Total Stock Value"
+msgstr "Valeur totale du stock"
+
+
+#: Reporting terms
+msgid "Products Count"
+msgstr "Nombre de produits"
+
+
+#: Reporting terms
+msgid "Stock Details"
+msgstr "Détails du stock"
+
+
+#: Reporting terms
+msgid "Physical Quantity"
+msgstr "Quantité physique"
+
+
+#: Reporting terms
+msgid "Reserved Quantity"
+msgstr "Quantité réservée"
+
+
+#: Reporting terms
+msgid "Available Quantity"
+msgstr "Quantité disponible"
+
+
+#: Reporting terms
+msgid "Unit Cost"
+msgstr "Coût unitaire"
+
+
+#: Reporting terms
+msgid "Stock Value"
+msgstr "Valeur du stock"
+
+
+#: Reporting terms
+msgid "Purchase Report"
+msgstr "Rapport d'achats"
+
+
+#: Reporting terms
+msgid "Purchase analytics by supplier and price evolution"
+msgstr "Analytique des achats par fournisseur et évolution des prix"
+
+
+#: Reporting terms
+msgid "Total Purchases"
+msgstr "Total des achats"
+
+
+#: Reporting terms
+msgid "Suppliers Count"
+msgstr "Nombre de fournisseurs"
+
+
+#: Reporting terms
+msgid "Purchases by Supplier"
+msgstr "Achats par fournisseur"
+
+
+#: Reporting terms
+msgid "Purchase Orders Details"
+msgstr "Détails des commandes d'achat"
+
+
+#: Reporting terms
+msgid "Order Number"
+msgstr "Numéro de commande"
+
+
+#: Reporting terms
+msgid "Order Date"
+msgstr "Date de commande"
+
+
+#: Reporting terms
+msgid "Expected Delivery"
+msgstr "Livraison prévue"
+
+
+#: Reporting terms
+msgid "Total HT"
+msgstr "Total HT"
+
+
+#: Reporting terms
+msgid "Total TTC"
+msgstr "Total TTC"
+
+
+#: Reporting terms
+msgid "Forecast Report"
+msgstr "Rapport de prévisions"
+
+
+#: Reporting terms
+msgid "Sales and stock forecasts based on historical data"
+msgstr "Prévisions de ventes et de stock basées sur les données historiques"
+
+
+#: Reporting terms
+msgid "Sales Forecast"
+msgstr "Prévision de ventes"
+
+
+#: Reporting terms
+msgid "Stock Forecast"
+msgstr "Prévision de stock"
+
+
+#: Reporting terms
+msgid "Historical Average"
+msgstr "Moyenne historique"
+
+
+#: Reporting terms
+msgid "Trend"
+msgstr "Tendance"
+
+
+#: Reporting terms
+msgid "Confidence Score"
+msgstr "Score de confiance"
+
+
+#: Reporting terms
+msgid "Select Product"
+msgstr "Sélectionner un produit"
+
+
+#: Reporting terms
+msgid "Current Stock"
+msgstr "Stock actuel"
+
+
+#: Reporting terms
+msgid "Forecast Demand"
+msgstr "Demande prévue"
+
+
+#: Reporting terms
+msgid "Days Until Out of Stock"
+msgstr "Jours jusqu'à rupture de stock"
+
+
+#: Reporting terms
+msgid "Recommended Reorder"
+msgstr "Réapprovisionnement recommandé"
+
+
+#: Reporting terms
+msgid "Forecast"
+msgstr "Prévision"
+
+
+#: Reporting terms
+msgid "Upper Bound"
+msgstr "Limite supérieure"
+
+
+#: Reporting terms
+msgid "Lower Bound"
+msgstr "Limite inférieure"
+
+
+#: Reporting terms
+msgid "Select a product"
+msgstr "Sélectionner un produit"
+
+
+#: Reporting terms
+msgid "Loading products..."
+msgstr "Chargement des produits..."
+
+
+#: Reporting terms
+msgid "Start Date"
+msgstr "Date de début"
+
+
+#: Reporting terms
+msgid "End Date"
+msgstr "Date de fin"
+
+
+#: Reporting terms
+msgid "Group By"
+msgstr "Grouper par"
+
+
+#: Reporting terms
+msgid "Day"
+msgstr "Jour"
+
+
+#: Reporting terms
+msgid "Week"
+msgstr "Semaine"
+
+
+#: Reporting terms
+msgid "Month"
+msgstr "Mois"
+
+
+#: Reporting terms
+msgid "Year"
+msgstr "Année"
+
+
+#: Reporting terms
+msgid "Apply Filters"
+msgstr "Appliquer les filtres"
+
+
+#: Reporting terms
+msgid "Loading..."
+msgstr "Chargement..."
+
+
+#: Reporting terms
+msgid "Export failed"
+msgstr "Échec de l'exportation"
+
+
+#: Reporting terms
+msgid "All Reports"
+msgstr "Tous les rapports"
+
+
+#: Reporting terms
+msgid "Profitability analysis"
+msgstr "Analyse de rentabilité"
+
+
+#: Reporting terms
+msgid "Analyze margins by product and customer"
+msgstr "Analyser les marges par produit et client"
+
+
+#: Reporting terms
+msgid "Inventory analysis"
+msgstr "Analyse des stocks"
+
+
+#: Reporting terms
+msgid "View stock value, turnover, and product movement"
+msgstr "Voir la valeur du stock, le chiffre d'affaires et les mouvements de produits"
+
+
+#: Reporting terms
+msgid "Customer analytics"
+msgstr "Analytique clients"
+
+
+#: Reporting terms
+msgid "Purchase analytics"
+msgstr "Analytique des achats"

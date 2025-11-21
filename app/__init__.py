@@ -130,8 +130,11 @@ def create_app() -> Flask:
         current_module = None
         if hasattr(request, 'endpoint') and request.endpoint:
             endpoint = request.endpoint
-            # Check purchases FIRST (before sales) to avoid conflicts with 'orders'
-            if 'purchases_frontend' in endpoint or 'purchase_orders' in endpoint or 'purchase_requests' in endpoint or 'purchase_receipts' in endpoint or 'supplier_invoices' in endpoint or 'suppliers' in endpoint:
+            # Check reports FIRST to avoid conflicts with 'sales' in reports.sales_report
+            if 'reports' in endpoint:
+                current_module = 'reports'
+            # Check purchases BEFORE sales to avoid conflicts with 'orders'
+            elif 'purchases_frontend' in endpoint or 'purchase_orders' in endpoint or 'purchase_requests' in endpoint or 'purchase_receipts' in endpoint or 'supplier_invoices' in endpoint or 'suppliers' in endpoint:
                 current_module = 'purchases'
             elif 'customers' in endpoint or 'sales' in endpoint or 'quotes' in endpoint or ('orders' in endpoint and 'purchase' not in endpoint) or 'promotions' in endpoint or 'billing' in endpoint or 'invoices' in endpoint or ('payments' in endpoint and 'supplier' not in endpoint):
                 current_module = 'sales'
@@ -915,6 +918,27 @@ def create_app() -> Flask:
     mediator.register_query(GetCompanySettingsQuery, GetCompanySettingsHandler())
     mediator.register_query(GetAppSettingsQuery, GetAppSettingsHandler())
     
+    # Register Report Queries
+    from .application.reports.queries.queries import (
+        GetSalesReportQuery, GetMarginReportQuery, GetStockReportQuery,
+        GetCustomerReportQuery, GetPurchaseReportQuery, GetCustomReportQuery,
+        GetSalesForecastQuery, GetStockForecastQuery
+    )
+    from .application.reports.queries.handlers import (
+        GetSalesReportHandler, GetMarginReportHandler, GetStockReportHandler,
+        GetCustomerReportHandler, GetPurchaseReportHandler, GetCustomReportHandler,
+        GetSalesForecastHandler, GetStockForecastHandler
+    )
+    
+    mediator.register_query(GetSalesReportQuery, GetSalesReportHandler())
+    mediator.register_query(GetMarginReportQuery, GetMarginReportHandler())
+    mediator.register_query(GetStockReportQuery, GetStockReportHandler())
+    mediator.register_query(GetCustomerReportQuery, GetCustomerReportHandler())
+    mediator.register_query(GetPurchaseReportQuery, GetPurchaseReportHandler())
+    mediator.register_query(GetCustomReportQuery, GetCustomReportHandler())
+    mediator.register_query(GetSalesForecastQuery, GetSalesForecastHandler())
+    mediator.register_query(GetStockForecastQuery, GetStockForecastHandler())
+    
     mediator.register_command(LoginCommand, LoginCommandHandler())
 
     # Register API blueprints
@@ -927,6 +951,8 @@ def create_app() -> Flask:
         from .api.sales import sales_bp
         from .api.dashboard import dashboard_bp
         from .api.i18n import i18n_bp
+        from .api.reports import reports_bp
+        from .api.reports import reports_bp
 
         app.register_blueprint(auth_bp, url_prefix="/api/auth")
         app.register_blueprint(products_bp, url_prefix="/api/products")
@@ -936,7 +962,8 @@ def create_app() -> Flask:
         app.register_blueprint(sales_bp, url_prefix="/api/sales", name="sales_api")
         app.register_blueprint(dashboard_bp, url_prefix="/api/dashboard", name="dashboard_api")
         app.register_blueprint(i18n_bp, url_prefix="/api/i18n", name="i18n_api")
-        print(f"[OK] Registered API blueprints: purchases, products, customers, auth, stock, sales, dashboard, i18n")
+        app.register_blueprint(reports_bp, url_prefix="/api/reports", name="reports_api")
+        print(f"[OK] Registered API blueprints: purchases, products, customers, auth, stock, sales, dashboard, i18n, reports")
     except Exception as e:
         import traceback
         print(f"[ERROR] Error registering API blueprints: {e}")
@@ -964,9 +991,11 @@ def create_app() -> Flask:
         app.register_blueprint(promotions_routes)
         from .routes.billing_routes import billing_routes
         from .routes.settings_routes import settings_routes
+        from .routes.reports_routes import reports_routes
         app.register_blueprint(billing_routes)
         app.register_blueprint(modules_routes)
         app.register_blueprint(settings_routes)
+        app.register_blueprint(reports_routes)
         
         print(f"[OK] Registered frontend blueprints: {list(app.blueprints.keys())}")
     except Exception as e:

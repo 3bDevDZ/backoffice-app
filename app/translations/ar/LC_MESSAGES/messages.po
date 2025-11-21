@@ -2958,7 +2958,7 @@ msgstr "Top 10 Customers by Outstanding"
 
 #: app/templates/billing/payments_dashboard.html:166
 msgid "Top Customers"
-msgstr "Top Customers"
+msgstr "أفضل العملاء"
 
 #: app/templates/billing/payments_dashboard.html:168
 msgid "View Full Report"
@@ -3509,7 +3509,7 @@ msgstr "Overview of your business activity"
 
 #: app/templates/dashboard/index.html:22
 msgid "Total Revenue"
-msgstr "Total Revenue"
+msgstr "إجمالي الإيرادات"
 
 #: app/templates/dashboard/index.html:38
 #: app/templates/purchases/orders/list.html:12
@@ -3527,7 +3527,7 @@ msgstr "Active products"
 
 #: app/templates/dashboard/index.html:81
 msgid "Revenue Trend"
-msgstr "Revenue Trend"
+msgstr "اتجاه الإيرادات"
 
 #: app/templates/dashboard/index.html:83 app/templates/dashboard/index.html:101
 msgid "Last 7 days"
@@ -3547,7 +3547,7 @@ msgstr "Chart will be displayed here"
 
 #: app/templates/dashboard/index.html:99
 msgid "Orders Trend"
-msgstr "Orders Trend"
+msgstr "اتجاه الطلبات"
 
 #: app/templates/dashboard/index.html:120
 msgid "Recent Orders"
@@ -6337,3 +6337,392 @@ msgstr "By"
 msgid "Created By"
 msgstr "تم الإنشاء بواسطة"
 
+
+#: Reporting terms
+msgid "Sales Report"
+msgstr "تقرير المبيعات"
+
+
+#: Reporting terms
+msgid "Revenue and sales analytics"
+msgstr "تحليلات الإيرادات والمبيعات"
+
+
+#: Reporting terms
+msgid "Total Revenue"
+msgstr "إجمالي الإيرادات"
+
+
+#: Reporting terms
+msgid "Total Orders"
+msgstr "إجمالي الطلبات"
+
+
+#: Reporting terms
+msgid "Average Order Value"
+msgstr "متوسط قيمة الطلب"
+
+
+#: Reporting terms
+msgid "Revenue Trend"
+msgstr "اتجاه الإيرادات"
+
+
+#: Reporting terms
+msgid "Orders Trend"
+msgstr "اتجاه الطلبات"
+
+
+#: Reporting terms
+msgid "Top Products"
+msgstr "أفضل المنتجات"
+
+
+#: Reporting terms
+msgid "Top Customers"
+msgstr "أفضل العملاء"
+
+
+#: Reporting terms
+msgid "Revenue"
+msgstr "الإيرادات"
+
+
+#: Reporting terms
+msgid "Customer Report"
+msgstr "تقرير العملاء"
+
+
+#: Reporting terms
+msgid "Customer analytics and revenue analysis"
+msgstr "تحليلات العملاء وتحليل الإيرادات"
+
+
+#: Reporting terms
+msgid "Customer Details"
+msgstr "تفاصيل العملاء"
+
+
+#: Reporting terms
+msgid "Orders Count"
+msgstr "عدد الطلبات"
+
+
+#: Reporting terms
+msgid "Last Order Date"
+msgstr "تاريخ آخر طلب"
+
+
+#: Reporting terms
+msgid "Margin Report"
+msgstr "تقرير الهامش"
+
+
+#: Reporting terms
+msgid "Profitability analysis by product and customer"
+msgstr "تحليل الربحية حسب المنتج والعميل"
+
+
+#: Reporting terms
+msgid "Total Margin"
+msgstr "إجمالي الهامش"
+
+
+#: Reporting terms
+msgid "Total Cost"
+msgstr "التكلفة الإجمالية"
+
+
+#: Reporting terms
+msgid "Margin Details"
+msgstr "تفاصيل الهامش"
+
+
+#: Reporting terms
+msgid "Quantity Sold"
+msgstr "الكمية المباعة"
+
+
+#: Reporting terms
+msgid "Margin"
+msgstr "الهامش"
+
+
+#: Reporting terms
+msgid "Margin %"
+msgstr "الهامش %"
+
+
+#: Reporting terms
+msgid "Stock Report"
+msgstr "تقرير المخزون"
+
+
+#: Reporting terms
+msgid "Inventory analysis and stock value"
+msgstr "تحليل المخزون وقيمة المخزون"
+
+
+#: Reporting terms
+msgid "Total Stock Value"
+msgstr "القيمة الإجمالية للمخزون"
+
+
+#: Reporting terms
+msgid "Products Count"
+msgstr "عدد المنتجات"
+
+
+#: Reporting terms
+msgid "Stock Details"
+msgstr "تفاصيل المخزون"
+
+
+#: Reporting terms
+msgid "Physical Quantity"
+msgstr "الكمية الفعلية"
+
+
+#: Reporting terms
+msgid "Reserved Quantity"
+msgstr "الكمية المحجوزة"
+
+
+#: Reporting terms
+msgid "Available Quantity"
+msgstr "الكمية المتاحة"
+
+
+#: Reporting terms
+msgid "Unit Cost"
+msgstr "التكلفة الوحدة"
+
+
+#: Reporting terms
+msgid "Stock Value"
+msgstr "قيمة المخزون"
+
+
+#: Reporting terms
+msgid "Purchase Report"
+msgstr "تقرير المشتريات"
+
+
+#: Reporting terms
+msgid "Purchase analytics by supplier and price evolution"
+msgstr "تحليلات المشتريات حسب المورد وتطور الأسعار"
+
+
+#: Reporting terms
+msgid "Total Purchases"
+msgstr "إجمالي المشتريات"
+
+
+#: Reporting terms
+msgid "Suppliers Count"
+msgstr "عدد الموردين"
+
+
+#: Reporting terms
+msgid "Purchases by Supplier"
+msgstr "المشتريات حسب المورد"
+
+
+#: Reporting terms
+msgid "Purchase Orders Details"
+msgstr "تفاصيل أوامر الشراء"
+
+
+#: Reporting terms
+msgid "Order Number"
+msgstr "رقم الطلب"
+
+
+#: Reporting terms
+msgid "Order Date"
+msgstr "تاريخ الطلب"
+
+
+#: Reporting terms
+msgid "Expected Delivery"
+msgstr "التسليم المتوقع"
+
+
+#: Reporting terms
+msgid "Total HT"
+msgstr "الإجمالي بدون ضريبة"
+
+
+#: Reporting terms
+msgid "Total TTC"
+msgstr "الإجمالي مع الضريبة"
+
+
+#: Reporting terms
+msgid "Forecast Report"
+msgstr "تقرير التوقعات"
+
+
+#: Reporting terms
+msgid "Sales and stock forecasts based on historical data"
+msgstr "توقعات المبيعات والمخزون بناءً على البيانات التاريخية"
+
+
+#: Reporting terms
+msgid "Sales Forecast"
+msgstr "توقعات المبيعات"
+
+
+#: Reporting terms
+msgid "Stock Forecast"
+msgstr "توقعات المخزون"
+
+
+#: Reporting terms
+msgid "Historical Average"
+msgstr "المتوسط التاريخي"
+
+
+#: Reporting terms
+msgid "Trend"
+msgstr "الاتجاه"
+
+
+#: Reporting terms
+msgid "Confidence Score"
+msgstr "نقاط الثقة"
+
+
+#: Reporting terms
+msgid "Select Product"
+msgstr "اختر منتج"
+
+
+#: Reporting terms
+msgid "Current Stock"
+msgstr "المخزون الحالي"
+
+
+#: Reporting terms
+msgid "Forecast Demand"
+msgstr "الطلب المتوقع"
+
+
+#: Reporting terms
+msgid "Days Until Out of Stock"
+msgstr "أيام حتى نفاد المخزون"
+
+
+#: Reporting terms
+msgid "Recommended Reorder"
+msgstr "إعادة الطلب الموصى بها"
+
+
+#: Reporting terms
+msgid "Forecast"
+msgstr "التوقعات"
+
+
+#: Reporting terms
+msgid "Upper Bound"
+msgstr "الحد الأعلى"
+
+
+#: Reporting terms
+msgid "Lower Bound"
+msgstr "الحد الأدنى"
+
+
+#: Reporting terms
+msgid "Select a product"
+msgstr "اختر منتج"
+
+
+#: Reporting terms
+msgid "Loading products..."
+msgstr "جاري تحميل المنتجات..."
+
+
+#: Reporting terms
+msgid "Start Date"
+msgstr "تاريخ البداية"
+
+
+#: Reporting terms
+msgid "End Date"
+msgstr "تاريخ النهاية"
+
+
+#: Reporting terms
+msgid "Group By"
+msgstr "تجميع حسب"
+
+
+#: Reporting terms
+msgid "Day"
+msgstr "يوم"
+
+
+#: Reporting terms
+msgid "Week"
+msgstr "أسبوع"
+
+
+#: Reporting terms
+msgid "Month"
+msgstr "شهر"
+
+
+#: Reporting terms
+msgid "Year"
+msgstr "سنة"
+
+
+#: Reporting terms
+msgid "Apply Filters"
+msgstr "تطبيق المرشحات"
+
+
+#: Reporting terms
+msgid "Loading..."
+msgstr "جاري التحميل..."
+
+
+#: Reporting terms
+msgid "Export failed"
+msgstr "فشل التصدير"
+
+
+#: Reporting terms
+msgid "All Reports"
+msgstr "جميع التقارير"
+
+
+#: Reporting terms
+msgid "Profitability analysis"
+msgstr "تحليل الربحية"
+
+
+#: Reporting terms
+msgid "Analyze margins by product and customer"
+msgstr "تحليل الهوامش حسب المنتج والعميل"
+
+
+#: Reporting terms
+msgid "Inventory analysis"
+msgstr "تحليل المخزون"
+
+
+#: Reporting terms
+msgid "View stock value, turnover, and product movement"
+msgstr "عرض قيمة المخزون والمبيعات وحركة المنتجات"
+
+
+#: Reporting terms
+msgid "Customer analytics"
+msgstr "تحليلات العملاء"
+
+
+#: Reporting terms
+msgid "Purchase analytics"
+msgstr "تحليلات المشتريات"

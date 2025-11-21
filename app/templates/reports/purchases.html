@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Purchase Report') }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Purchase Report') }}{% endblock %}
+{% block page_subtitle %}{{ _('Purchase analytics by supplier and price evolution') }}{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Date Range Filter -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+    <form method="GET" action="{{ url_for('reports.purchases_report') }}" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-primary);">{{ _('Start Date') }}</label>
+            <input type="date" name="start_date" value="{{ start_date }}" class="modern-input" required>
+        </div>
+        <div>
+            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-primary);">{{ _('End Date') }}</label>
+            <input type="date" name="end_date" value="{{ end_date }}" class="modern-input" required>
+        </div>
+        <div class="flex items-end">
+            <button type="submit" class="btn-primary w-full">
+                <i class="fas fa-filter {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                {{ _('Apply Filters') }}
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6" id="summary-cards">
+    <div class="stat-card">
+        <div class="stat-card-label">{{ _('Total Purchases') }}</div>
+        <div class="stat-card-metric" style="color: var(--color-success);" id="total-purchases">-</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">{{ _('Total Orders') }}</div>
+        <div class="stat-card-metric" style="color: var(--color-info);" id="total-orders">-</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">{{ _('Suppliers Count') }}</div>
+        <div class="stat-card-metric" style="color: #7C3AED;" id="suppliers-count">-</div>
+    </div>
+    <div class="stat-card">
+        <div class="flex items-center justify-between">
+            <div>
+                <div class="stat-card-label">{{ _('Export') }}</div>
+            </div>
+            <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+                <button onclick="exportReport('excel')" class="btn-secondary text-sm">
+                    <i class="fas fa-file-excel"></i>
+                </button>
+                <button onclick="exportReport('pdf')" class="btn-secondary text-sm">
+                    <i class="fas fa-file-pdf"></i>
+                </button>
+                <button onclick="exportReport('csv')" class="btn-secondary text-sm">
+                    <i class="fas fa-file-csv"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Suppliers Summary -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Purchases by Supplier') }}</h3>
+    <div class="overflow-x-auto">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th>{{ _('Supplier') }}</th>
+                    <th class="text-right">{{ _('Total Purchases') }}</th>
+                    <th class="text-right">{{ _('Orders Count') }}</th>
+                </tr>
+            </thead>
+            <tbody id="suppliers-table">
+                <tr><td colspan="3" class="text-center py-8" style="color: var(--color-text-tertiary);">{{ _('Loading...') }}</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Purchase Orders Table -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Purchase Orders Details') }}</h3>
+    <div class="overflow-x-auto">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th>{{ _('Order Number') }}</th>
+                    <th>{{ _('Supplier') }}</th>
+                    <th>{{ _('Order Date') }}</th>
+                    <th>{{ _('Expected Delivery') }}</th>
+                    <th>{{ _('Status') }}</th>
+                    <th class="text-right">{{ _('Total HT') }}</th>
+                    <th class="text-right">{{ _('Total TTC') }}</th>
+                </tr>
+            </thead>
+            <tbody id="purchases-table">
+                <tr><td colspan="7" class="text-center py-8" style="color: var(--color-text-tertiary);">{{ _('Loading...') }}</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+async function loadReportData() {
+    try {
+        const params = new URLSearchParams({
+            start_date: '{{ start_date }}',
+            end_date: '{{ end_date }}'
+        });
+        
+        const response = await fetch(`/reports/data/purchases?${params}`);
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            const data = result.data;
+            
+            // Update summary cards
+            document.getElementById('total-purchases').textContent = formatCurrencyValue(data.summary.total_purchases || 0);
+            document.getElementById('total-orders').textContent = data.summary.total_orders || 0;
+            document.getElementById('suppliers-count').textContent = data.summary.suppliers_count || 0;
+            
+            // Update suppliers table
+            if (data.summary.suppliers_summary) {
+                const suppliersTable = document.getElementById('suppliers-table');
+                suppliersTable.innerHTML = data.summary.suppliers_summary.map(item => `
+                    <tr>
+                        <td>${item.supplier_name}</td>
+                        <td class="text-right">${formatCurrencyValue(item.total_ht || 0)}</td>
+                        <td class="text-right">${item.orders_count || 0}</td>
+                    </tr>
+                `).join('');
+            }
+            
+            // Update purchases table
+            const purchasesTable = document.getElementById('purchases-table');
+            purchasesTable.innerHTML = data.data.map(item => `
+                <tr>
+                    <td>${item.purchase_order_number}</td>
+                    <td>${item.supplier_name}</td>
+                    <td>${item.order_date || '-'}</td>
+                    <td>${item.expected_delivery_date || '-'}</td>
+                    <td><span class="badge badge-${item.status}">${item.status}</span></td>
+                    <td class="text-right">${formatCurrencyValue(item.total_ht || 0)}</td>
+                    <td class="text-right">${formatCurrencyValue(item.total_ttc || 0)}</td>
+                </tr>
+            `).join('');
+        }
+    } catch (error) {
+        console.error('Error loading report data:', error);
+    }
+}
+
+async function exportReport(format) {
+    try {
+        const response = await fetch('/reports/export', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                report_type: 'purchases',
+                format: format,
+                start_date: '{{ start_date }}',
+                end_date: '{{ end_date }}'
+            })
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `purchase_report.${format === 'excel' ? 'xlsx' : format}`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } else {
+            alert('{{ _("Export failed") }}');
+        }
+    } catch (error) {
+        console.error('Export error:', error);
+        alert('{{ _("Export failed") }}');
+    }
+}
+
+// Load data on page load (only once)
+let dataLoaded = false;
+document.addEventListener('DOMContentLoaded', function() {
+    if (!dataLoaded) {
+        dataLoaded = true;
+        loadReportData();
+    }
+});
+</script>
+{% endblock %}
+
