@@ -268,15 +268,27 @@ def create_location():
         
         location = mediator.dispatch(command)
         
+        # Query location again to get a fresh instance bound to a session
+        # This avoids issues with detached objects
+        from app.infrastructure.db import get_session
+        from app.domain.models.stock import Location
+        with get_session() as session:
+            location = session.query(Location).filter(Location.code == command.code).first()
+            if not location:
+                raise ValueError("Location was created but could not be retrieved")
+            location_id = location.id
+            location_code = location.code
+            location_name = location.name
+        
         flash(_('Location created successfully'), 'success')
         return jsonify({
             'success': True,
             'status': 'success',
             'message': _('Location created successfully'),
             'data': {
-                'id': location.id,
-                'code': location.code,
-                'name': location.name
+                'id': location_id,
+                'code': location_code,
+                'name': location_name
             }
         })
     except ValueError as e:

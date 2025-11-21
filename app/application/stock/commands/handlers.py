@@ -52,11 +52,15 @@ class CreateLocationHandler(CommandHandler):
             
             session.add(location)
             session.flush()  # Flush to get ID
-            session.refresh(location)  # Refresh to ensure all attributes are loaded
+            
+            # Access all attributes while still in session
+            # This ensures they're loaded before commit
+            _ = location.id, location.code, location.name, location.type, location.site_id
             
             session.commit()
-            # Expunge to detach from session so it can be used after context closes
-            session.expunge(location)
+            
+            # Return location - it will be detached when session closes
+            # Attributes accessed above are already loaded, so they're safe to use
             return location
 
 

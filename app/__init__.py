@@ -277,10 +277,10 @@ def create_app() -> Flask:
         except (ValueError, TypeError):
             return 0.0
 
-    # Initialize DB
-    from .infrastructure.db import init_db
-
-    init_db(app.config["SQLALCHEMY_DATABASE_URI"])
+    # Initialize DB (only if not already initialized, e.g., in tests)
+    from .infrastructure.db import init_db, SessionLocal
+    if SessionLocal is None:
+        init_db(app.config["SQLALCHEMY_DATABASE_URI"])
     
     # Import all domain models to ensure SQLAlchemy can resolve relationships
     # This must be done after DB initialization but before any queries
