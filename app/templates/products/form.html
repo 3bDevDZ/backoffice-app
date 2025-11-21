@@ -396,7 +396,7 @@ function renderVolumePricingTable() {
         <tr>
             <td>${parseFloat(tier.min_quantity).toFixed(3)}</td>
             <td>${tier.max_quantity ? parseFloat(tier.max_quantity).toFixed(3) : '∞'}</td>
-            <td class="font-semibold">${parseFloat(tier.price).toFixed(2)} €</td>
+            <td class="font-semibold">${formatCurrencyValue(parseFloat(tier.price))}</td>
             <td>
                 <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
                     <button onclick="editVolumePricingTier(${tier.id})" 
@@ -558,8 +558,8 @@ function updateCalculations() {
     const margin = price - cost;
     const marginPercent = cost > 0 ? ((margin / cost) * 100) : 0;
     
-    document.getElementById('price-ttc').textContent = priceTTC.toFixed(2) + ' €';
-    document.getElementById('margin').textContent = margin.toFixed(2) + ' € (' + marginPercent.toFixed(1) + '%)';
+    document.getElementById('price-ttc').textContent = formatCurrencyValue(priceTTC);
+    document.getElementById('margin').textContent = formatCurrencyValue(margin) + ' (' + marginPercent.toFixed(1) + '%)';
 }
 
 document.getElementById('price').addEventListener('input', updateCalculations);

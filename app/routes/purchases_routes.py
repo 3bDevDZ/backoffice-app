@@ -1078,14 +1078,50 @@ def create_purchase_receipt():
             flash(_('Cannot create receipt for purchase order in status "%(status)s". Order must be confirmed, sent, or partially received.', status=po.status), 'error')
             return redirect(url_for('purchases_frontend.edit_purchase_order', order_id=purchase_order_id))
         
-        # Get locations
-        locations = mediator.dispatch(GetLocationHierarchyQuery())
+        # Get locations and sites based on stock management mode
+        from app.utils.settings_helper import get_stock_management_mode
+        stock_mode = get_stock_management_mode()
+        
+        locations = []
+        sites = []
+        default_site = None
+        default_location = None
+        
+        if stock_mode == 'advanced':
+            # Advanced mode: show sites and locations
+            from app.application.stock.sites.queries.queries import ListSitesQuery
+            sites = mediator.dispatch(ListSitesQuery(page=1, per_page=1000, status='active'))
+            locations = mediator.dispatch(GetLocationHierarchyQuery())
+        else:
+            # Simple mode: only show default location, hide site/location selection
+            locations = mediator.dispatch(GetLocationHierarchyQuery())
+            # Get first active warehouse location as default
+            from app.infrastructure.db import get_session
+            from app.domain.models.stock import Location
+            default_location = None
+            with get_session() as session:
+                location_obj = session.query(Location).filter(
+                    Location.type == 'warehouse',
+                    Location.is_active == True
+                ).first()
+                # Convert to dict to avoid DetachedInstanceError
+                if location_obj:
+                    default_location = {
+                        'id': location_obj.id,
+                        'code': location_obj.code,
+                        'name': location_obj.name,
+                        'type': location_obj.type,
+                        'site_id': location_obj.site_id if location_obj.site_id else None
+                    }
         
         return render_template(
             'purchases/receipts/form.html',
             receipt=None,
             purchase_order=po,
             locations=locations,
+            sites=sites,
+            default_location=default_location,
+            stock_mode=stock_mode,
             locale=locale,
             direction=direction
         )
@@ -1168,6 +1204,151 @@ def validate_purchase_receipt(receipt_id: int):
         
         flash(_('Purchase receipt validated. Stock has been updated.'), 'success')
         return redirect(url_for('purchases_frontend.view_purchase_receipt', receipt_id=receipt_id))
+    except Exception as e:
+        flash(_('An error occurred: %(error)s', error=str(e)), 'error')
+        return redirect(url_for('purchases_frontend.view_purchase_receipt', receipt_id=receipt_id))
+
+
+@purchases_routes.route('/purchase-receipts/<int:receipt_id>/create-invoice', methods=['GET', 'POST'])
+@require_roles_or_redirect('admin', 'accountant', 'direction')
+def create_invoice_from_receipt(receipt_id: int):
+    """
+    Create a supplier invoice from a validated purchase receipt.
+    This is a best practice in ERP systems: convert PO to invoice after goods are received.
+    """
+    try:
+        current_user = get_current_user()
+        if not current_user:
+            flash(_('Authentication required'), 'error')
+            return redirect(url_for('purchases_frontend.list_purchase_receipts'))
+        
+        # Get receipt
+        receipt_dto = mediator.dispatch(GetPurchaseReceiptByIdQuery(id=receipt_id))
+        if not receipt_dto:
+            flash(_('Purchase receipt not found'), 'error')
+            return redirect(url_for('purchases_frontend.list_purchase_receipts'))
+        
+        # Check if receipt is validated
+        if receipt_dto.status != 'validated':
+            flash(_('Can only create invoice from validated receipts'), 'error')
+            return redirect(url_for('purchases_frontend.view_purchase_receipt', receipt_id=receipt_id))
+        
+        # Get purchase order
+        po = mediator.dispatch(GetPurchaseOrderByIdQuery(id=receipt_dto.purchase_order_id))
+        if not po:
+            flash(_('Purchase order not found'), 'error')
+            return redirect(url_for('purchases_frontend.view_purchase_receipt', receipt_id=receipt_id))
+        
+        if request.method == 'POST':
+            from app.application.purchases.invoices.commands.commands import (
+                CreateSupplierInvoiceCommand, MatchSupplierInvoiceCommand
+            )
+            
+            # Get invoice number from form (required)
+            invoice_number = request.form.get('number', '').strip()
+            if not invoice_number:
+                flash(_('Invoice number is required'), 'error')
+                return redirect(url_for('purchases_frontend.create_invoice_from_receipt', receipt_id=receipt_id))
+            
+            # Calculate invoice amounts based on received quantities
+            # We need to load PO lines with receipt lines to calculate correctly
+            from app.infrastructure.db import get_session
+            from app.domain.models.purchase import PurchaseOrderLine, PurchaseReceiptLine
+            
+            with get_session() as session:
+                # Load receipt with lines
+                from app.domain.models.purchase import PurchaseReceipt
+                receipt = session.get(PurchaseReceipt, receipt_id)
+                if not receipt:
+                    flash(_('Purchase receipt not found'), 'error')
+                    return redirect(url_for('purchases_frontend.list_purchase_receipts'))
+                
+                # Calculate totals based on received quantities
+                subtotal_ht = Decimal(0)
+                total_tax = Decimal(0)
+                total_ttc = Decimal(0)
+                
+                for receipt_line in receipt.lines:
+                    po_line = session.get(PurchaseOrderLine, receipt_line.purchase_order_line_id)
+                    if po_line:
+                        # Calculate line total based on received quantity (not ordered)
+                        line_subtotal = receipt_line.quantity_received * po_line.unit_price
+                        discount_amount = line_subtotal * (po_line.discount_percent / Decimal(100))
+                        line_total_ht = line_subtotal - discount_amount
+                        line_tax = line_total_ht * (po_line.tax_rate / Decimal(100))
+                        line_total_ttc = line_total_ht + line_tax
+                        
+                        subtotal_ht += line_total_ht
+                        total_tax += line_tax
+                        total_ttc += line_total_ttc
+                
+                # Get invoice date (default to receipt date or today)
+                invoice_date_str = request.form.get('invoice_date')
+                invoice_date = None
+                if invoice_date_str:
+                    try:
+                        invoice_date = datetime.strptime(invoice_date_str, '%Y-%m-%d').date()
+                    except ValueError:
+                        pass
+                
+                if not invoice_date:
+                    invoice_date = receipt.receipt_date if receipt.receipt_date else date.today()
+                
+                # Get due date (optional, can be calculated from invoice date + payment terms)
+                due_date_str = request.form.get('due_date')
+                due_date = None
+                if due_date_str:
+                    try:
+                        due_date = datetime.strptime(due_date_str, '%Y-%m-%d').date()
+                    except ValueError:
+                        pass
+                
+                # Create supplier invoice
+                create_command = CreateSupplierInvoiceCommand(
+                    number=invoice_number,
+                    supplier_id=po.supplier_id,
+                    invoice_date=invoice_date,
+                    subtotal_ht=subtotal_ht,
+                    tax_amount=total_tax,
+                    total_ttc=total_ttc,
+                    created_by=current_user.id,
+                    due_date=due_date,
+                    received_date=receipt.receipt_date if receipt.receipt_date else date.today(),
+                    notes=f"Invoice created from receipt {receipt.number} for PO {po.number}",
+                    internal_notes=f"Auto-generated from receipt {receipt.number}"
+                )
+                
+                invoice_id = mediator.dispatch(create_command)
+                
+                if not invoice_id:
+                    flash(_('Failed to create supplier invoice. Please try again.'), 'error')
+                    return redirect(url_for('purchases_frontend.view_purchase_receipt', receipt_id=receipt_id))
+                
+                # Automatically match invoice with PO and receipt (3-way matching)
+                match_command = MatchSupplierInvoiceCommand(
+                    supplier_invoice_id=invoice_id,
+                    purchase_order_id=po.id,
+                    purchase_receipt_id=receipt_id,
+                    matched_by=current_user.id
+                )
+                
+                match_result = mediator.dispatch(match_command)
+                
+                flash(_('Supplier invoice created and matched successfully with PO and receipt'), 'success')
+                return redirect(url_for('purchases_frontend.view_supplier_invoice', invoice_id=invoice_id))
+        
+        # GET - show form with pre-filled data
+        # Pre-fill invoice number suggestion (can be edited)
+        suggested_invoice_number = f"INV-{receipt_dto.receipt_date.strftime('%Y%m%d') if receipt_dto.receipt_date else date.today().strftime('%Y%m%d')}-{receipt_dto.number.split('-')[-1] if '-' in receipt_dto.number else receipt_dto.id}"
+        
+        return render_template(
+            'purchases/receipts/create_invoice.html',
+            receipt=receipt_dto,
+            purchase_order=po,
+            suggested_invoice_number=suggested_invoice_number,
+            locale=get_locale(),
+            direction='rtl' if get_locale() == 'ar' else 'ltr'
+        )
     except Exception as e:
         flash(_('An error occurred: %(error)s', error=str(e)), 'error')
         return redirect(url_for('purchases_frontend.view_purchase_receipt', receipt_id=receipt_id))

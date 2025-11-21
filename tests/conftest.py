@@ -13,7 +13,8 @@ from app.domain.models.supplier import Supplier, SupplierConditions
 from app.domain.models.purchase import PurchaseOrder
 from app.domain.models.quote import Quote  # Import Quote to ensure table is created
 from app.domain.models.order import Order  # Import Order to ensure table is created
-from app.domain.models.stock import StockItem, Location  # Import Stock models to ensure tables are created
+from app.domain.models.stock import StockItem, Location, Site  # Import Stock models to ensure tables are created
+from app.domain.models.settings import AppSettings, CompanySettings  # Import Settings models to ensure tables are created
 from app.domain.models.invoice import Invoice, InvoiceLine  # Import Invoice models to ensure tables are created
 from app.domain.models.payment import Payment, PaymentAllocation, PaymentReminder  # Import Payment models to ensure tables are created
 

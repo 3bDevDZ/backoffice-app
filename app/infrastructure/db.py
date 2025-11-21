@@ -19,12 +19,46 @@ _domain_events_listener_registered = False
 def _dispatch_domain_events(session):
     """Dispatch domain events after transaction commit."""
     # Collect domain events from all tracked aggregates
+    # Access events while objects are still bound to the session
     domain_events = []
-    for obj in session.identity_map.values():
-        if hasattr(obj, 'get_domain_events'):
-            events = obj.get_domain_events()
-            domain_events.extend(events)
-            obj.clear_domain_events()
+    # Make a copy of identity_map values to avoid iteration issues
+    # and to ensure we access objects while they're still bound
+    try:
+        # Check if session is still active
+        if not session.is_active:
+            return
+        
+        # Get all tracked objects before accessing their attributes
+        # This ensures we're working with objects that are still bound
+        tracked_objects = []
+        try:
+            tracked_objects = list(session.identity_map.values())
+        except (RuntimeError, AttributeError):
+            # Session might be closed, skip event dispatch
+            return
+        
+        for obj in tracked_objects:
+            # Only process objects that are AggregateRoot (have domain events)
+            # Check for _domain_events attribute which is specific to AggregateRoot
+            # Location doesn't inherit from AggregateRoot, so it won't have _domain_events
+            if not hasattr(obj, '_domain_events'):
+                continue
+                
+            if hasattr(obj, 'get_domain_events'):
+                try:
+                    events = obj.get_domain_events()
+                    if events:
+                        domain_events.extend(events)
+                        obj.clear_domain_events()
+                except (AttributeError, RuntimeError) as e:
+                    # If object is detached or error occurs, skip it
+                    # This can happen if the object was expunged before commit
+                    import logging
+                    logging.debug(f"Skipping domain events for {type(obj).__name__}: {e}")
+                    pass
+    except (RuntimeError, AttributeError):
+        # Session might be closed or object detached, skip event dispatch
+        pass
     
     # Dispatch all events (only if we have events to avoid unnecessary processing)
     if domain_events:
@@ -57,8 +91,12 @@ def get_session() -> Iterator[Session]:
         yield session
         session.commit()
         # Domain events are dispatched via the after_commit event listener
+        # The listener runs while the session is still open, so objects are still bound
+        # After commit, objects remain in the session until it's closed
     except Exception:
         session.rollback()
         raise
     finally:
+        # Close session after events are dispatched
+        # Objects will be detached when session closes
         session.close()

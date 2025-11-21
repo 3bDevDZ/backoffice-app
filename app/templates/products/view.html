@@ -242,7 +242,7 @@
                                 {% set change = entry.new_price - entry.old_price %}
                                 {% set change_percent = (change / entry.old_price * 100) if entry.old_price > 0 else 0 %}
                                 <span class="{% if change > 0 %}text-red-600{% elif change < 0 %}text-green-600{% else %}text-gray-500{% endif %}">
-                                    {% if change > 0 %}+{% endif %}{{ "%.2f"|format(change) }} €
+                                    {% if change > 0 %}+{% endif %}{{ change|currency }}
                                     ({% if change_percent > 0 %}+{% endif %}{{ "%.1f"|format(change_percent) }}%)
                                 </span>
                                 {% else %}
@@ -313,7 +313,7 @@
                                 {% set change = entry.new_cost - entry.old_cost %}
                                 {% set change_percent = (change / entry.old_cost * 100) if entry.old_cost > 0 else 0 %}
                                 <span class="{% if change > 0 %}text-red-600{% elif change < 0 %}text-green-600{% else %}text-gray-500{% endif %}">
-                                    {% if change > 0 %}+{% endif %}{{ "%.2f"|format(change) }} €
+                                    {% if change > 0 %}+{% endif %}{{ change|currency }}
                                     ({% if change_percent > 0 %}+{% endif %}{{ "%.1f"|format(change_percent) }}%)
                                 </span>
                                 {% else %}

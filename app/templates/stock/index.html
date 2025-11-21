@@ -31,8 +31,22 @@
     </div>
 </div>
 
-<!-- Action Buttons -->
-<div class="mb-6 flex {% if direction == 'rtl' %}justify-start{% else %}justify-end{% endif %} {% if direction == 'rtl' %}space-x-reverse space-x-3{% else %}space-x-3{% endif %}">
+<!-- View Mode Toggle & Action Buttons -->
+<div class="mb-6 flex {% if direction == 'rtl' %}justify-start{% else %}justify-end{% endif %} items-center {% if direction == 'rtl' %}space-x-reverse space-x-4{% else %}space-x-4{% endif %}">
+    <!-- View Mode Toggle -->
+    <div class="flex items-center bg-gray-100 rounded-lg p-1 {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+        <a href="{{ url_for('stock.index', view_mode='standard', search=search, location_id=location_id, site_id=site_id, min_quantity=min_quantity, include_zero=include_zero if include_zero else None, page=1) }}" 
+           class="px-4 py-2 rounded-md text-sm font-medium transition {% if view_mode == 'standard' %}bg-white text-indigo-600 shadow-sm{% else %}text-gray-600 hover:text-gray-900{% endif %}">
+            <i class="fas fa-map-marker-alt {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+            {{ _('By Location') }}
+        </a>
+        <a href="{{ url_for('stock.index', view_mode='global', search=search, location_id=location_id, site_id=site_id, min_quantity=min_quantity, include_zero=include_zero if include_zero else None, page=1) }}" 
+           class="px-4 py-2 rounded-md text-sm font-medium transition {% if view_mode == 'global' %}bg-white text-indigo-600 shadow-sm{% else %}text-gray-600 hover:text-gray-900{% endif %}">
+            <i class="fas fa-globe {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+            {{ _('Multi-Site') }}
+        </a>
+    </div>
+    
     <a href="{{ url_for('stock.alerts') }}" class="btn-primary" style="background: var(--color-warning); box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.3);" onmouseover="this.style.background='#D97706'; this.style.boxShadow='0 10px 15px -3px rgba(245, 158, 11, 0.4)'" onmouseout="this.style.background='var(--color-warning)'; this.style.boxShadow='0 4px 6px -1px rgba(245, 158, 11, 0.3)'">
         <i class="fas fa-exclamation-triangle"></i>
         <span>{{ _('View Alerts') }}</span>
@@ -51,13 +65,25 @@
 
 <!-- Filters & Search -->
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
-    <form method="GET" action="{{ url_for('stock.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <form method="GET" action="{{ url_for('stock.index') }}" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <input type="hidden" name="view_mode" value="{{ view_mode }}">
         <div>
             <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ _('Search') }}</label>
             <input type="text" name="search" value="{{ search or '' }}" 
                    placeholder="{{ _('Product code or name') }}"
                    class="modern-input w-full">
         </div>
+        {% if view_mode == 'global' %}
+        <div>
+            <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ _('Site') }}</label>
+            <select name="site_id" class="modern-select w-full">
+                <option value="">{{ _('All Sites') }}</option>
+                {% for site in sites %}
+                <option value="{{ site.id }}" {% if site_id == site.id %}selected{% endif %}>{{ site.name }} ({{ site.code }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% else %}
         <div>
             <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ _('Location') }}</label>
             <select name="location_id" class="modern-select w-full">
@@ -67,12 +93,17 @@
                 {% endfor %}
             </select>
         </div>
+        {% endif %}
+        {% if view_mode == 'standard' %}
         <div>
             <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ _('Minimum Quantity') }}</label>
             <input type="number" name="min_quantity" value="{{ min_quantity or '' }}" step="0.01"
                    placeholder="{{ _('Min quantity') }}"
                    class="modern-input w-full">
         </div>
+        {% else %}
+        <div></div>
+        {% endif %}
         <div class="flex items-end">
             <label class="flex items-center">
                 <input type="checkbox" name="include_zero" value="true" {% if include_zero %}checked{% endif %}
@@ -80,8 +111,8 @@
                 <span class="{% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} text-sm text-gray-700">{{ _('Include Zero Stock') }}</span>
             </label>
         </div>
-        <div class="md:col-span-4 flex {% if direction == 'rtl' %}justify-start{% else %}justify-end{% endif %} {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
-            <a href="{{ url_for('stock.index') }}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+        <div class="md:col-span-5 flex {% if direction == 'rtl' %}justify-start{% else %}justify-end{% endif %} {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+            <a href="{{ url_for('stock.index', view_mode=view_mode) }}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
                 {{ _('Reset') }}
             </a>
             <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
@@ -100,9 +131,15 @@
                     <th class="px-6 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
                         {{ _('Product') }}
                     </th>
+                    {% if is_global_view %}
+                    <th class="px-6 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {{ _('Sites') }}
+                    </th>
+                    {% else %}
                     <th class="px-6 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
                         {{ _('Location') }}
                     </th>
+                    {% endif %}
                     <th class="px-6 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
                         {{ _('Physical') }}
                     </th>
@@ -112,12 +149,14 @@
                     <th class="px-6 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
                         {{ _('Available') }}
                     </th>
+                    {% if not is_global_view %}
                     <th class="px-6 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
                         {{ _('Min Stock') }}
                     </th>
                     <th class="px-6 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
                         {{ _('Status') }}
                     </th>
+                    {% endif %}
                     <th class="px-6 py-3 {% if direction == 'rtl' %}text-right{% else %}text-left{% endif %} text-xs font-medium text-gray-500 uppercase tracking-wider">
                         {{ _('Actions') }}
                     </th>
@@ -126,6 +165,55 @@
             <tbody class="bg-white divide-y divide-gray-200">
                 {% if stock_items %}
                     {% for item in stock_items %}
+                    {% if is_global_view %}
+                    <!-- Global View: Show consolidated stock with site breakdown -->
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ item.product_name or item.product_code or 'N/A' }}</div>
+                            <div class="text-sm text-gray-500">{{ item.product_code }}</div>
+                            {% if item.variant_id %}
+                            <div class="text-xs text-indigo-600 mt-1">
+                                <i class="fas fa-tag {% if direction == 'rtl' %}ml-1{% else %}mr-1{% endif %}"></i>
+                                {{ item.variant_code }} - {{ item.variant_name }}
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if item.by_site %}
+                                <div class="space-y-1">
+                                    {% for site_stock in item.by_site %}
+                                    <div class="text-xs">
+                                        <span class="font-medium text-gray-900">{{ site_stock.site_name or site_stock.site_code or 'N/A' }}</span>
+                                        <span class="text-gray-500 {% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %}">
+                                            ({{ "%.2f"|format(site_stock.physical_quantity) }} / {{ "%.2f"|format(site_stock.available_quantity) }})
+                                        </span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <span class="text-sm text-gray-500">{{ _('No stock') }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {{ "%.2f"|format(item.total_physical_quantity) }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ "%.2f"|format(item.total_reserved_quantity) }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="text-sm font-medium {% if item.total_available_quantity <= 0 %}text-red-600{% else %}text-green-600{% endif %}">
+                                {{ "%.2f"|format(item.total_available_quantity) }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <a href="{{ url_for('stock.movements', product_id=item.product_id) }}" 
+                               class="text-indigo-600 hover:text-indigo-900">
+                                {{ _('View Movements') }}
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <!-- Standard View: Show stock by location -->
                     <tr>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm font-medium text-gray-900">{{ item.product_name or item.product_code or 'N/A' }}</div>
@@ -181,10 +269,11 @@
                             </a>
                         </td>
                     </tr>
+                    {% endif %}
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">
+                        <td colspan="{% if is_global_view %}6{% else %}8{% endif %}" class="px-6 py-4 text-center text-sm text-gray-500">
                             {{ _('No stock items found') }}
                         </td>
                     </tr>

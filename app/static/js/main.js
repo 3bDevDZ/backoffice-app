@@ -378,14 +378,23 @@ function updateStockAlertsCount(data) {
 }
 
 /**
- * Format currency value
+ * Format currency value using configured currency
  * @param {number} value - Currency value
  * @returns {string} Formatted currency string
  */
 function formatCurrency(value) {
-    return new Intl.NumberFormat('fr-FR', {
+    const currency = window.appConfig?.currency || 'EUR';
+    const locale = window.appConfig?.locale || 'fr-FR';
+    const localeMap = {
+        'en': 'en-US',
+        'fr': 'fr-FR',
+        'ar': 'ar-DZ'
+    };
+    const intlLocale = localeMap[locale] || locale;
+    
+    return new Intl.NumberFormat(intlLocale, {
         style: 'currency',
-        currency: 'EUR'
+        currency: currency
     }).format(value);
 }
 

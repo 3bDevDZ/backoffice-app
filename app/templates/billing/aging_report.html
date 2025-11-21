@@ -41,7 +41,7 @@
                         {{ report.customer_name or report.customer_code or ('Customer #' + report.customer_id|string) }}
                     </h3>
                     <p class="text-sm text-gray-500">{{ _('Total Outstanding') }}: 
-                        <span class="font-bold text-gray-900">{{ "%.2f"|format(report.total_outstanding) }} €</span>
+                        <span class="font-bold text-gray-900">{{ report.total_outstanding|currency }}</span>
                     </p>
                 </div>
             </div>
@@ -53,7 +53,7 @@
                 <div class="p-4 bg-gray-50 rounded-lg">
                     <div class="text-xs text-gray-500 mb-1">{{ bucket.bucket_name }} {{ _('days') }}</div>
                     <div class="text-lg font-bold {% if bucket.bucket_name == '90+' %}text-red-600{% elif bucket.bucket_name == '61-90' %}text-orange-600{% else %}text-gray-900{% endif %}">
-                        {{ "%.2f"|format(bucket.total_amount) }} €
+                        {{ bucket.total_amount|currency }}
                     </div>
                     <div class="text-xs text-gray-500 mt-1">{{ bucket.invoice_count }} {{ _('invoices') }}</div>
                 </div>
@@ -86,7 +86,7 @@
                                 {{ invoice.due_date.strftime('%d/%m/%Y') }}
                             </td>
                             <td class="px-4 py-3 text-sm font-medium text-gray-900 text-right">
-                                {{ "%.2f"|format(invoice.remaining_amount) }} €
+                                {{ invoice.remaining_amount|currency }}
                             </td>
                             <td class="px-4 py-3 text-sm">
                                 <span class="px-2 py-1 text-xs rounded-full {% if invoice.days_overdue > 60 %}bg-red-100 text-red-800{% elif invoice.days_overdue > 30 %}bg-orange-100 text-orange-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">

@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Site') }} {{ site.code }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Site') }} {{ site.code }}{% endblock %}
+{% block page_subtitle %}{{ site.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <!-- Site Header -->
+    <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="text-lg font-bold" style="color: var(--color-text-primary);">{{ _('Site Information') }}</h3>
+                <p class="text-sm text-gray-600">{{ _('Status') }}: 
+                    {% if site.status == 'active' %}
+                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">{{ _('Active') }}</span>
+                    {% elif site.status == 'inactive' %}
+                    <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-medium rounded-full">{{ _('Inactive') }}</span>
+                    {% elif site.status == 'archived' %}
+                    <span class="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">{{ _('Archived') }}</span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="flex items-center {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+                {% if site.status == 'active' %}
+                <form method="POST" action="{{ url_for('stock.deactivate_site', site_id=site.id) }}" class="inline" onsubmit="return confirm('{{ _('Are you sure you want to deactivate this site?') }}');">
+                    <button type="submit" class="btn-secondary inline-flex items-center">
+                        <i class="fas fa-ban {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                        {{ _('Deactivate') }}
+                    </button>
+                </form>
+                {% endif %}
+                <a href="{{ url_for('stock.edit_site', site_id=site.id) }}" class="btn-secondary inline-flex items-center">
+                    <i class="fas fa-edit {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                    {{ _('Edit') }}
+                </a>
+                <a href="{{ url_for('stock.list_sites') }}" class="btn-secondary inline-flex items-center">
+                    <i class="fas fa-arrow-{% if direction == 'rtl' %}right{% else %}left{% endif %} {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                    {{ _('Back to List') }}
+                </a>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div>
+                <label class="text-sm font-medium text-gray-600">{{ _('Site Code') }}</label>
+                <p class="text-gray-900">{{ site.code }}</p>
+            </div>
+            <div>
+                <label class="text-sm font-medium text-gray-600">{{ _('Site Name') }}</label>
+                <p class="text-gray-900">{{ site.name }}</p>
+            </div>
+            {% if site.manager_name %}
+            <div>
+                <label class="text-sm font-medium text-gray-600">{{ _('Manager') }}</label>
+                <p class="text-gray-900">{{ site.manager_name }}</p>
+            </div>
+            {% endif %}
+            {% if site.address %}
+            <div class="col-span-2 md:col-span-3">
+                <label class="text-sm font-medium text-gray-600">{{ _('Address') }}</label>
+                <p class="text-gray-900">{{ site.address }}</p>
+            </div>
+            {% endif %}
+            {% if site.created_at %}
+            <div>
+                <label class="text-sm font-medium text-gray-600">{{ _('Created At') }}</label>
+                <p class="text-gray-900">{{ site.created_at.strftime('%Y-%m-%d %H:%M') if site.created_at else '-' }}</p>
+            </div>
+            {% endif %}
+            {% if site.updated_at %}
+            <div>
+                <label class="text-sm font-medium text-gray-600">{{ _('Updated At') }}</label>
+                <p class="text-gray-900">{{ site.updated_at.strftime('%Y-%m-%d %H:%M') if site.updated_at else '-' }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Site Stock -->
+    <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+        <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Stock at this Site') }}</h3>
+        <div class="overflow-x-auto">
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Product') }}</th>
+                        <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Location') }}</th>
+                        <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Physical Quantity') }}</th>
+                        <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Reserved') }}</th>
+                        <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Available') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if stock_items and stock_items|length > 0 %}
+                        {% for item in stock_items %}
+                        <tr>
+                            <td>
+                                <div class="text-sm font-medium text-gray-900">{{ item.product_name or '-' }}</div>
+                                {% if item.product_code %}
+                                <div class="text-xs text-gray-500">{{ item.product_code }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="text-sm text-gray-600">
+                                {{ item.location_name or '-' }}
+                                {% if item.location_code %}
+                                <span class="text-xs text-gray-500">({{ item.location_code }})</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-sm text-gray-900">{{ "%.2f"|format(item.physical_quantity|to_float) }}</td>
+                            <td class="text-sm text-gray-600">{{ "%.2f"|format(item.reserved_quantity|to_float) }}</td>
+                            <td class="text-sm font-medium {% if item.available_quantity|to_float > 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                {{ "%.2f"|format(item.available_quantity|to_float) }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-gray-500 py-4">{{ _('No stock items found at this site.') }}</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

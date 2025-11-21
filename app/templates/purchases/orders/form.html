@@ -181,13 +181,13 @@
                                     <div class="col-span-2">
                                         <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Unit Price') }}</label>
                                         <div class="px-2 py-1 text-sm text-gray-900">
-                                            {{ "%.2f"|format(line.unit_price) }} €
+                                            {{ line.unit_price|currency }}
                                         </div>
                                     </div>
                                     <div class="col-span-2">
                                         <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Total HT') }}</label>
                                         <div class="px-2 py-1 text-sm font-medium text-gray-900 line-total-ht" data-line-total="{{ line.line_total_ht }}">
-                                            {{ "%.2f"|format(line.line_total_ht) }} €
+                                            {{ line.line_total_ht|currency }}
                                         </div>
                                     </div>
                                     <div class="col-span-2">
@@ -215,7 +215,7 @@
                                     <div class="col-span-1">
                                         <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Total HT') }}</label>
                                         <div class="line-total-ht px-2 py-1 text-sm font-medium text-gray-900">
-                                            {{ "%.2f"|format(line.line_total_ht) }} €
+                                            {{ line.line_total_ht|currency }}
                                         </div>
                                     </div>
                                     <div class="col-span-1">
@@ -969,7 +969,7 @@ function addLine() {
                 </div>
                 <div class="col-span-1">
                     <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Total HT') }}</label>
-                    <div class="line-total-ht px-2 py-1 text-sm font-medium text-gray-900">0.00 €</div>
+                    <div class="line-total-ht px-2 py-1 text-sm font-medium text-gray-900">{{ 0|currency }}</div>
                 </div>
                 <div class="col-span-1">
                     <button type="button" onclick="removeLine(this)" class="mt-5 text-red-600 hover:text-red-900">
@@ -1061,7 +1061,7 @@ function calculateLineTotal(input) {
     const discountAmount = subtotal * (discount / 100);
     const totalHT = subtotal - discountAmount;
     
-    lineItem.querySelector('.line-total-ht').textContent = totalHT.toFixed(2) + ' €';
+    lineItem.querySelector('.line-total-ht').textContent = formatCurrencyValue(totalHT);
     
     calculateTotals();
 }
@@ -1083,7 +1083,8 @@ function calculateTotals() {
             } else {
                 // Otherwise parse from text content
                 const totalHTText = lineTotalHTElement.textContent;
-                totalHT = parseFloat(totalHTText.replace(' €', '').replace(',', '.').trim()) || 0;
+                // Remove currency formatting to extract numeric value
+                totalHT = parseFloat(totalHTText.replace(/[^\d.,-]/g, '').replace(',', '.').trim()) || 0;
             }
         }
         
@@ -1094,9 +1095,9 @@ function calculateTotals() {
     
     const totalTTC = subtotalHT + totalTax;
     
-    document.getElementById('subtotal-ht').textContent = subtotalHT.toFixed(2) + ' €';
-    document.getElementById('total-tax').textContent = totalTax.toFixed(2) + ' €';
-    document.getElementById('total-ttc').textContent = totalTTC.toFixed(2) + ' €';
+    document.getElementById('subtotal-ht').textContent = formatCurrencyValue(subtotalHT);
+    document.getElementById('total-tax').textContent = formatCurrencyValue(totalTax);
+    document.getElementById('total-ttc').textContent = formatCurrencyValue(totalTTC);
 }
 
 // Initialize totals on page load
@@ -1404,7 +1405,7 @@ async function createLocation() {
     }
     
     try {
-        const response = await fetch('/stock/data/locations', {
+        const response = await fetch('/data/locations', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1574,7 +1575,7 @@ function renderProductsList() {
         
         const stockIcon = item.stock > 0 ? '📦' : '📦';
         const stockText = `${item.stock} ${item.stock === 1 ? '{{ _("unit") }}' : '{{ _("units") }}'}`;
-        const priceText = item.price ? `${item.price.toFixed(2)} €` : '{{ _("N/A") }}';
+        const priceText = item.price ? formatCurrencyValue(item.price) : '{{ _("N/A") }}';
         const variantText = item.has_variants 
             ? `{{ _("Variants") }}: ${item.variant_attrs.join(', ')}` 
             : '{{ _("No variants") }}';
@@ -1612,7 +1613,7 @@ function renderProductsList() {
                 
                 const variantStockIcon = variant.stock > 0 ? '📦' : '📦';
                 const variantStockText = `${variant.stock} ${variant.stock === 1 ? '{{ _("unit") }}' : '{{ _("units") }}'}`;
-                const variantPriceText = variant.price ? `${variant.price.toFixed(2)} €` : priceText;
+                const variantPriceText = variant.price ? formatCurrencyValue(variant.price) : priceText;
                 
                 variantRow.innerHTML = `
                     <div class="flex items-center justify-between p-3">

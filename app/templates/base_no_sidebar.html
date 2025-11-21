@@ -26,7 +26,24 @@
                 </a>
             </div>
             <div class="flex items-center {% if direction == 'rtl' %}space-x-reverse space-x-4{% else %}space-x-4{% endif %}">
+                <!-- Language Switcher -->
+                <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-1{% else %}space-x-1{% endif %}">
+                    <button onclick="window.i18n.switchLanguage('en')" 
+                            class="px-2 py-1 text-xs {% if locale == 'en' %}bg-indigo-700{% else %}hover:bg-indigo-800{% endif %} rounded text-white"
+                            data-locale="en">EN</button>
+                    <button onclick="window.i18n.switchLanguage('fr')" 
+                            class="px-2 py-1 text-xs {% if locale == 'fr' %}bg-indigo-700{% else %}hover:bg-indigo-800{% endif %} rounded text-white"
+                            data-locale="fr">FR</button>
+                    <button onclick="window.i18n.switchLanguage('ar')" 
+                            class="px-2 py-1 text-xs {% if locale == 'ar' %}bg-indigo-700{% else %}hover:bg-indigo-800{% endif %} rounded text-white"
+                            data-locale="ar">AR</button>
+                </div>
                 {% if g.user %}
+                {% if g.user.role == 'admin' or g.user.role == 'direction' %}
+                <a href="{{ url_for('settings.index') }}" class="text-indigo-300 hover:text-white transition-colors {% if direction == 'rtl' %}ml-4{% else %}mr-4{% endif %}" title="{{ _('Settings') }}">
+                    <i class="fas fa-cog text-xl"></i>
+                </a>
+                {% endif %}
                 <div class="flex items-center {% if direction == 'rtl' %}space-x-reverse space-x-3{% else %}space-x-3{% endif %}">
                     <div class="text-right {% if direction == 'rtl' %}text-left{% endif %}">
                         <div class="text-sm font-medium text-white">{{ g.user.username }}</div>
@@ -78,6 +95,12 @@
         </div>
     </main>
 
+    <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
+    <script>
+        // Set current locale for i18n.js
+        window.__LOCALE__ = '{{ locale }}';
+        window.__DIRECTION__ = '{{ direction }}';
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

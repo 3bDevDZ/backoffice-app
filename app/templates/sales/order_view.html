@@ -91,7 +91,7 @@
             <dl class="space-y-2">
                 <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %}">
                     <dt class="text-sm" style="color: var(--color-text-secondary);">{{ _('Subtotal HT') }}:</dt>
-                    <dd class="text-sm font-medium" style="color: var(--color-text-primary);">{{ "%.2f"|format(order.subtotal) }} €</dd>
+                    <dd class="text-sm font-medium" style="color: var(--color-text-primary);">{{ order.subtotal|currency }}</dd>
                 </div>
                 {% if order.discount_amount > 0 %}
                 <div class="flex {% if direction == 'rtl' %}justify-between{% else %}justify-between{% endif %}">

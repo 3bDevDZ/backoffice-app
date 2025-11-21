@@ -96,7 +96,7 @@
                                 {{ promo.product_code }} - {{ promo.product_name }}
                             </a>
                         </td>
-                        <td class="font-semibold">{{ "%.2f"|format(promo.price) }} €</td>
+                        <td class="font-semibold">{{ promo.price|currency }}</td>
                         <td>{{ promo.start_date.strftime('%Y-%m-%d %H:%M') if promo.start_date else '-' }}</td>
                         <td>{{ promo.end_date.strftime('%Y-%m-%d %H:%M') if promo.end_date else '-' }}</td>
                         <td>

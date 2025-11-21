@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Stock Transfer') }} {{ transfer.number }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Stock Transfer') }} {{ transfer.number }}{% endblock %}
+{% block page_subtitle %}{{ _('View transfer details') }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <!-- Transfer Header -->
+    <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="text-lg font-bold" style="color: var(--color-text-primary);">{{ _('Transfer Information') }}</h3>
+                <p class="text-sm text-gray-600">{{ _('Status') }}: 
+                    {% if transfer.status == 'created' %}
+                    <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-medium rounded-full">{{ _('Created') }}</span>
+                    {% elif transfer.status == 'in_transit' %}
+                    <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">{{ _('In Transit') }}</span>
+                    {% elif transfer.status == 'received' %}
+                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">{{ _('Received') }}</span>
+                    {% elif transfer.status == 'cancelled' %}
+                    <span class="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">{{ _('Cancelled') }}</span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="flex items-center {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+                {% if transfer.status == 'created' %}
+                <form method="POST" action="{{ url_for('stock.ship_transfer', transfer_id=transfer.id) }}" class="inline" onsubmit="return confirm('{{ _('Are you sure you want to ship this transfer?') }}');">
+                    <button type="submit" class="btn-primary inline-flex items-center">
+                        <i class="fas fa-shipping-fast {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                        {{ _('Ship Transfer') }}
+                    </button>
+                </form>
+                {% elif transfer.status == 'in_transit' %}
+                <form method="POST" action="{{ url_for('stock.receive_transfer', transfer_id=transfer.id) }}" class="inline" onsubmit="return confirm('{{ _('Are you sure you want to receive this transfer?') }}');">
+                    <button type="submit" class="btn-primary inline-flex items-center">
+                        <i class="fas fa-check-circle {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                        {{ _('Receive Transfer') }}
+                    </button>
+                </form>
+                {% endif %}
+                {% if transfer.status not in ['received', 'cancelled'] %}
+                <form method="POST" action="{{ url_for('stock.cancel_transfer', transfer_id=transfer.id) }}" class="inline" onsubmit="return confirm('{{ _('Are you sure you want to cancel this transfer?') }}');">
+                    <button type="submit" class="btn-secondary inline-flex items-center">
+                        <i class="fas fa-times {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                        {{ _('Cancel') }}
+                    </button>
+                </form>
+                {% endif %}
+                <a href="{{ url_for('stock.list_transfers') }}" class="btn-secondary inline-flex items-center">
+                    <i class="fas fa-arrow-{% if direction == 'rtl' %}right{% else %}left{% endif %} {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                    {{ _('Back to List') }}
+                </a>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div>
+                <label class="text-sm font-medium text-gray-600">{{ _('Source Site') }}</label>
+                <p class="text-gray-900">{{ transfer.source_site_name or '-' }}</p>
+                {% if transfer.source_site_code %}
+                <p class="text-xs text-gray-500">{{ transfer.source_site_code }}</p>
+                {% endif %}
+            </div>
+            <div>
+                <label class="text-sm font-medium text-gray-600">{{ _('Destination Site') }}</label>
+                <p class="text-gray-900">{{ transfer.destination_site_name or '-' }}</p>
+                {% if transfer.destination_site_code %}
+                <p class="text-xs text-gray-500">{{ transfer.destination_site_code }}</p>
+                {% endif %}
+            </div>
+            {% if transfer.requested_date %}
+            <div>
+                <label class="text-sm font-medium text-gray-600">{{ _('Requested Date') }}</label>
+                <p class="text-gray-900">{{ transfer.requested_date.strftime('%Y-%m-%d') if transfer.requested_date else '-' }}</p>
+            </div>
+            {% endif %}
+            {% if transfer.shipped_date %}
+            <div>
+                <label class="text-sm font-medium text-gray-600">{{ _('Shipped Date') }}</label>
+                <p class="text-gray-900">{{ transfer.shipped_date.strftime('%Y-%m-%d %H:%M') if transfer.shipped_date else '-' }}</p>
+                {% if transfer.shipped_by_name %}
+                <p class="text-xs text-gray-500">{{ _('By') }}: {{ transfer.shipped_by_name }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% if transfer.received_date %}
+            <div>
+                <label class="text-sm font-medium text-gray-600">{{ _('Received Date') }}</label>
+                <p class="text-gray-900">{{ transfer.received_date.strftime('%Y-%m-%d %H:%M') if transfer.received_date else '-' }}</p>
+                {% if transfer.received_by_name %}
+                <p class="text-xs text-gray-500">{{ _('By') }}: {{ transfer.received_by_name }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% if transfer.created_by_name %}
+            <div>
+                <label class="text-sm font-medium text-gray-600">{{ _('Created By') }}</label>
+                <p class="text-gray-900">{{ transfer.created_by_name }}</p>
+            </div>
+            {% endif %}
+            {% if transfer.notes %}
+            <div class="col-span-2 md:col-span-3">
+                <label class="text-sm font-medium text-gray-600">{{ _('Notes') }}</label>
+                <p class="text-gray-900">{{ transfer.notes }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Transfer Lines -->
+    <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+        <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Transfer Lines') }}</h3>
+        <div class="overflow-x-auto">
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Product') }}</th>
+                        <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Quantity') }}</th>
+                        <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Received') }}</th>
+                        <th class="text-{% if direction == 'rtl' %}right{% else %}left{% endif %}">{{ _('Notes') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if transfer.lines %}
+                        {% for line in transfer.lines %}
+                        <tr>
+                            <td>
+                                <div class="text-sm font-medium text-gray-900">{{ line.product_name or '-' }}</div>
+                                {% if line.product_code %}
+                                <div class="text-xs text-gray-500">{{ line.product_code }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="text-sm text-gray-600">{{ "%.2f"|format(line.quantity|to_float) }}</td>
+                            <td class="text-sm text-gray-600">
+                                <span class="{% if line.quantity_received|to_float == line.quantity|to_float %}text-green-600 font-medium{% elif line.quantity_received|to_float > 0 %}text-yellow-600 font-medium{% else %}text-gray-600{% endif %}">
+                                    {{ "%.2f"|format(line.quantity_received|to_float) }} / {{ "%.2f"|format(line.quantity|to_float) }}
+                                </span>
+                            </td>
+                            <td class="text-sm text-gray-600">{{ line.notes or '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-gray-500 py-4">{{ _('No lines') }}</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

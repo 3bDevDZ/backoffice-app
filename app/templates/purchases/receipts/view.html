@@ -30,6 +30,10 @@
                 <form method="POST" action="{{ url_for('purchases_frontend.validate_purchase_receipt', receipt_id=receipt.id) }}" class="inline">
                     <button type="submit" class="btn-primary">{{ _('Validate Receipt') }}</button>
                 </form>
+                {% elif receipt.status == 'validated' %}
+                <a href="{{ url_for('purchases_frontend.create_invoice_from_receipt', receipt_id=receipt.id) }}" class="btn-primary">
+                    <i class="fas fa-file-invoice-dollar"></i> {{ _('Create Invoice') }}
+                </a>
                 {% endif %}
                 <a href="{{ url_for('purchases_frontend.list_purchase_receipts') }}" class="btn-secondary">{{ _('Back to List') }}</a>
             </div>

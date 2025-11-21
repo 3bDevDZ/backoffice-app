@@ -229,7 +229,7 @@
 - [x] T262 [US9] Create PurchaseReceipt DTO in `app/application/purchases/receipts/queries/receipt_dto.py` for API responses
 - [x] T262.1 [US9] Create integration tests for purchase receipt handlers using in-memory database in `tests/integration/test_purchase_receipt_handlers.py`
 - [x] T262.2 [US9] Fix unit tests for domain events in customer and product handlers (use mock dispatcher to verify events are dispatched)
-- [ ] T263 [US9] Create PurchaseReceiptPDFService in `app/services/purchase_receipt_pdf_service.py` for generating receipt documents
+- [x] T263 [US9] Create PurchaseReceiptPDFService in `app/services/purchase_receipt_pdf_service.py` for generating receipt documents
 - [ ] T264 [US9] Create PurchaseRequest API endpoints (GET /api/purchase-requests, POST /api/purchase-requests, POST /api/purchase-requests/{id}/approve, POST /api/purchase-requests/{id}/convert) in `app/api/purchases.py`
 - [ ] T265 [US9] Create PurchaseReceipt API endpoints (GET /api/purchase-receipts, POST /api/purchase-receipts, POST /api/purchase-receipts/{id}/validate) in `app/api/purchases.py`
 - [ ] T266 [US9] Create SupplierInvoice API endpoints (GET /api/supplier-invoices, POST /api/supplier-invoices, POST /api/supplier-invoices/{id}/match) in `app/api/purchases.py`

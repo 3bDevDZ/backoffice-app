@@ -84,7 +84,7 @@
                         <td>{{ invoice.number }}</td>
                         <td>{{ invoice.supplier_name or '-' }}</td>
                         <td>{{ invoice.invoice_date.strftime('%Y-%m-%d') if invoice.invoice_date else '-' }}</td>
-                        <td>{{ "%.2f"|format(invoice.total_ttc|to_float) }} €</td>
+                        <td>{{ invoice.total_ttc|to_float|currency }}</td>
                         <td>
                             {% if invoice.status == 'pending' %}
                             <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">{{ _('Pending') }}</span>

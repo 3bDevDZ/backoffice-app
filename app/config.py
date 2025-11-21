@@ -44,3 +44,8 @@ class Config:
     MAIL_PASSWORD = os.getenv("BREVO_SMTP_KEY", "")
     MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER", "noreply@gmflow.com")
     APP_URL = os.getenv("APP_URL", "http://localhost:5000")
+    
+    # Stock Management Mode: 'simple' or 'advanced'
+    # 'simple': Single site/warehouse, simplified interface (for small businesses)
+    # 'advanced': Multi-site support, full features (for larger businesses)
+    STOCK_MANAGEMENT_MODE = os.getenv("STOCK_MANAGEMENT_MODE", "simple").lower()  # Default to simple

@@ -79,13 +79,13 @@
                                 {{ invoice.due_date.strftime('%d/%m/%Y') }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
-                                {{ "%.2f"|format(invoice.total) }} €
+                                {{ invoice.total|currency }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
-                                {{ "%.2f"|format(invoice.paid_amount) }} €
+                                {{ invoice.paid_amount|currency }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium {% if invoice.remaining_amount > 0 %}text-red-600{% else %}text-green-600{% endif %} text-right">
-                                {{ "%.2f"|format(invoice.remaining_amount) }} €
+                                {{ invoice.remaining_amount|currency }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-2 py-1 text-xs font-semibold rounded-full

@@ -70,19 +70,39 @@ class PurchaseReceiptValidatedDomainEventHandler(DomainEventHandler):
             for receipt_line in receipt.lines:
                 # Get or create stock item
                 location_id = receipt_line.location_id
+                site_id = None
+                location = None
+                
                 if not location_id:
                     # Use default location (first warehouse location)
-                    default_location = session.query(Location).filter(
+                    location = session.query(Location).filter(
                         Location.type == 'warehouse',
                         Location.is_active == True
                     ).first()
                     
-                    if not default_location:
+                    if not location:
                         # Log warning but continue with other lines
                         # In production, you'd want to log this properly
                         continue
                     
-                    location_id = default_location.id
+                    location_id = location.id
+                else:
+                    # Load location to determine site_id
+                    location = session.get(Location, location_id)
+                
+                # Get site_id from location (access within session context)
+                if location:
+                    # Access site_id while location is still in session
+                    site_id = location.site_id if location.site_id else None
+                    
+                    if not site_id:
+                        # If location has no site, try to get default site
+                        from app.domain.models.stock import Site
+                        default_site = session.query(Site).filter(
+                            Site.status == 'active'
+                        ).first()
+                        if default_site:
+                            site_id = default_site.id
                 
                 # Get or create stock item
                 stock_item = session.query(StockItem).filter(
@@ -97,10 +117,14 @@ class PurchaseReceiptValidatedDomainEventHandler(DomainEventHandler):
                         product_id=receipt_line.product_id,
                         location_id=location_id,
                         physical_quantity=Decimal(0),
-                        variant_id=None
+                        variant_id=None,
+                        site_id=site_id  # Set site_id if available
                     )
                     session.add(stock_item)
                     session.flush()  # Get stock_item.id
+                elif site_id and not stock_item.site_id:
+                    # Update existing stock item with site_id if not set
+                    stock_item.site_id = site_id
                 
                 # Create stock movement
                 # Use validated_by from receipt, or fallback to received_by if not set

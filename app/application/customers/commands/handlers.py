@@ -84,7 +84,8 @@ class UpdateCustomerHandler(CommandHandler):
             )
             
             # Update commercial conditions if provided
-            if (command.payment_terms_days is not None or 
+            if (command.price_list_id is not None or
+                command.payment_terms_days is not None or 
                 command.default_discount_percent is not None or 
                 command.credit_limit is not None or 
                 command.block_on_credit_exceeded is not None):
@@ -99,6 +100,14 @@ class UpdateCustomerHandler(CommandHandler):
                     commercial_conditions = customer.commercial_conditions
                 
                 # Update fields if provided
+                if command.price_list_id is not None:
+                    # Validate price_list_id if it's not None
+                    if command.price_list_id:
+                        from app.domain.models.product import PriceList
+                        price_list = session.get(PriceList, command.price_list_id)
+                        if not price_list:
+                            raise ValueError(f"Price list with ID {command.price_list_id} not found")
+                    commercial_conditions.price_list_id = command.price_list_id
                 if command.payment_terms_days is not None:
                     commercial_conditions.payment_terms_days = command.payment_terms_days
                 if command.default_discount_percent is not None:

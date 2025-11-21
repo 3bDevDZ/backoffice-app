@@ -1,0 +1,406 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('New Stock Transfer') }} - CommerceFlow{% endblock %}
+
+{% block extra_css %}
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<style>
+    .select2-container {
+        width: 100% !important;
+    }
+    .select2-container--default .select2-selection--single {
+        height: 38px;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 36px;
+        padding-left: 12px;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 36px;
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}{{ _('New Stock Transfer') }}{% endblock %}
+{% block page_subtitle %}{{ _('Create a new stock transfer between sites') }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <form id="transfer-form" method="POST" action="{{ url_for('stock.create_transfer') }}">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Column - Main Info -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Transfer Information -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Transfer Information') }}</h3>
+                    
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                    {{ _('Source Site') }} <span style="color: var(--color-error);">*</span>
+                                </label>
+                                <select id="source_site_id" name="source_site_id" required class="modern-input">
+                                    <option value="">{{ _('Select source site') }}</option>
+                                    {% for site in sites %}
+                                    <option value="{{ site.id }}">{{ site.name }} ({{ site.code }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                    {{ _('Destination Site') }} <span style="color: var(--color-error);">*</span>
+                                </label>
+                                <select id="destination_site_id" name="destination_site_id" required class="modern-input">
+                                    <option value="">{{ _('Select destination site') }}</option>
+                                    {% for site in sites %}
+                                    <option value="{{ site.id }}">{{ site.name }} ({{ site.code }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Requested Date') }}
+                            </label>
+                            <input type="date" 
+                                id="requested_date"
+                                name="requested_date"
+                                class="modern-input">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">
+                                {{ _('Notes') }}
+                            </label>
+                            <textarea 
+                                id="notes"
+                                name="notes"
+                                rows="3"
+                                class="modern-input"
+                                placeholder="{{ _('Transfer notes') }}"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transfer Lines -->
+                <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold" style="color: var(--color-text-primary);">{{ _('Transfer Lines') }}</h3>
+                        <button type="button" onclick="openProductPicker()" class="btn-secondary">
+                            <i class="fas fa-plus {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                            {{ _('Add Product') }}
+                        </button>
+                    </div>
+                    
+                    <div id="transfer-lines-container">
+                        <div id="no-lines-message" class="text-center text-gray-500 py-8">
+                            {{ _('No products added yet. Click "Add Product" to start.') }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Actions -->
+            <div class="space-y-6">
+                <!-- Quick Actions -->
+                <div style="background: var(--color-info-light); border: 1px solid var(--color-info); border-radius: var(--radius-xl); padding: var(--spacing-lg);">
+                    <h4 class="text-sm font-bold mb-3" style="color: var(--color-primary-dark);">{{ _('Quick Actions') }}</h4>
+                    <div class="space-y-2">
+                        <a href="{{ url_for('stock.list_transfers') }}" class="block w-full text-{% if direction == 'rtl' %}right{% else %}left{% endif %} px-3 py-2 text-sm rounded-lg transition" style="color: var(--color-primary);">
+                            <i class="fas fa-arrow-{% if direction == 'rtl' %}right{% else %}left{% endif %} {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                            {{ _('Back to List') }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="mt-6 flex {% if direction == 'rtl' %}justify-start{% else %}justify-end{% endif %} {% if direction == 'rtl' %}space-x-reverse space-x-3{% else %}space-x-3{% endif %}">
+            <a href="{{ url_for('stock.list_transfers') }}" class="btn-secondary">
+                {{ _('Cancel') }}
+            </a>
+            <button type="submit" class="btn-primary">
+                {{ _('Create Transfer') }}
+            </button>
+        </div>
+        
+        <input type="hidden" id="line_count" name="line_count" value="0">
+    </form>
+</div>
+
+<!-- Product Picker Modal -->
+<div id="product-picker-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+    <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-gray-900">{{ _('Select Product') }}</h3>
+            <button onclick="closeProductPicker()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="mb-4">
+            <input type="text" 
+                   id="product-picker-search"
+                   class="modern-input w-full"
+                   placeholder="{{ _('Search products...') }}"
+                   onkeyup="searchProductsPicker()">
+        </div>
+        
+        <div id="product-picker-list" class="max-h-96 overflow-y-auto">
+            <!-- Products will be loaded here -->
+        </div>
+        
+        <div id="product-picker-pagination" class="mt-4 flex items-center justify-between">
+            <!-- Pagination will be rendered here -->
+        </div>
+        
+        <div class="mt-6 flex {% if direction == 'rtl' %}justify-start space-x-reverse space-x-3{% else %}justify-end space-x-3{% endif %}">
+            <button type="button" onclick="closeProductPicker()" class="btn-secondary">
+                {{ _('Cancel') }}
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- jQuery and Select2 JS -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+let lineCounter = 0;
+let selectedProductIds = [];
+let pickerCurrentPage = 1;
+let pickerTotalPages = 1;
+let pickerTotal = 0;
+let pickerPerPage = 20;
+let searchTimeout = null;
+
+$(document).ready(function() {
+    // Initialize Select2
+    if (typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined') {
+        $('#source_site_id').select2({
+            theme: 'bootstrap-5',
+            placeholder: '{{ _("Select source site") }}',
+            allowClear: false,
+            width: '100%'
+        });
+        
+        $('#destination_site_id').select2({
+            theme: 'bootstrap-5',
+            placeholder: '{{ _("Select destination site") }}',
+            allowClear: false,
+            width: '100%'
+        });
+    }
+    
+    // Load products for picker
+    loadProductsForPicker();
+});
+
+function openProductPicker() {
+    document.getElementById('product-picker-modal').classList.remove('hidden');
+    pickerCurrentPage = 1;
+    loadProductsForPicker();
+}
+
+function closeProductPicker() {
+    document.getElementById('product-picker-modal').classList.add('hidden');
+    document.getElementById('product-picker-search').value = '';
+}
+
+function searchProductsPicker() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(function() {
+        pickerCurrentPage = 1;
+        loadProductsForPicker();
+    }, 500);
+}
+
+function loadProductsForPicker(page = 1, search = '') {
+    const searchValue = search || document.getElementById('product-picker-search').value;
+    const url = `/products/data/picker?page=${page}&per_page=${pickerPerPage}&search=${encodeURIComponent(searchValue)}`;
+    
+    document.getElementById('product-picker-list').innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-gray-400 text-2xl"></i></div>';
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.data && data.data.items) {
+                const items = data.data.items;
+                pickerTotal = data.data.pagination.total;
+                pickerTotalPages = data.data.pagination.pages;
+                pickerCurrentPage = page;
+                
+                renderProductList(items);
+                renderPagination();
+            } else {
+                document.getElementById('product-picker-list').innerHTML = '<div class="text-center text-gray-500 py-8">{{ _("No products found") }}</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading products:', error);
+            document.getElementById('product-picker-list').innerHTML = '<div class="text-center text-red-500 py-8">{{ _("Error loading products") }}</div>';
+        });
+}
+
+function renderProductList(products) {
+    const container = document.getElementById('product-picker-list');
+    if (products.length === 0) {
+        container.innerHTML = '<div class="text-center text-gray-500 py-8">{{ _("No products found") }}</div>';
+        return;
+    }
+    
+    let html = '<div class="grid grid-cols-1 gap-2">';
+    products.forEach(product => {
+        if (selectedProductIds.includes(product.id)) {
+            return; // Skip already selected products
+        }
+        html += `
+            <div class="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer" onclick="addProductToTransfer(${product.id}, '${(product.code || '').replace(/'/g, "\\'")}', '${(product.name || '').replace(/'/g, "\\'")}')">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="text-sm font-medium text-gray-900">${product.name || ''}</div>
+                        <div class="text-xs text-gray-500">${product.code || ''}</div>
+                    </div>
+                    <i class="fas fa-plus text-indigo-600"></i>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function renderPagination() {
+    const container = document.getElementById('product-picker-pagination');
+    if (pickerTotalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    let html = '<div class="flex items-center justify-between w-full">';
+    html += `<span class="text-sm text-gray-600">{{ _("Page") }} ${pickerCurrentPage} {{ _("of") }} ${pickerTotalPages} (${pickerTotal} {{ _("products") }})</span>`;
+    html += '<div class="flex space-x-2">';
+    if (pickerCurrentPage > 1) {
+        html += `<button onclick="prevPickerPage()" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50">{{ _("Previous") }}</button>`;
+    }
+    if (pickerCurrentPage < pickerTotalPages) {
+        html += `<button onclick="nextPickerPage()" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50">{{ _("Next") }}</button>`;
+    }
+    html += '</div></div>';
+    container.innerHTML = html;
+}
+
+function prevPickerPage() {
+    if (pickerCurrentPage > 1) {
+        loadProductsForPicker(pickerCurrentPage - 1);
+    }
+}
+
+function nextPickerPage() {
+    if (pickerCurrentPage < pickerTotalPages) {
+        loadProductsForPicker(pickerCurrentPage + 1);
+    }
+}
+
+function addProductToTransfer(productId, productCode, productName) {
+    if (selectedProductIds.includes(productId)) {
+        alert('{{ _("This product is already in the transfer") }}');
+        return;
+    }
+    
+    selectedProductIds.push(productId);
+    lineCounter++;
+    
+    const container = document.getElementById('transfer-lines-container');
+    const noLinesMessage = document.getElementById('no-lines-message');
+    if (noLinesMessage) {
+        noLinesMessage.remove();
+    }
+    
+    const lineHtml = `
+        <div class="line-item border border-gray-200 rounded-lg p-4 mb-4" data-line-index="${lineCounter}" data-product-id="${productId}">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <div class="text-sm font-medium text-gray-900">${productName}</div>
+                    <div class="text-xs text-gray-500">${productCode}</div>
+                </div>
+                <button type="button" onclick="removeTransferLine(this)" class="text-red-600 hover:text-red-900">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Quantity') }} <span style="color: var(--color-error);">*</span></label>
+                    <input type="number" 
+                           name="lines[${lineCounter}][quantity]"
+                           step="0.001"
+                           min="0.001"
+                           required
+                           class="modern-input"
+                           placeholder="0.000">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">{{ _('Notes') }}</label>
+                    <input type="text" 
+                           name="lines[${lineCounter}][notes]"
+                           class="modern-input"
+                           placeholder="{{ _('Optional notes') }}">
+                </div>
+            </div>
+            <input type="hidden" name="lines[${lineCounter}][product_id]" value="${productId}">
+            <input type="hidden" name="lines[${lineCounter}][variant_id]" value="">
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', lineHtml);
+    document.getElementById('line_count').value = lineCounter;
+    
+    closeProductPicker();
+}
+
+function removeTransferLine(button) {
+    const lineItem = button.closest('.line-item');
+    const productId = parseInt(lineItem.dataset.productId);
+    selectedProductIds = selectedProductIds.filter(id => id !== productId);
+    lineItem.remove();
+    
+    // Update line count
+    const lines = document.querySelectorAll('.line-item');
+    document.getElementById('line_count').value = lines.length;
+    
+    if (lines.length === 0) {
+        const container = document.getElementById('transfer-lines-container');
+        container.innerHTML = '<div id="no-lines-message" class="text-center text-gray-500 py-8">{{ _('No products added yet. Click "Add Product" to start.')|e }}</div>';
+    }
+}
+
+document.getElementById('transfer-form').addEventListener('submit', function(e) {
+    const lines = document.querySelectorAll('.line-item');
+    if (lines.length === 0) {
+        e.preventDefault();
+        alert('{{ _("Please add at least one product to the transfer") }}');
+        return false;
+    }
+    
+    const sourceSite = document.getElementById('source_site_id').value;
+    const destinationSite = document.getElementById('destination_site_id').value;
+    
+    if (sourceSite === destinationSite) {
+        e.preventDefault();
+        alert('{{ _("Source and destination sites must be different") }}');
+        return false;
+    }
+});
+</script>
+{% endblock %}
+

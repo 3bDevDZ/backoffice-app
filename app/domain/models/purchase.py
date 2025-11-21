@@ -951,11 +951,8 @@ class SupplierInvoice(Base, AggregateRoot):
             status='draft'
         )
         
-        invoice.raise_domain_event(SupplierInvoiceCreatedDomainEvent(
-            supplier_invoice_id=invoice.id,
-            supplier_invoice_number=invoice.number,
-            supplier_id=supplier_id
-        ))
+        # Note: Domain event will be raised after invoice is added to session and ID is generated
+        # The event will be raised in the handler after flush()
         
         return invoice
 

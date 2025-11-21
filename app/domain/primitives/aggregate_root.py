@@ -19,8 +19,14 @@ class AggregateRoot:
     
     def _ensure_domain_events(self):
         """Ensure _domain_events list exists (lazy initialization for SQLAlchemy-loaded instances)."""
+        # Use getattr with default to avoid triggering SQLAlchemy lazy loading
+        # if object is detached from session
         if not hasattr(self, '_domain_events'):
-            self._domain_events: List[IDomainEvent] = []
+            try:
+                self._domain_events: List[IDomainEvent] = []
+            except (AttributeError, RuntimeError):
+                # Object might be detached, create list anyway
+                object.__setattr__(self, '_domain_events', [])
     
     def raise_domain_event(self, domain_event: IDomainEvent) -> None:
         """

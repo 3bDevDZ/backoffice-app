@@ -48,7 +48,7 @@ def create_app() -> Flask:
     
     # Configure Flask-Babel
     app.config['BABEL_DEFAULT_LOCALE'] = 'fr'
-    app.config['BABEL_SUPPORTED_LOCALES'] = ['fr', 'ar']
+    app.config['BABEL_SUPPORTED_LOCALES'] = ['en', 'fr', 'ar']
     app.config['BABEL_TRANSLATION_DIRECTORIES'] = 'translations'
     
     # Initialize Babel
@@ -56,29 +56,73 @@ def create_app() -> Flask:
     babel.init_app(app)
     
     def get_locale():
-        # 1. Check URL parameter
+        from flask import session
+        # 1. Check URL parameter (highest priority - save to session if present)
         locale = request.args.get('locale')
-        if locale in ['fr', 'ar']:
+        if locale in ['en', 'fr', 'ar']:
+            # Save to session for persistence
+            session['locale'] = locale
+            session.permanent = True
+            # Force session to be saved
+            session.modified = True
             return locale
         # 2. Check user preference from session (if logged in)
-        from flask import session
         if 'locale' in session:
-            return session['locale']
+            saved_locale = session['locale']
+            if saved_locale in ['en', 'fr', 'ar']:
+                return saved_locale
         # 3. Check user object in g (if available and expunged)
         if hasattr(g, 'user') and g.user:
             # User object is expunged, so we can safely access locale
             try:
-                return getattr(g.user, 'locale', 'fr')
+                user_locale = getattr(g.user, 'locale', None)
+                if user_locale in ['en', 'fr', 'ar']:
+                    # Save to session for consistency
+                    session['locale'] = user_locale
+                    session.permanent = True
+                    session.modified = True
+                    return user_locale
             except:
                 pass
-        # 4. Check Accept-Language header
-        return request.accept_languages.best_match(['fr', 'ar'], 'fr')
+        # 4. Check application default language from settings
+        try:
+            from app.utils.settings_helper import get_default_language
+            default_lang = get_default_language()
+            if default_lang in ['en', 'fr', 'ar']:
+                # Save to session for consistency
+                session['locale'] = default_lang
+                session.permanent = True
+                session.modified = True
+                return default_lang
+        except Exception:
+            # If settings not available, continue to next fallback
+            pass
+        # 5. Check Accept-Language header
+        browser_locale = request.accept_languages.best_match(['en', 'fr', 'ar'], 'fr')
+        # Save to session for consistency
+        session['locale'] = browser_locale
+        session.permanent = True
+        session.modified = True
+        return browser_locale
     
     # Set locale selector for Flask-Babel 4.0
     app.config['BABEL_LOCALE_SELECTOR'] = get_locale
     
+    # Ensure locale is set in session before each request
+    @app.before_request
+    def ensure_locale_in_session():
+        """Ensure locale is set in session before processing request."""
+        from flask import session
+        # This will call get_locale() which saves to session if needed
+        get_locale()
+        # Force session to be saved
+        if session.modified:
+            session.permanent = True
+    
     @app.context_processor
     def inject_locale():
+        """Inject locale and stock management mode into all templates."""
+        from app.utils.settings_helper import get_stock_management_mode
         from datetime import date, datetime
         locale = get_locale()
         
@@ -98,13 +142,28 @@ def create_app() -> Flask:
             elif 'dashboard' in endpoint:
                 current_module = 'dashboard'
         
+        # Get stock management mode
+        try:
+            stock_management_mode = get_stock_management_mode()
+        except Exception:
+            stock_management_mode = 'simple'  # Default to simple if error
+        
+        # Get default currency
+        try:
+            from app.utils.settings_helper import get_default_currency
+            default_currency = get_default_currency()
+        except Exception:
+            default_currency = 'EUR'  # Default to EUR if error
+        
         return {
             'locale': locale,
             'direction': 'rtl' if locale == 'ar' else 'ltr',
             '_': _,
             'date': date,
             'datetime': datetime,
-            'current_module': current_module
+            'current_module': current_module,
+            'stock_management_mode': stock_management_mode,
+            'default_currency': default_currency
         }
     
     # Register custom Jinja2 filters
@@ -114,6 +173,85 @@ def create_app() -> Flask:
         if value is None:
             return ''
         return value.replace('\n', '<br>')
+    
+    @app.template_filter('currency')
+    def currency_filter(value, currency=None, locale_code=None):
+        """
+        Format a number as currency according to locale and currency settings.
+        
+        Args:
+            value: Numeric value to format
+            currency: Currency code (defaults to app default currency)
+            locale_code: Locale code (defaults to current locale)
+        
+        Returns:
+            Formatted currency string
+        """
+        if value is None:
+            return ''
+        
+        try:
+            from decimal import Decimal
+            # Convert to float for formatting
+            if isinstance(value, Decimal):
+                num_value = float(value)
+            else:
+                num_value = float(value)
+        except (ValueError, TypeError):
+            return str(value)
+        
+        # Get currency from parameter or default
+        if currency is None:
+            try:
+                from app.utils.settings_helper import get_default_currency
+                currency = get_default_currency()
+            except Exception:
+                currency = 'EUR'
+        
+        # Get locale from parameter or current locale
+        if locale_code is None:
+            locale_code = get_locale()
+        
+        # Map locale codes to proper Intl locale format
+        locale_map = {
+            'en': 'en-US',
+            'fr': 'fr-FR',
+            'ar': 'ar-DZ'  # Arabic locale for Algeria (can be adjusted)
+        }
+        intl_locale = locale_map.get(locale_code, locale_code)
+        
+        try:
+            import babel.numbers
+            return babel.numbers.format_currency(
+                num_value,
+                currency,
+                locale=intl_locale.replace('-', '_')
+            )
+        except Exception:
+            # Fallback to basic formatting if babel is not available
+            try:
+                # Use Python's locale module as fallback
+                import locale as py_locale
+                # Map locale codes
+                py_locale_map = {
+                    'en': 'en_US.UTF-8',
+                    'fr': 'fr_FR.UTF-8',
+                    'ar': 'ar_DZ.UTF-8'
+                }
+                py_locale.setlocale(py_locale.LC_ALL, py_locale_map.get(locale_code, 'en_US.UTF-8'))
+                return py_locale.currency(num_value, grouping=True, symbol=True)
+            except Exception:
+                # Final fallback: simple format
+                currency_symbols = {
+                    'EUR': '€',
+                    'USD': '$',
+                    'GBP': '£',
+                    'MAD': 'د.م.',
+                    'DZD': 'د.ج',
+                    'TND': 'د.ت'
+                }
+                symbol = currency_symbols.get(currency, currency)
+                return f"{num_value:,.2f} {symbol}"
     
     @app.template_filter('from_json')
     def from_json_filter(value):
@@ -139,10 +277,10 @@ def create_app() -> Flask:
         except (ValueError, TypeError):
             return 0.0
 
-    # Initialize DB
-    from .infrastructure.db import init_db
-
-    init_db(app.config["SQLALCHEMY_DATABASE_URI"])
+    # Initialize DB (only if not already initialized, e.g., in tests)
+    from .infrastructure.db import init_db, SessionLocal
+    if SessionLocal is None:
+        init_db(app.config["SQLALCHEMY_DATABASE_URI"])
     
     # Import all domain models to ensure SQLAlchemy can resolve relationships
     # This must be done after DB initialization but before any queries
@@ -564,11 +702,13 @@ def create_app() -> Flask:
     )
     from .application.stock.queries.queries import (
         GetStockLevelsQuery, GetStockAlertsQuery, GetStockMovementsQuery,
-        GetLocationHierarchyQuery, GetStockItemByIdQuery, GetLocationByIdQuery
+        GetLocationHierarchyQuery, GetStockItemByIdQuery, GetLocationByIdQuery,
+        GlobalStockQuery
     )
     from .application.stock.queries.handlers import (
         GetStockLevelsHandler, GetStockAlertsHandler, GetStockMovementsHandler,
-        GetLocationHierarchyHandler, GetStockItemByIdHandler, GetLocationByIdHandler
+        GetLocationHierarchyHandler, GetStockItemByIdHandler, GetLocationByIdHandler,
+        GlobalStockHandler
     )
     
     # Register Stock Commands
@@ -586,6 +726,45 @@ def create_app() -> Flask:
     mediator.register_query(GetStockAlertsQuery, GetStockAlertsHandler())
     mediator.register_query(GetStockMovementsQuery, GetStockMovementsHandler())
     mediator.register_query(GetLocationHierarchyQuery, GetLocationHierarchyHandler())
+    mediator.register_query(GlobalStockQuery, GlobalStockHandler())
+    
+    # Site Commands/Queries (User Story 10)
+    from .application.stock.sites.commands import (
+        CreateSiteCommand, UpdateSiteCommand, DeactivateSiteCommand,
+        CreateSiteHandler, UpdateSiteHandler, DeactivateSiteHandler
+    )
+    from .application.stock.sites.queries import (
+        ListSitesQuery, GetSiteByIdQuery, GetSiteStockQuery,
+        ListSitesHandler, GetSiteByIdHandler, GetSiteStockHandler
+    )
+    
+    mediator.register_command(CreateSiteCommand, CreateSiteHandler())
+    mediator.register_command(UpdateSiteCommand, UpdateSiteHandler())
+    mediator.register_command(DeactivateSiteCommand, DeactivateSiteHandler())
+    
+    mediator.register_query(ListSitesQuery, ListSitesHandler())
+    mediator.register_query(GetSiteByIdQuery, GetSiteByIdHandler())
+    mediator.register_query(GetSiteStockQuery, GetSiteStockHandler())
+    
+    # Stock Transfer Commands/Queries (User Story 10)
+    from .application.stock.transfers.commands import (
+        CreateStockTransferCommand, ShipStockTransferCommand,
+        ReceiveStockTransferCommand, CancelStockTransferCommand,
+        CreateStockTransferHandler, ShipStockTransferHandler,
+        ReceiveStockTransferHandler, CancelStockTransferHandler
+    )
+    from .application.stock.transfers.queries import (
+        ListStockTransfersQuery, GetStockTransferByIdQuery,
+        ListStockTransfersHandler, GetStockTransferByIdHandler
+    )
+    
+    mediator.register_command(CreateStockTransferCommand, CreateStockTransferHandler())
+    mediator.register_command(ShipStockTransferCommand, ShipStockTransferHandler())
+    mediator.register_command(ReceiveStockTransferCommand, ReceiveStockTransferHandler())
+    mediator.register_command(CancelStockTransferCommand, CancelStockTransferHandler())
+    
+    mediator.register_query(ListStockTransfersQuery, ListStockTransfersHandler())
+    mediator.register_query(GetStockTransferByIdQuery, GetStockTransferByIdHandler())
     mediator.register_query(GetStockItemByIdQuery, GetStockItemByIdHandler())
     mediator.register_query(GetLocationByIdQuery, GetLocationByIdHandler())
     
@@ -721,6 +900,21 @@ def create_app() -> Flask:
     mediator.register_query(GetStockAlertsQuery, GetStockAlertsHandler())
     mediator.register_query(GetActiveOrdersQuery, GetActiveOrdersHandler())
     
+    # Settings Commands/Queries
+    from .application.settings.commands import (
+        UpdateCompanySettingsCommand, UpdateAppSettingsCommand,
+        UpdateCompanySettingsHandler, UpdateAppSettingsHandler
+    )
+    from .application.settings.queries import (
+        GetCompanySettingsQuery, GetAppSettingsQuery,
+        GetCompanySettingsHandler, GetAppSettingsHandler
+    )
+    
+    mediator.register_command(UpdateCompanySettingsCommand, UpdateCompanySettingsHandler())
+    mediator.register_command(UpdateAppSettingsCommand, UpdateAppSettingsHandler())
+    mediator.register_query(GetCompanySettingsQuery, GetCompanySettingsHandler())
+    mediator.register_query(GetAppSettingsQuery, GetAppSettingsHandler())
+    
     mediator.register_command(LoginCommand, LoginCommandHandler())
 
     # Register API blueprints
@@ -732,6 +926,7 @@ def create_app() -> Flask:
         from .api.stock import stock_bp
         from .api.sales import sales_bp
         from .api.dashboard import dashboard_bp
+        from .api.i18n import i18n_bp
 
         app.register_blueprint(auth_bp, url_prefix="/api/auth")
         app.register_blueprint(products_bp, url_prefix="/api/products")
@@ -740,7 +935,8 @@ def create_app() -> Flask:
         app.register_blueprint(stock_bp, url_prefix="/api/stock", name="stock_api")
         app.register_blueprint(sales_bp, url_prefix="/api/sales", name="sales_api")
         app.register_blueprint(dashboard_bp, url_prefix="/api/dashboard", name="dashboard_api")
-        print(f"[OK] Registered API blueprints: purchases, products, customers, auth, stock, sales, dashboard")
+        app.register_blueprint(i18n_bp, url_prefix="/api/i18n", name="i18n_api")
+        print(f"[OK] Registered API blueprints: purchases, products, customers, auth, stock, sales, dashboard, i18n")
     except Exception as e:
         import traceback
         print(f"[ERROR] Error registering API blueprints: {e}")
@@ -767,8 +963,10 @@ def create_app() -> Flask:
         app.register_blueprint(sales_routes)
         app.register_blueprint(promotions_routes)
         from .routes.billing_routes import billing_routes
+        from .routes.settings_routes import settings_routes
         app.register_blueprint(billing_routes)
         app.register_blueprint(modules_routes)
+        app.register_blueprint(settings_routes)
         
         print(f"[OK] Registered frontend blueprints: {list(app.blueprints.keys())}")
     except Exception as e:

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Settings') }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Settings') }}{% endblock %}
+{% block page_subtitle %}{{ _('Manage application and company settings') }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <!-- Tabs Navigation -->
+    <div class="mb-6 border-b border-gray-200">
+        <nav class="flex {% if direction == 'rtl' %}space-x-reverse space-x-4{% else %}space-x-4{% endif %}" aria-label="Tabs">
+            <a href="{{ url_for('settings.company_settings') }}" 
+               class="px-4 py-3 text-sm font-medium {% if request.endpoint == 'settings.company_settings' %}border-b-2 border-indigo-600 text-indigo-600{% else %}text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %} border-b-2 border-transparent">
+                <i class="fas fa-building {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                {{ _('Company Information') }}
+            </a>
+            <a href="{{ url_for('settings.app_settings') }}" 
+               class="px-4 py-3 text-sm font-medium {% if request.endpoint == 'settings.app_settings' %}border-b-2 border-indigo-600 text-indigo-600{% else %}text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %} border-b-2 border-transparent">
+                <i class="fas fa-cog {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                {{ _('Application Settings') }}
+            </a>
+        </nav>
+    </div>
+
+    <!-- Settings Cards Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <!-- Company Settings Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-800">
+                    <i class="fas fa-building text-indigo-600 {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                    {{ _('Company Information') }}
+                </h3>
+                <a href="{{ url_for('settings.company_settings') }}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+                    {{ _('Edit') }} <i class="fas fa-arrow-{% if direction == 'rtl' %}left{% else %}right{% endif %} {% if direction == 'rtl' %}mr-1{% else %}ml-1{% endif %}"></i>
+                </a>
+            </div>
+            <div class="space-y-2 text-sm text-gray-600">
+                <p><strong>{{ _('Name') }}:</strong> {{ company_settings.name or _('Not set') }}</p>
+                <p><strong>{{ _('City') }}:</strong> {{ company_settings.city or _('Not set') }}</p>
+                <p><strong>{{ _('Email') }}:</strong> {{ company_settings.email or _('Not set') }}</p>
+                <p><strong>{{ _('Phone') }}:</strong> {{ company_settings.phone or _('Not set') }}</p>
+            </div>
+        </div>
+
+        <!-- App Settings Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-800">
+                    <i class="fas fa-cog text-indigo-600 {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                    {{ _('Application Settings') }}
+                </h3>
+                <a href="{{ url_for('settings.app_settings') }}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+                    {{ _('Edit') }} <i class="fas fa-arrow-{% if direction == 'rtl' %}left{% else %}right{% endif %} {% if direction == 'rtl' %}mr-1{% else %}ml-1{% endif %}"></i>
+                </a>
+            </div>
+            <div class="space-y-2 text-sm text-gray-600">
+                <p><strong>{{ _('Stock Mode') }}:</strong> 
+                    <span class="px-2 py-1 text-xs rounded-full {% if app_settings.stock_management_mode == 'simple' %}bg-blue-100 text-blue-800{% else %}bg-purple-100 text-purple-800{% endif %}">
+                        {{ _('Simple') if app_settings.stock_management_mode == 'simple' else _('Advanced') }}
+                    </span>
+                </p>
+                <p><strong>{{ _('Currency') }}:</strong> {{ app_settings.default_currency or 'EUR' }}</p>
+                <p><strong>{{ _('Tax Rate') }}:</strong> {{ "%.2f"|format(app_settings.default_tax_rate) if app_settings.default_tax_rate else '20.00' }}%</p>
+                <p><strong>{{ _('Language') }}:</strong> {{ app_settings.default_language or 'fr' }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

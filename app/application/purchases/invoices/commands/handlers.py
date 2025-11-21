@@ -41,7 +41,20 @@ class CreateSupplierInvoiceHandler(CommandHandler):
             )
             
             session.add(invoice)
+            session.flush()  # Flush to get the ID before commit
             invoice_id = invoice.id
+            
+            if not invoice_id:
+                raise ValueError("Failed to create supplier invoice: ID not generated")
+            
+            # Raise domain event now that ID is available
+            from app.domain.models.purchase import SupplierInvoiceCreatedDomainEvent
+            invoice.raise_domain_event(SupplierInvoiceCreatedDomainEvent(
+                supplier_invoice_id=invoice_id,
+                supplier_invoice_number=invoice.number,
+                supplier_id=command.supplier_id
+            ))
+            
             session.commit()
             
             return invoice_id

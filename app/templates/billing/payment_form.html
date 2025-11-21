@@ -48,7 +48,7 @@
                         <p class="text-sm text-blue-800">
                             <i class="fas fa-info-circle {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
                             <strong>{{ _('Total Outstanding:') }}</strong> 
-                            <span id="total-outstanding-amount" class="font-semibold">0.00</span> €
+                            <span id="total-outstanding-amount" class="font-semibold">{{ 0|currency }}</span>
                             <span id="outstanding-invoice-count" class="text-xs">(0 {{ _('invoices') }})</span>
                         </p>
                     </div>
@@ -368,7 +368,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <option value="">{{ _('Select Invoice') }}</option>
                 ${overdueInvoices.map(inv => `
                     <option value="${inv.invoice_id}" data-remaining="${inv.remaining_amount}">
-                        ${inv.invoice_number} - ${inv.customer_name || inv.customer_code || ''} - ${inv.remaining_amount.toFixed(2)} € (${inv.days_overdue} {{ _('days overdue') }})
+                        ${inv.invoice_number} - ${inv.customer_name || inv.customer_code || ''} - ${formatCurrencyValue(inv.remaining_amount)} (${inv.days_overdue} {{ _('days overdue') }})
                     </option>
                 `).join('')}
             </select>

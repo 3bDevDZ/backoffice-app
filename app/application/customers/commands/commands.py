@@ -54,6 +54,7 @@ class UpdateCustomerCommand(Command):
     default_discount_percent: Decimal = None
     credit_limit: Decimal = None
     block_on_credit_exceeded: bool = None
+    price_list_id: Optional[int] = None
 
 
 @dataclass

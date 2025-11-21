@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Application Settings') }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Application Settings') }}{% endblock %}
+{% block page_subtitle %}{{ _('Manage application configuration') }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <form method="POST" action="{{ url_for('settings.app_settings') }}">
+        <div class="space-y-6">
+            <!-- Stock Management -->
+            <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                <h3 class="text-lg font-bold mb-4">{{ _('Stock Management') }}</h3>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">{{ _('Stock Management Mode') }}</label>
+                    <select name="stock_management_mode" class="modern-select">
+                        <option value="simple" {% if app_settings.stock_management_mode == 'simple' %}selected{% endif %}>
+                            {{ _('Simple') }} - {{ _('Single warehouse, simplified interface') }}
+                        </option>
+                        <option value="advanced" {% if app_settings.stock_management_mode == 'advanced' %}selected{% endif %}>
+                            {{ _('Advanced') }} - {{ _('Multi-site support, full features') }}
+                        </option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">
+                        {{ _('Simple mode is ideal for small businesses with one warehouse. Advanced mode supports multiple sites and transfers.') }}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Default Values -->
+            <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                <h3 class="text-lg font-bold mb-4">{{ _('Default Values') }}</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">{{ _('Currency') }}</label>
+                        <select name="default_currency" class="modern-select">
+                            <option value="EUR" {% if app_settings.default_currency == 'EUR' %}selected{% endif %}>EUR (€)</option>
+                            <option value="USD" {% if app_settings.default_currency == 'USD' %}selected{% endif %}>USD ($)</option>
+                            <option value="GBP" {% if app_settings.default_currency == 'GBP' %}selected{% endif %}>GBP (£)</option>
+                            <option value="MAD" {% if app_settings.default_currency == 'MAD' %}selected{% endif %}>MAD (د.م.) - {% if locale == 'ar' %}المغرب{% elif locale == 'fr' %}Maroc{% else %}Morocco{% endif %}</option>
+                            <option value="DZD" {% if app_settings.default_currency == 'DZD' %}selected{% endif %}>DZD (د.ج) - {% if locale == 'ar' %}الجزائر{% elif locale == 'fr' %}Algérie{% else %}Algeria{% endif %}</option>
+                            <option value="TND" {% if app_settings.default_currency == 'TND' %}selected{% endif %}>TND (د.ت) - {% if locale == 'ar' %}تونس{% elif locale == 'fr' %}Tunisie{% else %}Tunisia{% endif %}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">{{ _('Default Tax Rate (%)') }}</label>
+                        <input type="number" name="default_tax_rate" value="{{ app_settings.default_tax_rate or 20.00 }}" step="0.01" min="0" max="100" class="modern-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">{{ _('Default Language') }}</label>
+                        <select name="default_language" class="modern-select">
+                            <option value="en" {% if app_settings.default_language == 'en' %}selected{% endif %}>English</option>
+                            <option value="fr" {% if app_settings.default_language == 'fr' %}selected{% endif %}>Français</option>
+                            <option value="ar" {% if app_settings.default_language == 'ar' %}selected{% endif %}>العربية</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Document Prefixes -->
+            <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                <h3 class="text-lg font-bold mb-4">{{ _('Document Prefixes') }}</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">{{ _('Invoice Prefix') }}</label>
+                        <input type="text" name="invoice_prefix" value="{{ app_settings.invoice_prefix or 'INV' }}" maxlength="10" class="modern-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">{{ _('Purchase Order Prefix') }}</label>
+                        <input type="text" name="purchase_order_prefix" value="{{ app_settings.purchase_order_prefix or 'PO' }}" maxlength="10" class="modern-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">{{ _('Receipt Prefix') }}</label>
+                        <input type="text" name="receipt_prefix" value="{{ app_settings.receipt_prefix or 'REC' }}" maxlength="10" class="modern-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">{{ _('Quote Prefix') }}</label>
+                        <input type="text" name="quote_prefix" value="{{ app_settings.quote_prefix or 'QUO' }}" maxlength="10" class="modern-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">{{ _('Quote Validity (Days)') }}</label>
+                        <input type="number" name="quote_validity_days" value="{{ app_settings.quote_validity_days or 30 }}" min="1" max="365" class="modern-input">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Invoice Settings -->
+            <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                <h3 class="text-lg font-bold mb-4">{{ _('Invoice Settings') }}</h3>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">{{ _('Invoice Footer') }}</label>
+                    <textarea name="invoice_footer" rows="3" class="modern-input" placeholder="{{ _('Text to display at the bottom of invoices') }}">{{ app_settings.invoice_footer or '' }}</textarea>
+                </div>
+            </div>
+
+            <!-- Email Notifications -->
+            <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); padding: var(--spacing-lg); box-shadow: var(--shadow-md);">
+                <h3 class="text-lg font-bold mb-4">{{ _('Email Notifications') }}</h3>
+                <div class="space-y-3">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="email_notifications_enabled" {% if app_settings.email_notifications_enabled %}checked{% endif %} class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                        <span class="{% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} text-sm text-gray-700">{{ _('Enable email notifications') }}</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="email_order_confirmation" {% if app_settings.email_order_confirmation %}checked{% endif %} class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                        <span class="{% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} text-sm text-gray-700">{{ _('Send order confirmation emails') }}</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="email_invoice_sent" {% if app_settings.email_invoice_sent %}checked{% endif %} class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                        <span class="{% if direction == 'rtl' %}mr-2{% else %}ml-2{% endif %} text-sm text-gray-700">{{ _('Send invoice emails') }}</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-3{% else %}space-x-3{% endif %}">
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-save {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                    {{ _('Save Settings') }}
+                </button>
+                <a href="{{ url_for('settings.index') }}" class="btn-secondary">{{ _('Cancel') }}</a>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

@@ -58,16 +58,19 @@ document.addEventListener('keydown', function(e) {
 
 /**
  * Show loading overlay
- * @param {string} message - Optional loading message
+ * @param {string} message - Optional loading message (will be translated if i18n is available)
  */
-function showLoading(message = 'Loading...') {
+function showLoading(message = null) {
+  // Use i18n if available, otherwise use default
+  const loadingMessage = message || (window.i18n && window.i18n.t ? window.i18n.t('Loading...') : 'Loading...');
+  
   const overlay = document.createElement('div');
   overlay.className = 'modern-loading-overlay';
   overlay.id = 'modern-loading-overlay';
   overlay.innerHTML = `
     <div class="modern-loading-container">
       <div class="modern-spinner modern-spinner-lg"></div>
-      ${message ? `<div class="modern-loading-text">${message}</div>` : ''}
+      ${loadingMessage ? `<div class="modern-loading-text">${loadingMessage}</div>` : ''}
     </div>
   `;
   document.body.appendChild(overlay);
@@ -89,12 +92,15 @@ function hideLoading() {
 
 /**
  * Show a toast notification
- * @param {string} message - The message to display
+ * @param {string} message - The message to display (will be translated if i18n is available)
  * @param {string} type - Type: 'success', 'error', 'warning', 'info'
- * @param {string} title - Optional title
+ * @param {string} title - Optional title (will be translated if i18n is available)
  * @param {number} duration - Duration in milliseconds (0 = no auto-close)
  */
 function showToast(message, type = 'info', title = null, duration = 5000) {
+  // Translate message and title if i18n is available
+  const translatedMessage = window.i18n && window.i18n.t ? window.i18n.t(message) : message;
+  const translatedTitle = title && window.i18n && window.i18n.t ? window.i18n.t(title) : title;
   // Ensure toast container exists
   let container = document.getElementById('modern-toast-container');
   if (!container) {
@@ -119,8 +125,8 @@ function showToast(message, type = 'info', title = null, duration = 5000) {
   toast.innerHTML = `
     <div class="modern-toast-icon">${icons[type] || icons.info}</div>
     <div class="modern-toast-content">
-      ${title ? `<div class="modern-toast-title">${title}</div>` : ''}
-      <div class="modern-toast-message">${message}</div>
+      ${translatedTitle ? `<div class="modern-toast-title">${translatedTitle}</div>` : ''}
+      <div class="modern-toast-message">${translatedMessage}</div>
     </div>
     <button class="modern-toast-close" onclick="this.closest('.modern-toast').remove()">
       <i class="fas fa-times"></i>
@@ -209,6 +215,10 @@ function createEmptyState(options = {}) {
     action = null
   } = options;
   
+  // Translate title and description if i18n is available
+  const translatedTitle = window.i18n && window.i18n.t ? window.i18n.t(title) : title;
+  const translatedDescription = window.i18n && window.i18n.t ? window.i18n.t(description) : description;
+  
   const emptyState = document.createElement('div');
   emptyState.className = 'modern-empty-state';
   
@@ -216,8 +226,8 @@ function createEmptyState(options = {}) {
     <div class="modern-empty-state-icon">
       <i class="${icon}"></i>
     </div>
-    <div class="modern-empty-state-title">${title}</div>
-    <div class="modern-empty-state-description">${description}</div>
+    <div class="modern-empty-state-title">${translatedTitle}</div>
+    <div class="modern-empty-state-description">${translatedDescription}</div>
     ${action ? `<div class="modern-empty-state-action">${action}</div>` : ''}
   `;
   

@@ -64,3 +64,15 @@ class GetLocationByIdQuery(Query):
     """Query to get a specific location by ID."""
     id: int
 
+
+@dataclass
+class GlobalStockQuery(Query):
+    """Query to get consolidated stock view across all sites."""
+    product_id: Optional[int] = None
+    variant_id: Optional[int] = None
+    site_id: Optional[int] = None  # If provided, shows stock for specific site only
+    include_zero: bool = False
+    page: int = 1
+    per_page: int = 50
+    search: Optional[str] = None  # Search by product code or name
+

@@ -78,6 +78,22 @@
                 <i class="fas fa-arrow-{% if direction == 'rtl' %}left{% else %}right{% endif %}"></i>
             </div>
         </a>
+
+        <!-- Settings Module (Admin/Direction only) -->
+        {% if g.user and (g.user.role == 'admin' or g.user.role == 'direction') %}
+        <a href="{{ url_for('settings.index') }}" class="module-card group">
+            <div class="module-card-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <i class="fas fa-cog text-4xl"></i>
+            </div>
+            <div class="module-card-content">
+                <h3 class="module-card-title">{{ _('Settings') }}</h3>
+                <p class="module-card-description">{{ _('Configure company information and application settings') }}</p>
+            </div>
+            <div class="module-card-arrow">
+                <i class="fas fa-arrow-{% if direction == 'rtl' %}left{% else %}right{% endif %}"></i>
+            </div>
+        </a>
+        {% endif %}
     </div>
 
     <!-- Quick Actions -->
