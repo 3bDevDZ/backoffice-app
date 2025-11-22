@@ -238,6 +238,79 @@ def inventory_menu():
     )
 
 
+@modules_routes.route('/modules/reports')
+@require_roles_or_redirect('admin', 'direction', 'commercial')
+def reports_menu():
+    """Render the Reports module menu."""
+    locale = get_locale()
+    direction = 'rtl' if locale == 'ar' else 'ltr'
+    
+    from flask import url_for
+    
+    menu_items = [
+        {
+            'title': _('Sales Report'),
+            'description': _('Revenue and sales analytics'),
+            'icon': 'fas fa-chart-line',
+            'color': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            'url': url_for('reports.sales_report')
+        },
+        {
+            'title': _('Margin Report'),
+            'description': _('Profitability analysis'),
+            'icon': 'fas fa-percent',
+            'color': 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+            'url': url_for('reports.margins_report')
+        },
+        {
+            'title': _('Stock Report'),
+            'description': _('Inventory analysis'),
+            'icon': 'fas fa-box',
+            'color': 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+            'url': url_for('reports.stock_report')
+        },
+        {
+            'title': _('Customer Report'),
+            'description': _('Customer analytics'),
+            'icon': 'fas fa-users',
+            'color': 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+            'url': url_for('reports.customers_report')
+        },
+        {
+            'title': _('Purchase Report'),
+            'description': _('Purchase analytics'),
+            'icon': 'fas fa-shopping-bag',
+            'color': 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+            'url': url_for('reports.purchases_report')
+        },
+        {
+            'title': _('Forecast Report'),
+            'description': _('Sales and stock forecasts'),
+            'icon': 'fas fa-crystal-ball',
+            'color': 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
+            'url': url_for('reports.forecast_report')
+        },
+        {
+            'title': _('Custom Report Builder'),
+            'description': _('Create personalized reports'),
+            'icon': 'fas fa-tools',
+            'color': 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+            'url': url_for('reports.report_builder')
+        }
+    ]
+    
+    return render_template(
+        'modules/menu.html',
+        module_name=_('Reports'),
+        module_description=_('Generate and view business reports, analytics, and forecasts'),
+        module_icon='fas fa-chart-pie',
+        module_color='linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
+        menu_items=menu_items,
+        locale=locale,
+        direction=direction
+    )
+
+
 @modules_routes.route('/modules/catalog')
 @require_roles_or_redirect('admin', 'commercial', 'direction')
 def catalog_menu():

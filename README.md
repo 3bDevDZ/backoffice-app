@@ -507,10 +507,20 @@ npm run test:ui
 
 ## 📚 Documentation
 
-- **Architecture** : Voir `architecture-prompt-mvp-commercial.md` (local, non versionné)
-- **Cahier des Charges** : Voir `cahier-des-charges-systeme-gestion-commerciale.md` (local, non versionné)
+### Guides Utilisateur
+
+- **[Guide Utilisateur Complet](docs/USER_GUIDE.md)** : Guide détaillé de toutes les fonctionnalités
+- **[Guide de Démarrage Rapide](docs/QUICK_START.md)** : Installation et première utilisation en 15 minutes
+- **[Guide d'Installation](docs/INSTALLATION_GUIDE.md)** : Installation locale et production
+- **[Guide Administrateur](docs/ADMIN_GUIDE.md)** : Administration, maintenance et dépannage
+
+### Documentation Technique
+
+- **Architecture** : Voir `docs/ARCHITECTURE_REFERENCE.md`
 - **Spécifications** : Voir `specs/` pour les spécifications détaillées par phase
 - **Documentation Code** : Docstrings dans le code source
+
+👉 **Voir [docs/README.md](docs/README.md) pour l'index complet de la documentation**
 
 ## 🔐 Sécurité
 

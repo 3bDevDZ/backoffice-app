@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Report Builder') }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Custom Report Builder') }}{% endblock %}
+{% block page_subtitle %}{{ _('Create personalized reports with custom columns, filters, and calculated fields') }}{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Builder Configuration -->
+    <div class="lg:col-span-2">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+            <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Report Configuration') }}</h3>
+            
+            <form id="report-builder-form">
+                <!-- Report Type -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-primary);">{{ _('Report Type') }}</label>
+                    <select name="report_type" id="report-type" class="modern-select" required>
+                        <option value="sales" {% if report_type == 'sales' %}selected{% endif %}>{{ _('Sales') }}</option>
+                        <option value="margins" {% if report_type == 'margins' %}selected{% endif %}>{{ _('Margins') }}</option>
+                        <option value="stock" {% if report_type == 'stock' %}selected{% endif %}>{{ _('Stock') }}</option>
+                        <option value="customers" {% if report_type == 'customers' %}selected{% endif %}>{{ _('Customers') }}</option>
+                        <option value="purchases" {% if report_type == 'purchases' %}selected{% endif %}>{{ _('Purchases') }}</option>
+                    </select>
+                </div>
+                
+                <!-- Date Range -->
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-primary);">{{ _('Start Date') }}</label>
+                        <input type="date" name="start_date" class="modern-input" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-primary);">{{ _('End Date') }}</label>
+                        <input type="date" name="end_date" class="modern-input" required>
+                    </div>
+                </div>
+                
+                <!-- Template Name -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-primary);">{{ _('Template Name') }}</label>
+                    <input type="text" name="template_name" class="modern-input" placeholder="{{ _('My Custom Report') }}" required>
+                </div>
+                
+                <!-- Description -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2" style="color: var(--color-text-primary);">{{ _('Description') }}</label>
+                    <textarea name="description" class="modern-input" rows="3" placeholder="{{ _('Report description...') }}"></textarea>
+                </div>
+                
+                <!-- Actions -->
+                <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-3{% else %}space-x-3{% endif %}">
+                    <button type="button" onclick="previewReport()" class="btn-secondary">
+                        <i class="fas fa-eye {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                        {{ _('Preview') }}
+                    </button>
+                    <button type="button" onclick="saveTemplate()" class="btn-primary">
+                        <i class="fas fa-save {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                        {{ _('Save Template') }}
+                    </button>
+                    <button type="button" onclick="generateReport()" class="btn-primary">
+                        <i class="fas fa-file-export {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                        {{ _('Generate Report') }}
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Preview Section -->
+        <div id="preview-section" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md); display: none;">
+            <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Report Preview') }}</h3>
+            <div id="preview-content">
+                <p class="text-center py-8" style="color: var(--color-text-tertiary);">{{ _('Click "Preview" to see the report') }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Builder Options Sidebar -->
+    <div>
+        <!-- Column Selection -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+            <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Columns') }}</h3>
+            <div id="columns-list" class="space-y-2">
+                <p class="text-sm" style="color: var(--color-text-tertiary);">{{ _('Select report type to see available columns') }}</p>
+            </div>
+        </div>
+        
+        <!-- Filters -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold" style="color: var(--color-text-primary);">{{ _('Filters') }}</h3>
+                <button onclick="addFilter()" class="btn-secondary text-sm">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <div id="filters-list" class="space-y-2">
+                <p class="text-sm" style="color: var(--color-text-tertiary);">{{ _('No filters added') }}</p>
+            </div>
+        </div>
+        
+        <!-- Sorting -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold" style="color: var(--color-text-primary);">{{ _('Sorting') }}</h3>
+                <button onclick="addSort()" class="btn-secondary text-sm">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <div id="sorting-list" class="space-y-2">
+                <p class="text-sm" style="color: var(--color-text-tertiary);">{{ _('No sorting added') }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let filters = [];
+let sorting = [];
+let columns = [];
+
+function addFilter() {
+    // Simple filter addition UI
+    const field = prompt('{{ _("Enter field name") }}');
+    const operator = prompt('{{ _("Enter operator (equals, contains, greater_than, less_than)") }}');
+    const value = prompt('{{ _("Enter value") }}');
+    
+    if (field && operator && value) {
+        filters.push({ field, operator, value });
+        updateFiltersList();
+    }
+}
+
+function addSort() {
+    const field = prompt('{{ _("Enter field name") }}');
+    const direction = prompt('{{ _("Enter direction (asc, desc)") }}');
+    
+    if (field && direction) {
+        sorting.push({ field, direction });
+        updateSortingList();
+    }
+}
+
+function updateFiltersList() {
+    const list = document.getElementById('filters-list');
+    if (filters.length === 0) {
+        list.innerHTML = '<p class="text-sm" style="color: var(--color-text-tertiary);">{{ _("No filters added") }}</p>';
+    } else {
+        list.innerHTML = filters.map((f, i) => `
+            <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                <span class="text-sm">${f.field} ${f.operator} ${f.value}</span>
+                <button onclick="removeFilter(${i})" class="text-red-500 hover:text-red-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `).join('');
+    }
+}
+
+function updateSortingList() {
+    const list = document.getElementById('sorting-list');
+    if (sorting.length === 0) {
+        list.innerHTML = '<p class="text-sm" style="color: var(--color-text-tertiary);">{{ _("No sorting added") }}</p>';
+    } else {
+        list.innerHTML = sorting.map((s, i) => `
+            <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                <span class="text-sm">${s.field} (${s.direction})</span>
+                <button onclick="removeSort(${i})" class="text-red-500 hover:text-red-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `).join('');
+    }
+}
+
+function removeFilter(index) {
+    filters.splice(index, 1);
+    updateFiltersList();
+}
+
+function removeSort(index) {
+    sorting.splice(index, 1);
+    updateSortingList();
+}
+
+async function previewReport() {
+    const form = document.getElementById('report-builder-form');
+    const formData = new FormData(form);
+    const reportType = formData.get('report_type');
+    
+    try {
+        const params = new URLSearchParams({
+            start_date: formData.get('start_date'),
+            end_date: formData.get('end_date')
+        });
+        
+        const response = await fetch(`/reports/data/${reportType}?${params}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('preview-section').style.display = 'block';
+            document.getElementById('preview-content').innerHTML = `
+                <div class="overflow-x-auto">
+                    <table class="modern-table">
+                        <thead>
+                            <tr>
+                                ${Object.keys(result.data.data[0] || {}).map(key => `<th>${key}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${result.data.data.slice(0, 10).map(row => `
+                                <tr>
+                                    ${Object.values(row).map(val => `<td>${val}</td>`).join('')}
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Preview error:', error);
+        alert('{{ _("Preview failed") }}');
+    }
+}
+
+async function saveTemplate() {
+    const form = document.getElementById('report-builder-form');
+    const formData = new FormData(form);
+    
+    // TODO: Implement template saving via API
+    alert('{{ _("Template saving will be implemented with API endpoints") }}');
+}
+
+async function generateReport() {
+    const form = document.getElementById('report-builder-form');
+    const formData = new FormData(form);
+    const reportType = formData.get('report_type');
+    
+    try {
+        const response = await fetch('/reports/export', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                report_type: reportType,
+                format: 'excel',
+                start_date: formData.get('start_date'),
+                end_date: formData.get('end_date'),
+                filters: filters,
+                sorting: sorting
+            })
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `custom_report.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } else {
+            alert('{{ _("Report generation failed") }}');
+        }
+    } catch (error) {
+        console.error('Generate error:', error);
+        alert('{{ _("Report generation failed") }}');
+    }
+}
+
+// Set default dates
+document.addEventListener('DOMContentLoaded', () => {
+    const today = new Date();
+    const lastMonth = new Date();
+    lastMonth.setMonth(lastMonth.getMonth() - 1);
+    
+    document.querySelector('input[name="end_date"]').value = today.toISOString().split('T')[0];
+    document.querySelector('input[name="start_date"]').value = lastMonth.toISOString().split('T')[0];
+});
+</script>
+{% endblock %}
+

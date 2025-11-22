@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Sales Report') }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Sales Report') }}{% endblock %}
+{% block page_subtitle %}{{ _('Revenue and sales analytics') }}{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Date Range Filter -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+    <form method="GET" action="{{ url_for('reports.sales_report') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-primary);">{{ _('Start Date') }}</label>
+            <input type="date" name="start_date" value="{{ start_date }}" class="modern-input" required>
+        </div>
+        <div>
+            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-primary);">{{ _('End Date') }}</label>
+            <input type="date" name="end_date" value="{{ end_date }}" class="modern-input" required>
+        </div>
+        <div>
+            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-primary);">{{ _('Group By') }}</label>
+            <select name="group_by" class="modern-select">
+                <option value="day" {% if group_by == 'day' %}selected{% endif %}>{{ _('Day') }}</option>
+                <option value="week" {% if group_by == 'week' %}selected{% endif %}>{{ _('Week') }}</option>
+                <option value="month" {% if group_by == 'month' %}selected{% endif %}>{{ _('Month') }}</option>
+                <option value="year" {% if group_by == 'year' %}selected{% endif %}>{{ _('Year') }}</option>
+            </select>
+        </div>
+        <div class="flex items-end">
+            <button type="submit" class="btn-primary w-full">
+                <i class="fas fa-filter {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                {{ _('Apply Filters') }}
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6" id="summary-cards">
+    <div class="stat-card">
+        <div class="stat-card-label">{{ _('Total Revenue') }}</div>
+        <div class="stat-card-metric" style="color: var(--color-success);" id="total-revenue">-</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">{{ _('Total Orders') }}</div>
+        <div class="stat-card-metric" style="color: var(--color-info);" id="total-orders">-</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">{{ _('Average Order Value') }}</div>
+        <div class="stat-card-metric" style="color: #7C3AED;" id="avg-order-value">-</div>
+    </div>
+    <div class="stat-card">
+        <div class="flex items-center justify-between">
+            <div>
+                <div class="stat-card-label">{{ _('Export') }}</div>
+            </div>
+            <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+                <button onclick="exportReport('excel')" class="btn-secondary text-sm">
+                    <i class="fas fa-file-excel"></i>
+                </button>
+                <button onclick="exportReport('pdf')" class="btn-secondary text-sm">
+                    <i class="fas fa-file-pdf"></i>
+                </button>
+                <button onclick="exportReport('csv')" class="btn-secondary text-sm">
+                    <i class="fas fa-file-csv"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Revenue Trend Chart -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+        <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Revenue Trend') }}</h3>
+        <canvas id="revenue-chart" height="300"></canvas>
+    </div>
+
+    <!-- Orders Trend Chart -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+        <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Orders Trend') }}</h3>
+        <canvas id="orders-chart" height="300"></canvas>
+    </div>
+</div>
+
+<!-- Top Products and Customers -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Top Products -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+        <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Top Products') }}</h3>
+        <div class="overflow-x-auto">
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th>{{ _('Product') }}</th>
+                        <th class="text-right">{{ _('Quantity') }}</th>
+                        <th class="text-right">{{ _('Revenue') }}</th>
+                    </tr>
+                </thead>
+                <tbody id="top-products-table">
+                    <tr><td colspan="3" class="text-center py-8" style="color: var(--color-text-tertiary);">{{ _('Loading...') }}</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Top Customers -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+        <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Top Customers') }}</h3>
+        <div class="overflow-x-auto">
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th>{{ _('Customer') }}</th>
+                        <th class="text-right">{{ _('Orders') }}</th>
+                        <th class="text-right">{{ _('Revenue') }}</th>
+                    </tr>
+                </thead>
+                <tbody id="top-customers-table">
+                    <tr><td colspan="3" class="text-center py-8" style="color: var(--color-text-tertiary);">{{ _('Loading...') }}</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+let revenueChart, ordersChart;
+
+async function loadReportData() {
+    try {
+        const params = new URLSearchParams({
+            start_date: '{{ start_date }}',
+            end_date: '{{ end_date }}',
+            group_by: '{{ group_by }}',
+            include_top_products: 'true',
+            include_top_customers: 'true',
+            limit: '10'
+        });
+        
+        const response = await fetch(`/reports/data/analytics/sales?${params}`);
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            const data = result.data;
+            
+            // Update summary cards
+            if (typeof formatCurrencyValue === 'function') {
+                document.getElementById('total-revenue').textContent = formatCurrencyValue(data.summary.total_revenue || 0);
+                document.getElementById('avg-order-value').textContent = formatCurrencyValue(data.summary.average_order_value || 0);
+            } else {
+                document.getElementById('total-revenue').textContent = (data.summary.total_revenue || 0).toFixed(2);
+                document.getElementById('avg-order-value').textContent = (data.summary.average_order_value || 0).toFixed(2);
+            }
+            document.getElementById('total-orders').textContent = data.summary.total_orders || 0;
+            
+            // Update charts only if data exists
+            if (data.data && Array.isArray(data.data) && data.data.length > 0) {
+                updateCharts(data.data);
+            }
+            
+            // Update top products table
+            if (data.summary.top_products) {
+                const productsTable = document.getElementById('top-products-table');
+                productsTable.innerHTML = data.summary.top_products.map(product => `
+                    <tr>
+                        <td>${product.product_name || product.product_code}</td>
+                        <td class="text-right">${product.quantity_sold || 0}</td>
+                        <td class="text-right">${formatCurrencyValue(product.revenue || 0)}</td>
+                    </tr>
+                `).join('');
+            }
+            
+            // Update top customers table
+            if (data.summary.top_customers) {
+                const customersTable = document.getElementById('top-customers-table');
+                customersTable.innerHTML = data.summary.top_customers.map(customer => `
+                    <tr>
+                        <td>${customer.customer_name}</td>
+                        <td class="text-right">${customer.orders_count || 0}</td>
+                        <td class="text-right">${formatCurrencyValue(customer.revenue || 0)}</td>
+                    </tr>
+                `).join('');
+            }
+        }
+    } catch (error) {
+        console.error('Error loading report data:', error);
+    }
+}
+
+function updateCharts(periodData) {
+    if (!periodData || periodData.length === 0) {
+        console.warn('No period data available for charts');
+        return;
+    }
+    
+    // Ensure all values are valid numbers
+    const dates = periodData.map(d => d.date || '');
+    const revenues = periodData.map(d => {
+        const val = parseFloat(d.revenue) || 0;
+        return isNaN(val) ? 0 : val;
+    });
+    const ordersCount = periodData.map(d => {
+        const val = parseInt(d.orders_count) || 0;
+        return isNaN(val) ? 0 : val;
+    });
+    
+    // Revenue Chart
+    const revenueCanvas = document.getElementById('revenue-chart');
+    if (!revenueCanvas) {
+        console.error('Revenue chart canvas not found');
+        return;
+    }
+    
+    const revenueCtx = revenueCanvas.getContext('2d');
+    if (revenueChart) {
+        revenueChart.destroy();
+        revenueChart = null;
+    }
+    
+    revenueChart = new Chart(revenueCtx, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: [{
+                label: '{{ _("Revenue") }}',
+                data: revenues,
+                borderColor: 'rgb(34, 197, 94)',
+                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            animation: {
+                duration: 750
+            },
+            plugins: {
+                legend: {
+                    display: true
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.parsed.y;
+                            return formatCurrencyValue ? formatCurrencyValue(value) : value.toFixed(2);
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            if (typeof formatCurrencyValue === 'function') {
+                                return formatCurrencyValue(value);
+                            }
+                            return value.toFixed(2);
+                        },
+                        maxTicksLimit: 10
+                    }
+                },
+                x: {
+                    ticks: {
+                        maxTicksLimit: 10
+                    }
+                }
+            }
+        }
+    });
+    
+    // Orders Chart
+    const ordersCanvas = document.getElementById('orders-chart');
+    if (!ordersCanvas) {
+        console.error('Orders chart canvas not found');
+        return;
+    }
+    
+    const ordersCtx = ordersCanvas.getContext('2d');
+    if (ordersChart) {
+        ordersChart.destroy();
+        ordersChart = null;
+    }
+    
+    ordersChart = new Chart(ordersCtx, {
+        type: 'bar',
+        data: {
+            labels: dates,
+            datasets: [{
+                label: '{{ _("Orders") }}',
+                data: ordersCount,
+                backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                borderColor: 'rgb(59, 130, 246)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            animation: {
+                duration: 750
+            },
+            plugins: {
+                legend: {
+                    display: true
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1,
+                        maxTicksLimit: 10
+                    }
+                },
+                x: {
+                    ticks: {
+                        maxTicksLimit: 10
+                    }
+                }
+            }
+        }
+    });
+}
+
+async function exportReport(format) {
+    try {
+        const response = await fetch('/reports/export', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                report_type: 'sales',
+                format: format,
+                start_date: '{{ start_date }}',
+                end_date: '{{ end_date }}',
+                group_by: '{{ group_by }}'
+            })
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `sales_report.${format === 'excel' ? 'xlsx' : format}`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } else {
+            alert('{{ _("Export failed") }}');
+        }
+    } catch (error) {
+        console.error('Export error:', error);
+        alert('{{ _("Export failed") }}');
+    }
+}
+
+// Load data on page load (only once)
+let dataLoaded = false;
+document.addEventListener('DOMContentLoaded', function() {
+    if (!dataLoaded) {
+        dataLoaded = true;
+        loadReportData();
+    }
+});
+</script>
+{% endblock %}
+

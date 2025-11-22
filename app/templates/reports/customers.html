@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Customer Report') }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Customer Report') }}{% endblock %}
+{% block page_subtitle %}{{ _('Customer analytics and revenue analysis') }}{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Date Range Filter -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+    <form method="GET" action="{{ url_for('reports.customers_report') }}" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-primary);">{{ _('Start Date') }}</label>
+            <input type="date" name="start_date" value="{{ start_date }}" class="modern-input" required>
+        </div>
+        <div>
+            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-primary);">{{ _('End Date') }}</label>
+            <input type="date" name="end_date" value="{{ end_date }}" class="modern-input" required>
+        </div>
+        <div class="flex items-end">
+            <button type="submit" class="btn-primary w-full">
+                <i class="fas fa-filter {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                {{ _('Apply Filters') }}
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6" id="summary-cards">
+    <div class="stat-card">
+        <div class="stat-card-label">{{ _('Total Revenue') }}</div>
+        <div class="stat-card-metric" style="color: var(--color-success);" id="total-revenue">-</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">{{ _('Total Orders') }}</div>
+        <div class="stat-card-metric" style="color: var(--color-info);" id="total-orders">-</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">{{ _('Average Order Value') }}</div>
+        <div class="stat-card-metric" style="color: #7C3AED;" id="avg-order-value">-</div>
+    </div>
+    <div class="stat-card">
+        <div class="flex items-center justify-between">
+            <div>
+                <div class="stat-card-label">{{ _('Export') }}</div>
+            </div>
+            <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+                <button onclick="exportReport('excel')" class="btn-secondary text-sm">
+                    <i class="fas fa-file-excel"></i>
+                </button>
+                <button onclick="exportReport('pdf')" class="btn-secondary text-sm">
+                    <i class="fas fa-file-pdf"></i>
+                </button>
+                <button onclick="exportReport('csv')" class="btn-secondary text-sm">
+                    <i class="fas fa-file-csv"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Customer Table -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Customer Details') }}</h3>
+    <div class="overflow-x-auto">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th>{{ _('Customer') }}</th>
+                    <th class="text-right">{{ _('Revenue') }}</th>
+                    <th class="text-right">{{ _('Orders Count') }}</th>
+                    <th class="text-right">{{ _('Average Order Value') }}</th>
+                    <th>{{ _('Last Order Date') }}</th>
+                </tr>
+            </thead>
+            <tbody id="customers-table">
+                <tr><td colspan="5" class="text-center py-8" style="color: var(--color-text-tertiary);">{{ _('Loading...') }}</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+async function loadReportData() {
+    try {
+        const params = new URLSearchParams({
+            start_date: '{{ start_date }}',
+            end_date: '{{ end_date }}'
+        });
+        
+        const response = await fetch(`/reports/data/analytics/customers?${params}`);
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            const data = result.data;
+            
+            // Update summary cards
+            document.getElementById('total-revenue').textContent = formatCurrencyValue(data.summary.total_revenue || 0);
+            document.getElementById('total-orders').textContent = data.summary.total_orders || 0;
+            document.getElementById('avg-order-value').textContent = formatCurrencyValue(data.summary.average_order_value || 0);
+            
+            // Update table
+            const table = document.getElementById('customers-table');
+            table.innerHTML = data.data.map(item => `
+                <tr>
+                    <td>${item.customer_name}</td>
+                    <td class="text-right">${formatCurrencyValue(item.revenue || 0)}</td>
+                    <td class="text-right">${item.orders_count || 0}</td>
+                    <td class="text-right">${formatCurrencyValue(item.average_order_value || 0)}</td>
+                    <td>${item.last_order_date || '-'}</td>
+                </tr>
+            `).join('');
+        }
+    } catch (error) {
+        console.error('Error loading report data:', error);
+    }
+}
+
+async function exportReport(format) {
+    try {
+        const response = await fetch('/reports/export', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                report_type: 'customers',
+                format: format,
+                start_date: '{{ start_date }}',
+                end_date: '{{ end_date }}'
+            })
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `customer_report.${format === 'excel' ? 'xlsx' : format}`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } else {
+            alert('{{ _("Export failed") }}');
+        }
+    } catch (error) {
+        console.error('Export error:', error);
+        alert('{{ _("Export failed") }}');
+    }
+}
+
+// Load data on page load (only once)
+let dataLoaded = false;
+document.addEventListener('DOMContentLoaded', function() {
+    if (!dataLoaded) {
+        dataLoaded = true;
+        loadReportData();
+    }
+});
+</script>
+{% endblock %}
+

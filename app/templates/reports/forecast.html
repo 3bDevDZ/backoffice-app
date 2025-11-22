@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Forecast Report') }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Forecast Report') }}{% endblock %}
+{% block page_subtitle %}{{ _('Sales and stock forecasts based on historical data') }}{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Forecast Type Selector -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+    <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-4{% else %}space-x-4{% endif %}">
+        <button onclick="loadForecast('sales')" 
+                class="btn-primary {% if forecast_type == 'sales' %}active{% endif %}" 
+                id="btn-sales-forecast">
+            <i class="fas fa-chart-line {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+            {{ _('Sales Forecast') }}
+        </button>
+        <button onclick="loadForecast('stock')" 
+                class="btn-secondary {% if forecast_type == 'stock' %}active{% endif %}" 
+                id="btn-stock-forecast">
+            <i class="fas fa-box {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+            {{ _('Stock Forecast') }}
+        </button>
+    </div>
+</div>
+
+<!-- Sales Forecast Section -->
+<div id="sales-forecast-section" {% if forecast_type != 'sales' %}style="display: none;"{% endif %}>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+        <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Sales Forecast') }}</h3>
+        <canvas id="sales-forecast-chart" height="300"></canvas>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6" id="sales-forecast-summary">
+        <div class="stat-card">
+            <div class="stat-card-label">{{ _('Historical Average') }}</div>
+            <div class="stat-card-metric" style="color: var(--color-info);" id="historical-average">-</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-label">{{ _('Trend') }}</div>
+            <div class="stat-card-metric" id="forecast-trend">-</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-label">{{ _('Confidence Score') }}</div>
+            <div class="stat-card-metric" style="color: var(--color-success);" id="confidence-score">-</div>
+        </div>
+    </div>
+</div>
+
+<!-- Stock Forecast Section -->
+<div id="stock-forecast-section" {% if forecast_type != 'stock' %}style="display: none;"{% endif %}>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+        <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Stock Forecast') }}</h3>
+        <div class="mb-4">
+            <label class="block text-sm font-medium mb-2" style="color: var(--color-text-primary);">{{ _('Select Product') }}</label>
+            <select id="product-select" class="modern-select">
+                <option value="">{{ _('Loading products...') }}</option>
+            </select>
+        </div>
+        <div id="stock-forecast-content" style="display: none;">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                <div class="stat-card">
+                    <div class="stat-card-label">{{ _('Current Stock') }}</div>
+                    <div class="stat-card-metric" style="color: var(--color-info);" id="current-stock">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-label">{{ _('Forecast Demand') }}</div>
+                    <div class="stat-card-metric" style="color: var(--color-warning);" id="forecast-demand">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-label">{{ _('Days Until Out of Stock') }}</div>
+                    <div class="stat-card-metric" style="color: var(--color-danger);" id="days-out-of-stock">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-label">{{ _('Recommended Reorder') }}</div>
+                    <div class="stat-card-metric" style="color: var(--color-success);" id="recommended-reorder">-</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let salesForecastChart;
+
+async function loadForecast(type) {
+    if (type === 'sales') {
+        document.getElementById('sales-forecast-section').style.display = 'block';
+        document.getElementById('stock-forecast-section').style.display = 'none';
+        document.getElementById('btn-sales-forecast').classList.add('active');
+        document.getElementById('btn-stock-forecast').classList.remove('active');
+        await loadSalesForecast();
+    } else {
+        document.getElementById('sales-forecast-section').style.display = 'none';
+        document.getElementById('stock-forecast-section').style.display = 'block';
+        document.getElementById('btn-sales-forecast').classList.remove('active');
+        document.getElementById('btn-stock-forecast').classList.add('active');
+        await loadProducts();
+    }
+}
+
+async function loadSalesForecast() {
+    try {
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 90);
+        
+        const params = new URLSearchParams({
+            start_date: startDate.toISOString().split('T')[0],
+            end_date: endDate.toISOString().split('T')[0],
+            forecast_periods: '12',
+            method: 'moving_average'
+        });
+        
+        const response = await fetch(`/reports/data/forecast/sales?${params}`);
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            const data = result.data;
+            
+            // Update summary
+            document.getElementById('historical-average').textContent = formatCurrencyValue(data.historical_average || 0);
+            document.getElementById('forecast-trend').textContent = data.trend || '-';
+            document.getElementById('confidence-score').textContent = (data.confidence_score || 0).toFixed(0) + '%';
+            
+            // Update chart
+            updateSalesForecastChart(data.forecast_periods);
+        }
+    } catch (error) {
+        console.error('Error loading sales forecast:', error);
+    }
+}
+
+function updateSalesForecastChart(forecastPeriods) {
+    if (!forecastPeriods || forecastPeriods.length === 0) {
+        console.warn('No forecast data available for chart');
+        return;
+    }
+    
+    const dates = forecastPeriods.map(p => p.date || '');
+    const forecastValues = forecastPeriods.map(p => {
+        const val = parseFloat(p.forecast_value) || 0;
+        return isNaN(val) ? 0 : val;
+    });
+    const lowerBounds = forecastPeriods.map(p => {
+        const val = parseFloat(p.lower_bound) || 0;
+        return isNaN(val) ? 0 : val;
+    });
+    const upperBounds = forecastPeriods.map(p => {
+        const val = parseFloat(p.upper_bound) || 0;
+        return isNaN(val) ? 0 : val;
+    });
+    
+    const canvas = document.getElementById('sales-forecast-chart');
+    if (!canvas) {
+        console.error('Sales forecast chart canvas not found');
+        return;
+    }
+    
+    const ctx = canvas.getContext('2d');
+    if (salesForecastChart) {
+        salesForecastChart.destroy();
+        salesForecastChart = null;
+    }
+    
+    salesForecastChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: [
+                {
+                    label: '{{ _("Forecast") }}',
+                    data: forecastValues,
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4,
+                    fill: false
+                },
+                {
+                    label: '{{ _("Upper Bound") }}',
+                    data: upperBounds,
+                    borderColor: 'rgba(34, 197, 94, 0.5)',
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    borderDash: [5, 5],
+                    fill: '+1'
+                },
+                {
+                    label: '{{ _("Lower Bound") }}',
+                    data: lowerBounds,
+                    borderColor: 'rgba(239, 68, 68, 0.5)',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    borderDash: [5, 5],
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            animation: {
+                duration: 750
+            },
+            plugins: {
+                legend: {
+                    display: true
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.parsed.y;
+                            return formatCurrencyValue ? formatCurrencyValue(value) : value.toFixed(2);
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            if (typeof formatCurrencyValue === 'function') {
+                                return formatCurrencyValue(value);
+                            }
+                            return value.toFixed(2);
+                        },
+                        maxTicksLimit: 10
+                    }
+                },
+                x: {
+                    ticks: {
+                        maxTicksLimit: 10
+                    }
+                }
+            }
+        }
+    });
+}
+
+async function loadProducts() {
+    try {
+        const response = await fetch('/products/data/picker?per_page=1000&status=active');
+        const result = await response.json();
+        
+        if (result.items && result.items.length > 0) {
+            const select = document.getElementById('product-select');
+            select.innerHTML = '<option value="">{{ _("Select a product") }}</option>' +
+                result.items.map(p => `<option value="${p.id}">${p.code} - ${p.name}</option>`).join('');
+            
+            select.addEventListener('change', async (e) => {
+                if (e.target.value) {
+                    await loadStockForecast(parseInt(e.target.value));
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Error loading products:', error);
+    }
+}
+
+async function loadStockForecast(productId) {
+    try {
+        const params = new URLSearchParams({
+            product_id: productId,
+            forecast_days: '30'
+        });
+        
+        const response = await fetch(`/reports/data/forecast/stock?${params}`);
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            const data = result.data;
+            
+            document.getElementById('current-stock').textContent = data.current_stock || 0;
+            document.getElementById('forecast-demand').textContent = data.forecast_demand || 0;
+            document.getElementById('days-out-of-stock').textContent = data.days_until_out_of_stock || 'N/A';
+            document.getElementById('recommended-reorder').textContent = data.recommended_reorder_quantity || 0;
+            
+            document.getElementById('stock-forecast-content').style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error loading stock forecast:', error);
+    }
+}
+
+// Load initial forecast (only once)
+let dataLoaded = false;
+document.addEventListener('DOMContentLoaded', () => {
+    if (!dataLoaded) {
+        dataLoaded = true;
+        loadForecast('{{ forecast_type }}');
+    }
+});
+</script>
+{% endblock %}
+

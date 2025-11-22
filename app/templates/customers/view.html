@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Customer Details') }} - {{ customer.name }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ customer.name }}{% endblock %}
+{% block page_subtitle %}{{ _('Customer details, pending orders and unpaid invoices') }}{% endblock %}
+
+{% block content %}
+<!-- Customer Information Card -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+    <div class="flex items-start justify-between mb-6">
+        <div class="flex items-center {% if direction == 'rtl' %}space-x-reverse space-x-4{% else %}space-x-4{% endif %}">
+            <div class="w-16 h-16 bg-indigo-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-{% if customer.type == 'B2B' %}building{% else %}user{% endif %} text-indigo-600 text-2xl"></i>
+            </div>
+            <div>
+                <h2 class="text-2xl font-bold" style="color: var(--color-text-primary);">{{ customer.name }}</h2>
+                <p class="text-sm" style="color: var(--color-text-secondary);">{{ customer.code }}</p>
+                {% if customer.type == 'B2B' and customer.company_name %}
+                <p class="text-sm" style="color: var(--color-text-secondary);">{{ customer.company_name }}</p>
+                {% endif %}
+            </div>
+        </div>
+        <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+            <a href="{{ url_for('customers_frontend.edit', customer_id=customer.id) }}" class="btn-secondary">
+                <i class="fas fa-edit {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                {{ _('Edit') }}
+            </a>
+            <a href="{{ url_for('customers_frontend.list') }}" class="btn-secondary">
+                <i class="fas fa-arrow-left {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}"></i>
+                {{ _('Back to List') }}
+            </a>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div>
+            <div class="text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ _('Type') }}</div>
+            <div class="text-lg font-semibold" style="color: var(--color-text-primary);">
+                {% if customer.type == 'B2B' %}
+                <span class="px-2 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">{{ _('B2B') }}</span>
+                {% else %}
+                <span class="px-2 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full">{{ _('B2C') }}</span>
+                {% endif %}
+            </div>
+        </div>
+        <div>
+            <div class="text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ _('Email') }}</div>
+            <div class="text-lg font-semibold" style="color: var(--color-text-primary);">{{ customer.email or '-' }}</div>
+        </div>
+        <div>
+            <div class="text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ _('Phone') }}</div>
+            <div class="text-lg font-semibold" style="color: var(--color-text-primary);">{{ customer.phone or customer.mobile or '-' }}</div>
+        </div>
+        <div>
+            <div class="text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ _('Status') }}</div>
+            <div class="text-lg font-semibold" style="color: var(--color-text-primary);">
+                {% if customer.status == 'active' %}
+                <span class="px-2 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">{{ _('Active') }}</span>
+                {% elif customer.status == 'inactive' %}
+                <span class="px-2 py-1 bg-gray-100 text-gray-800 text-sm font-medium rounded-full">{{ _('Inactive') }}</span>
+                {% elif customer.status == 'archived' %}
+                <span class="px-2 py-1 bg-red-100 text-red-800 text-sm font-medium rounded-full">{{ _('Archived') }}</span>
+                {% elif customer.status == 'blocked' %}
+                <span class="px-2 py-1 bg-orange-100 text-orange-800 text-sm font-medium rounded-full">{{ _('Blocked') }}</span>
+                {% endif %}
+            </div>
+        </div>
+        {% if customer.credit_limit %}
+        <div>
+            <div class="text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ _('Credit Limit') }}</div>
+            <div class="text-lg font-semibold" style="color: var(--color-text-primary);">
+                <script>
+                    document.write(formatCurrencyValue ? formatCurrencyValue({{ customer.credit_limit }}) : '{{ customer.credit_limit }}');
+                </script>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Pending Orders Section -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold" style="color: var(--color-text-primary);">{{ _('Pending Orders') }}</h3>
+        <span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
+            {{ pending_orders|length }} {{ _('orders') }}
+        </span>
+    </div>
+    
+    {% if pending_orders %}
+    <div class="overflow-x-auto">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th>{{ _('Order Number') }}</th>
+                    <th>{{ _('Status') }}</th>
+                    <th>{{ _('Date') }}</th>
+                    <th>{{ _('Delivery Date') }}</th>
+                    <th class="text-right">{{ _('Total') }}</th>
+                    <th class="text-right">{{ _('Actions') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in pending_orders %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('sales.view_order', order_id=order.id) }}" class="text-indigo-600 hover:text-indigo-900 font-medium">
+                            {{ order.number }}
+                        </a>
+                    </td>
+                    <td>
+                        {% if order.status == 'draft' %}
+                        <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-medium rounded-full">{{ _('Draft') }}</span>
+                        {% elif order.status == 'confirmed' %}
+                        <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">{{ _('Confirmed') }}</span>
+                        {% elif order.status == 'ready' %}
+                        <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">{{ _('Ready') }}</span>
+                        {% elif order.status == 'shipped' %}
+                        <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">{{ _('Shipped') }}</span>
+                        {% else %}
+                        <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-medium rounded-full">{{ order.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ order.created_at or '-' }}</td>
+                    <td>{{ order.delivery_date_promised or '-' }}</td>
+                    <td class="text-right">
+                        <script>
+                            document.write(formatCurrencyValue ? formatCurrencyValue({{ order.total }}) : '{{ order.total }}');
+                        </script>
+                    </td>
+                    <td class="text-right">
+                        <a href="{{ url_for('sales.view_order', order_id=order.id) }}" class="text-indigo-600 hover:text-indigo-900">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-center py-8" style="color: var(--color-text-tertiary);">
+        <i class="fas fa-shopping-cart text-4xl mb-4"></i>
+        <p>{{ _('No pending orders') }}</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Unpaid Invoices Section -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold" style="color: var(--color-text-primary);">{{ _('Unpaid Invoices') }}</h3>
+        <span class="px-3 py-1 bg-red-100 text-red-800 text-sm font-medium rounded-full">
+            {{ unpaid_invoices|length }} {{ _('invoices') }}
+        </span>
+    </div>
+    
+    {% if unpaid_invoices %}
+    <div class="overflow-x-auto">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th>{{ _('Invoice Number') }}</th>
+                    <th>{{ _('Status') }}</th>
+                    <th>{{ _('Invoice Date') }}</th>
+                    <th>{{ _('Due Date') }}</th>
+                    <th class="text-right">{{ _('Total') }}</th>
+                    <th class="text-right">{{ _('Remaining') }}</th>
+                    <th class="text-right">{{ _('Actions') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for invoice in unpaid_invoices %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('billing.invoice_view', invoice_id=invoice.id) }}" class="text-indigo-600 hover:text-indigo-900 font-medium">
+                            {{ invoice.number }}
+                        </a>
+                    </td>
+                    <td>
+                        {% if invoice.status == 'draft' %}
+                        <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-medium rounded-full">{{ _('Draft') }}</span>
+                        {% elif invoice.status == 'validated' %}
+                        <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">{{ _('Validated') }}</span>
+                        {% elif invoice.status == 'sent' %}
+                        <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">{{ _('Sent') }}</span>
+                        {% elif invoice.status == 'partially_paid' %}
+                        <span class="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">{{ _('Partially Paid') }}</span>
+                        {% elif invoice.status == 'overdue' %}
+                        <span class="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">{{ _('Overdue') }}</span>
+                        {% else %}
+                        <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-medium rounded-full">{{ invoice.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ invoice.invoice_date or '-' }}</td>
+                    <td>
+                        {{ invoice.due_date or '-' }}
+                        {% if invoice.days_overdue and invoice.days_overdue > 0 %}
+                        <span class="text-red-600 text-xs ml-2">({{ invoice.days_overdue }} {{ _('days overdue') }})</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-right">
+                        <script>
+                            document.write(formatCurrencyValue ? formatCurrencyValue({{ invoice.total }}) : '{{ invoice.total }}');
+                        </script>
+                    </td>
+                    <td class="text-right font-semibold" style="color: var(--color-danger);">
+                        <script>
+                            document.write(formatCurrencyValue ? formatCurrencyValue({{ invoice.remaining_amount }}) : '{{ invoice.remaining_amount }}');
+                        </script>
+                    </td>
+                    <td class="text-right">
+                        <a href="{{ url_for('billing.invoice_view', invoice_id=invoice.id) }}" class="text-indigo-600 hover:text-indigo-900 {% if direction == 'rtl' %}ml-2{% else %}mr-2{% endif %}">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <a href="{{ url_for('billing.create_payment') }}?invoice_id={{ invoice.id }}" class="text-green-600 hover:text-green-900">
+                            <i class="fas fa-money-check-alt"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-center py-8" style="color: var(--color-text-tertiary);">
+        <i class="fas fa-file-invoice-dollar text-4xl mb-4"></i>
+        <p>{{ _('No unpaid invoices') }}</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

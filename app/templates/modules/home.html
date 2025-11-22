@@ -79,6 +79,22 @@
             </div>
         </a>
 
+        <!-- Reports Module -->
+        {% if g.user and (g.user.role == 'admin' or g.user.role == 'direction' or g.user.role == 'commercial') %}
+        <a href="{{ url_for('modules.reports_menu') }}" class="module-card group">
+            <div class="module-card-icon" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);">
+                <i class="fas fa-chart-pie text-4xl"></i>
+            </div>
+            <div class="module-card-content">
+                <h3 class="module-card-title">{{ _('Reports') }}</h3>
+                <p class="module-card-description">{{ _('Generate and view business reports, analytics, and forecasts') }}</p>
+            </div>
+            <div class="module-card-arrow">
+                <i class="fas fa-arrow-{% if direction == 'rtl' %}left{% else %}right{% endif %}"></i>
+            </div>
+        </a>
+        {% endif %}
+
         <!-- Settings Module (Admin/Direction only) -->
         {% if g.user and (g.user.role == 'admin' or g.user.role == 'direction') %}
         <a href="{{ url_for('settings.index') }}" class="module-card group">

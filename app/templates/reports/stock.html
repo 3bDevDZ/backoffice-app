@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Stock Report') }} - CommerceFlow{% endblock %}
+
+{% block page_title %}{{ _('Stock Report') }}{% endblock %}
+{% block page_subtitle %}{{ _('Inventory analysis and stock value') }}{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6" id="summary-cards">
+    <div class="stat-card">
+        <div class="stat-card-label">{{ _('Total Stock Value') }}</div>
+        <div class="stat-card-metric" style="color: var(--color-success);" id="total-stock-value">-</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">{{ _('Products Count') }}</div>
+        <div class="stat-card-metric" style="color: var(--color-info);" id="products-count">-</div>
+    </div>
+    <div class="stat-card">
+        <div class="flex items-center justify-between">
+            <div>
+                <div class="stat-card-label">{{ _('Export') }}</div>
+            </div>
+            <div class="flex {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
+                <button onclick="exportReport('excel')" class="btn-secondary text-sm">
+                    <i class="fas fa-file-excel"></i>
+                </button>
+                <button onclick="exportReport('pdf')" class="btn-secondary text-sm">
+                    <i class="fas fa-file-pdf"></i>
+                </button>
+                <button onclick="exportReport('csv')" class="btn-secondary text-sm">
+                    <i class="fas fa-file-csv"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stock Table -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+    <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ _('Stock Details') }}</h3>
+    <div class="overflow-x-auto">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th>{{ _('Product') }}</th>
+                    <th>{{ _('Location') }}</th>
+                    <th class="text-right">{{ _('Physical Quantity') }}</th>
+                    <th class="text-right">{{ _('Reserved Quantity') }}</th>
+                    <th class="text-right">{{ _('Available Quantity') }}</th>
+                    <th class="text-right">{{ _('Unit Cost') }}</th>
+                    <th class="text-right">{{ _('Stock Value') }}</th>
+                </tr>
+            </thead>
+            <tbody id="stock-table">
+                <tr><td colspan="7" class="text-center py-8" style="color: var(--color-text-tertiary);">{{ _('Loading...') }}</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+async function loadReportData() {
+    try {
+        const response = await fetch('/reports/data/stock');
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            const data = result.data;
+            
+            // Update summary cards
+            document.getElementById('total-stock-value').textContent = formatCurrencyValue(data.summary.total_stock_value || 0);
+            document.getElementById('products-count').textContent = data.summary.products_count || 0;
+            
+            // Update table
+            const table = document.getElementById('stock-table');
+            table.innerHTML = data.data.map(item => `
+                <tr>
+                    <td>${item.product_name || item.product_code}</td>
+                    <td>${item.location_id || '-'}</td>
+                    <td class="text-right">${item.physical_quantity || 0}</td>
+                    <td class="text-right">${item.reserved_quantity || 0}</td>
+                    <td class="text-right">${item.available_quantity || 0}</td>
+                    <td class="text-right">${formatCurrencyValue(item.unit_cost || 0)}</td>
+                    <td class="text-right">${formatCurrencyValue(item.stock_value || 0)}</td>
+                </tr>
+            `).join('');
+        }
+    } catch (error) {
+        console.error('Error loading report data:', error);
+    }
+}
+
+async function exportReport(format) {
+    try {
+        const response = await fetch('/reports/export', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                report_type: 'stock',
+                format: format
+            })
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `stock_report.${format === 'excel' ? 'xlsx' : format}`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } else {
+            alert('{{ _("Export failed") }}');
+        }
+    } catch (error) {
+        console.error('Export error:', error);
+        alert('{{ _("Export failed") }}');
+    }
+}
+
+// Load data on page load (only once)
+let dataLoaded = false;
+document.addEventListener('DOMContentLoaded', function() {
+    if (!dataLoaded) {
+        dataLoaded = true;
+        loadReportData();
+    }
+});
+</script>
+{% endblock %}
+
