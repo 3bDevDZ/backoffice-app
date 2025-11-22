@@ -89,6 +89,78 @@ def new():
     )
 
 
+@customers_routes.route('/customers/<int:customer_id>/view')
+@require_roles_or_redirect('admin', 'commercial', 'direction')
+def view(customer_id: int):
+    """Render customer view page with pending orders and unpaid invoices."""
+    locale = get_locale()
+    direction = 'rtl' if locale == 'ar' else 'ltr'
+    
+    # Fetch customer
+    customer_dto = mediator.dispatch(GetCustomerByIdQuery(id=customer_id))
+    
+    # Fetch pending orders (draft, confirmed, ready, shipped)
+    from app.infrastructure.db import get_session
+    from app.domain.models.order import Order
+    from app.domain.models.invoice import Invoice
+    from sqlalchemy import func
+    from decimal import Decimal
+    
+    with get_session() as session:
+        from datetime import date
+        
+        # Get pending orders
+        pending_orders = session.query(Order).filter(
+            Order.customer_id == customer_id,
+            Order.status.in_(['draft', 'confirmed', 'ready', 'shipped'])
+        ).order_by(Order.created_at.desc()).all()
+        
+        # Get unpaid invoices (remaining_amount > 0)
+        unpaid_invoices = session.query(Invoice).filter(
+            Invoice.customer_id == customer_id,
+            Invoice.remaining_amount > Decimal('0')
+        ).order_by(Invoice.due_date.asc()).all()
+        
+        # Convert to dicts for template
+        orders_data = []
+        for order in pending_orders:
+            orders_data.append({
+                'id': order.id,
+                'number': order.number,
+                'status': order.status,
+                'total': float(order.total),
+                'created_at': order.created_at.strftime('%Y-%m-%d') if order.created_at else None,
+                'delivery_date_promised': order.delivery_date_promised.strftime('%Y-%m-%d') if order.delivery_date_promised else None
+            })
+        
+        invoices_data = []
+        today = date.today()
+        for invoice in unpaid_invoices:
+            days_overdue = None
+            if invoice.due_date and invoice.due_date < today:
+                days_overdue = (today - invoice.due_date).days
+            
+            invoices_data.append({
+                'id': invoice.id,
+                'number': invoice.number,
+                'status': invoice.status,
+                'total': float(invoice.total),
+                'remaining_amount': float(invoice.remaining_amount),
+                'invoice_date': invoice.invoice_date.strftime('%Y-%m-%d') if invoice.invoice_date else None,
+                'due_date': invoice.due_date.strftime('%Y-%m-%d') if invoice.due_date else None,
+                'days_overdue': days_overdue
+            })
+    
+    return render_template(
+        'customers/view.html',
+        customer=customer_dto,
+        pending_orders=orders_data,
+        unpaid_invoices=invoices_data,
+        locale=locale,
+        direction=direction
+    )
+
+
 @customers_routes.route('/customers/<int:customer_id>/edit')
 @require_roles_or_redirect('admin', 'commercial')
 def edit(customer_id: int):

@@ -200,7 +200,7 @@
                         <td class="px-6 py-4 text-{% if direction == 'rtl' %}left{% else %}right{% endif %} text-sm font-medium">
                             <div class="flex items-center {% if direction == 'rtl' %}space-x-reverse space-x-2{% else %}space-x-2{% endif %}">
                                 <!-- View Button -->
-                                <a href="{{ url_for('customers_frontend.edit', customer_id=customer.id) }}" 
+                                <a href="{{ url_for('customers_frontend.view', customer_id=customer.id) }}" 
                                    class="text-blue-600 hover:text-blue-900" 
                                    title="{{ _('View') }}">
                                     <i class="fas fa-eye"></i>

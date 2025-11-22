@@ -6765,3 +6765,28 @@ msgstr "Analytique clients"
 #: Reporting terms
 msgid "Purchase analytics"
 msgstr "Analytique des achats"
+
+
+#: Customer view
+msgid "Pending Orders"
+msgstr "Commandes en attente"
+
+
+#: Customer view
+msgid "Unpaid Invoices"
+msgstr "Factures non payées"
+
+
+#: Customer view
+msgid "No pending orders"
+msgstr "Aucune commande en attente"
+
+
+#: Customer view
+msgid "No unpaid invoices"
+msgstr "Aucune facture non payée"
+
+
+#: Customer view
+msgid "Customer details, pending orders and unpaid invoices"
+msgstr "Détails du client, commandes en attente et factures non payées"

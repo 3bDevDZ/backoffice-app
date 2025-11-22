@@ -6726,3 +6726,28 @@ msgstr "تحليلات العملاء"
 #: Reporting terms
 msgid "Purchase analytics"
 msgstr "تحليلات المشتريات"
+
+
+#: Customer view
+msgid "Pending Orders"
+msgstr "الطلبات المعلقة"
+
+
+#: Customer view
+msgid "Unpaid Invoices"
+msgstr "الفواتير غير المدفوعة"
+
+
+#: Customer view
+msgid "No pending orders"
+msgstr "لا توجد طلبات معلقة"
+
+
+#: Customer view
+msgid "No unpaid invoices"
+msgstr "لا توجد فواتير غير مدفوعة"
+
+
+#: Customer view
+msgid "Customer details, pending orders and unpaid invoices"
+msgstr "تفاصيل العميل والطلبات المعلقة والفواتير غير المدفوعة"
